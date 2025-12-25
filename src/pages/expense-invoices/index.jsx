@@ -180,19 +180,38 @@ const ExpenseInvoicesManagement = () => {
           }
           
           // Fetch quote number from related client invoice
+          // This works for both deposit and final invoices since they share the same buyerReference
           const clientInvoiceNumber = getClientInvoiceNumber(invoice);
-          if (clientInvoiceNumber) {
+          if (clientInvoiceNumber && !invoice.quoteNumber) {
             try {
               const { supabase } = await import('../../services/supabaseClient');
-              const { data: clientInvoice } = await supabase
+              // Use maybeSingle() instead of single() to handle cases where invoice might not exist
+              // First try to get quote_number directly from invoice
+              const { data: clientInvoice, error: queryError } = await supabase
                 .from('invoices')
-                .select('quote_number')
+                .select('quote_number, quote_id')
                 .eq('invoice_number', clientInvoiceNumber)
                 .eq('user_id', user?.id)
-                .single();
+                .maybeSingle();
               
-              if (clientInvoice?.quote_number) {
-                invoice.quoteNumber = clientInvoice.quote_number;
+              if (queryError) {
+                console.debug('Error querying client invoice for quote number:', queryError);
+              } else if (clientInvoice) {
+                // If quote_number is directly available, use it
+                if (clientInvoice.quote_number) {
+                  invoice.quoteNumber = clientInvoice.quote_number;
+                } else if (clientInvoice.quote_id) {
+                  // If quote_id is available but quote_number is not, fetch from quotes table
+                  const { data: quote } = await supabase
+                    .from('quotes')
+                    .select('quote_number')
+                    .eq('id', clientInvoice.quote_id)
+                    .maybeSingle();
+                  
+                  if (quote?.quote_number) {
+                    invoice.quoteNumber = quote.quote_number;
+                  }
+                }
               }
             } catch (err) {
               // Silently fail if client invoice not found

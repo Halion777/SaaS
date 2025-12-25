@@ -46,12 +46,12 @@ function App() {
       <InternetConnectionCheck>
       <MultiUserProvider>
         <NavigationProvider>
-          <Routes />
-          <ProfileSelectionModal
-            isOpen={showProfileSelection}
-            onProfileSelect={handleProfileSelect}
-            onClose={closeProfileSelection}
-          />
+        <Routes />
+        <ProfileSelectionModal
+          isOpen={showProfileSelection}
+          onProfileSelect={handleProfileSelect}
+          onClose={closeProfileSelection}
+        />
         </NavigationProvider>
       </MultiUserProvider>
       </InternetConnectionCheck>

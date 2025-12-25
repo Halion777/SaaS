@@ -1083,10 +1083,8 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
     invoiceLines = invoice.invoiceLines.map((line, index) => {
       // Use EXACT values as stored in peppol_metadata (already parsed from UBL XML)
       // These values come directly from <cac:InvoiceLine> in UBL XML
-      // Clean quantity - ensure it's a number, not a string with multiple values
-      let rawQuantity = line.quantity || line.InvoicedQuantity || 1;
-      // If it's a string, clean it first, then ensure it's a number
-      const exactQuantity = typeof rawQuantity === 'number' ? rawQuantity : cleanQuantity(rawQuantity);
+      // Use same logic as expense invoice detail modal - simple and consistent
+      const exactQuantity = line.quantity || 1;
       const exactUnitPrice = typeof line.unitPrice === 'number' ? line.unitPrice : 
                             typeof line.priceAmount === 'number' ? line.priceAmount :
                             typeof line.unit_price === 'number' ? line.unit_price :

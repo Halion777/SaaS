@@ -413,9 +413,9 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
     
     // Ungrouped view
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-        {expenseInvoices.map((invoice) => {
-          const daysOverdue = getDaysOverdue(invoice.due_date, invoice.status);
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+      {expenseInvoices.map((invoice) => {
+        const daysOverdue = getDaysOverdue(invoice.due_date, invoice.status);
           return renderInvoiceCard(invoice, daysOverdue);
         })}
       </div>
@@ -423,13 +423,13 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
   };
 
   const renderInvoiceCard = (invoice, daysOverdue) => {
-    return (
-      <div key={invoice.id} className="bg-card border border-border rounded-lg p-4 hover:shadow-md transition-shadow duration-150 overflow-visible">
-        {/* Header with checkbox and invoice number */}
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              checked={selectedExpenseInvoices.includes(invoice.id)}
+        return (
+          <div key={invoice.id} className="bg-card border border-border rounded-lg p-4 hover:shadow-md transition-shadow duration-150 overflow-visible">
+            {/* Header with checkbox and invoice number */}
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  checked={selectedExpenseInvoices.includes(invoice.id)}
               onCheckedChange={(checked) => {
                 if (checked) {
                   onSelectionChange([...selectedExpenseInvoices, invoice.id]);
@@ -437,8 +437,8 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                   onSelectionChange(selectedExpenseInvoices.filter(id => id !== invoice.id));
                 }
               }}
-            />
-            <div>
+                />
+                <div>
               <div className="font-semibold text-foreground">{getDisplayInvoiceNumber(invoice)}</div>
               {invoice.quoteNumber && (
                 <div className="text-xs text-muted-foreground">{t('expenseInvoices.table.quote', 'Quote')}: {invoice.quoteNumber}</div>
@@ -481,8 +481,8 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
         {/* Status and Invoice Type */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex flex-col space-y-1">
-            {getInvoiceTypeBadge(invoice.invoice_type)}
-          </div>
+                    {getInvoiceTypeBadge(invoice.invoice_type)}
+                  </div>
           <div className="flex flex-col items-end space-y-1">
             {getStatusBadge(invoice.status, invoice.id)}
             {daysOverdue && (
@@ -806,17 +806,17 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                     </tr>
                     {/* Group Invoices */}
                     {isExpanded && group.invoices.map((invoice) => {
-                      const daysOverdue = getDaysOverdue(invoice.due_date, invoice.status);
-                      return (
-                        <tr key={invoice.id} className="hover:bg-muted/30 transition-colors duration-150" style={{ position: 'relative' }}>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <Checkbox
-                              checked={selectedExpenseInvoices.includes(invoice.id)}
-                              onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
-                            />
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-foreground">{getDisplayInvoiceNumber(invoice)}</div>
+              const daysOverdue = getDaysOverdue(invoice.due_date, invoice.status);
+              return (
+                <tr key={invoice.id} className="hover:bg-muted/30 transition-colors duration-150" style={{ position: 'relative' }}>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <Checkbox
+                      checked={selectedExpenseInvoices.includes(invoice.id)}
+                      onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
+                    />
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-foreground">{getDisplayInvoiceNumber(invoice)}</div>
                             {invoice.quoteNumber && (
                               <div className="text-xs text-muted-foreground">{t('expenseInvoices.table.quote', 'Quote')}: {invoice.quoteNumber}</div>
                             )}
@@ -824,20 +824,20 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             {getInvoiceTypeBadge(invoice.invoice_type)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-foreground">{invoice.supplier_name}</div>
-                            <div className="text-xs text-muted-foreground">{invoice.supplier_email}</div>
-                            {invoice.supplier_vat_number && (
-                              <div className="text-xs text-muted-foreground">VAT: {invoice.supplier_vat_number}</div>
-                            )}
-                            {invoice.source === 'peppol' && invoice.sender_peppol_id && (
-                              <div className="text-xs text-blue-600 mt-1 flex items-center">
-                                <Icon name="Globe" size={10} className="mr-1" />
-                                {invoice.sender_peppol_id}
-                              </div>
-                            )}
-                          </td>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-foreground">{invoice.supplier_name}</div>
+                    <div className="text-xs text-muted-foreground">{invoice.supplier_email}</div>
+                    {invoice.supplier_vat_number && (
+                      <div className="text-xs text-muted-foreground">VAT: {invoice.supplier_vat_number}</div>
+                    )}
+                    {invoice.source === 'peppol' && invoice.sender_peppol_id && (
+                      <div className="text-xs text-blue-600 mt-1 flex items-center">
+                        <Icon name="Globe" size={10} className="mr-1" />
+                        {invoice.sender_peppol_id}
+                      </div>
+                    )}
+                  </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-medium text-foreground">{formatCurrency(invoice.amount)}</div>
                             {renderAmountInfo(invoice)}
@@ -850,16 +850,16 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                               )}
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex flex-col space-y-1">
-                            {getSourceBadge(invoice.source)}
-                              {invoice.source === 'peppol' && invoice.peppol_received_at && (
-                                <span className="text-xs text-muted-foreground">
-                                  {t('expenseInvoices.table.received', 'Received')}: {formatDate(invoice.peppol_received_at)}
-                                </span>
-                              )}
-                            </div>
-                          </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex flex-col space-y-1">
+                    {getSourceBadge(invoice.source)}
+                      {invoice.source === 'peppol' && invoice.peppol_received_at && (
+                        <span className="text-xs text-muted-foreground">
+                          {t('expenseInvoices.table.received', 'Received')}: {formatDate(invoice.peppol_received_at)}
+                        </span>
+                      )}
+                    </div>
+                  </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                             {formatDate(invoice.issue_date)}
                           </td>

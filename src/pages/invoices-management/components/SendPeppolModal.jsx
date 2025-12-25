@@ -352,6 +352,22 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
           .eq('id', invoice.id);
       }
 
+      // For final invoices: Find deposit invoice number (same quote_id, invoice_type = 'deposit')
+      let depositInvoiceNumber = null;
+      if (invoiceType === 'final' && invoice.quote_id) {
+        const { data: depositInvoice } = await supabase
+          .from('invoices')
+          .select('invoice_number')
+          .eq('user_id', user.id)
+          .eq('quote_id', invoice.quote_id)
+          .eq('invoice_type', 'deposit')
+          .single();
+        
+        if (depositInvoice) {
+          depositInvoiceNumber = depositInvoice.invoice_number;
+        }
+      }
+
       const haliqoInvoice = {
         ...invoice,
         invoice_number: invoiceNumber, // Ensure invoice_number is set
@@ -360,6 +376,7 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
         // Extract deposit/balance amounts from peppol_metadata or quote data
         deposit_amount: invoice.peppol_metadata?.deposit_amount || invoice.quote?.deposit_amount || 0,
         balance_amount: invoice.peppol_metadata?.balance_amount || invoice.quote?.balance_amount || 0,
+        deposit_invoice_number: depositInvoiceNumber, // Include deposit invoice number for final invoices
         items: invoiceLines
       };
 

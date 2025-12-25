@@ -1767,6 +1767,228 @@ const domesticInvoice = {
 ```
 
 ---
+This is the standard Peppol way to handle deposit deductions in the final invoice.
+Deposit Invoice :
+❌ NO AllowanceCharge needed - just a simple invoice as we have now all things same but for deposit invoice wr have to exclude total and balance information only, show only deposit total and its vat but keep invocie line shwoing same, only we dont have to show total anf balnce info in deposit invoices
+Final Invoice :
+✅ YES - Use AllowanceCharge here to deduct the deposit, and here in this ubl we can show everything as we showing now, only we have to add AllowanceCharge
+<?xml version="1.0" encoding="UTF-8"?>
+<Invoice xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2">
+    <cbc:UBLVersionID>2.1</cbc:UBLVersionID>
+    <cbc:CustomizationID>urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0</cbc:CustomizationID>
+    <cbc:ProfileID>urn:fdc:peppol.eu:2017:poacc:billing:01:1.0</cbc:ProfileID>
+    <cbc:ID>22505764</cbc:ID>
+    <cbc:IssueDate>2025-06-15</cbc:IssueDate>
+    <cbc:DueDate>2025-07-30</cbc:DueDate>
+    <cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>
+    <cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>
+    <cbc:BuyerReference>22505764</cbc:BuyerReference>
+    <cac:OrderReference>
+        <cbc:ID>22505764</cbc:ID>
+    </cac:OrderReference>
+
+    <cac:AccountingSupplierParty>
+        <cac:Party>
+            <cbc:EndpointID schemeID="9925">BE1111111111</cbc:EndpointID>
+            <cac:PartyIdentification>
+                <cbc:ID>9925:BE1111111111</cbc:ID>
+            </cac:PartyIdentification>
+            <cac:PartyName>
+                <cbc:Name>Tst Escompte SA</cbc:Name>
+            </cac:PartyName>
+            <cac:PostalAddress>
+                <cbc:StreetName>Route AA 134</cbc:StreetName>
+                <cbc:CityName>AAA</cbc:CityName>
+                <cbc:PostalZone>0000</cbc:PostalZone>
+                <cac:Country>
+                    <cbc:IdentificationCode>BE</cbc:IdentificationCode>
+                </cac:Country>
+            </cac:PostalAddress>
+            <cac:PartyTaxScheme>
+                <cbc:CompanyID>BE1111111111</cbc:CompanyID>
+                <cac:TaxScheme>
+                    <cbc:ID>VAT</cbc:ID>
+                </cac:TaxScheme>
+            </cac:PartyTaxScheme>
+            <cac:PartyLegalEntity>
+                <cbc:RegistrationName>Tst Escompte SA</cbc:RegistrationName>
+            </cac:PartyLegalEntity>
+        </cac:Party>
+    </cac:AccountingSupplierParty>
+    <cac:AccountingCustomerParty>
+        <cac:Party>
+            <cbc:EndpointID schemeID="9925">be2222222222</cbc:EndpointID>
+            <cac:PartyIdentification>
+                <cbc:ID>9925:be2222222222</cbc:ID>
+            </cac:PartyIdentification>
+            <cac:PartyName>
+                <cbc:Name>BB</cbc:Name>
+            </cac:PartyName>
+            <cac:PostalAddress>
+                <cbc:StreetName> Strasse 212</cbc:StreetName>
+                <cbc:CityName>CCC</cbc:CityName>
+                <cbc:PostalZone>3333</cbc:PostalZone>
+                <cac:Country>
+                    <cbc:IdentificationCode>BE</cbc:IdentificationCode>
+                </cac:Country>
+            </cac:PostalAddress>
+            <cac:PartyTaxScheme>
+                <cbc:CompanyID>be2222222222</cbc:CompanyID>
+                <cac:TaxScheme>
+                    <cbc:ID>VAT</cbc:ID>
+                </cac:TaxScheme>
+            </cac:PartyTaxScheme>
+            <cac:PartyLegalEntity>
+                <cbc:RegistrationName>BB</cbc:RegistrationName>
+            </cac:PartyLegalEntity>
+        </cac:Party>
+    </cac:AccountingCustomerParty>
+    <cac:PaymentMeans>
+        <cbc:PaymentMeansCode name="Credit transfer">42</cbc:PaymentMeansCode>
+        <cbc:PaymentID>22505764</cbc:PaymentID>
+        <cac:PayeeFinancialAccount>
+            <cbc:ID>BE98348031033293</cbc:ID>
+            <cac:FinancialInstitutionBranch>
+                <cbc:ID>BBRUBEBB</cbc:ID>
+            </cac:FinancialInstitutionBranch>
+        </cac:PayeeFinancialAccount>
+    </cac:PaymentMeans>
+    <cac:AllowanceCharge>
+        <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
+        <cbc:AllowanceChargeReason>Escompte appliqué</cbc:AllowanceChargeReason>
+        <cbc:MultiplierFactorNumeric>1.5</cbc:MultiplierFactorNumeric> 
+        <cbc:Amount currencyID="EUR">1.60</cbc:Amount>
+        <cbc:BaseAmount currencyID="EUR">106.64</cbc:BaseAmount>
+        <cac:TaxCategory>
+            <cbc:ID>S</cbc:ID> <!-- Code TVA standard -->
+            <cbc:Percent>21.00</cbc:Percent>
+            <cac:TaxScheme>
+                <cbc:ID>VAT</cbc:ID>
+            </cac:TaxScheme>
+        </cac:TaxCategory>
+    </cac:AllowanceCharge>    
+    <cac:TaxTotal>
+        <cbc:TaxAmount currencyID="EUR">22.06</cbc:TaxAmount>
+        <cac:TaxSubtotal>
+            <cbc:TaxableAmount currencyID="EUR">105.04</cbc:TaxableAmount> <!-- Changed from 105.04 to 106.64 --> 
+            <cbc:TaxAmount currencyID="EUR">22.06</cbc:TaxAmount>
+            <cac:TaxCategory>
+                <cbc:ID>S</cbc:ID>
+                <cbc:Percent>21</cbc:Percent>
+                <cac:TaxScheme>
+                    <cbc:ID>VAT</cbc:ID>
+                </cac:TaxScheme>
+            </cac:TaxCategory>
+        </cac:TaxSubtotal>
+    </cac:TaxTotal>
+    <cac:LegalMonetaryTotal>
+        <cbc:LineExtensionAmount currencyID="EUR">106.64</cbc:LineExtensionAmount>
+        <cbc:TaxExclusiveAmount currencyID="EUR">105.04</cbc:TaxExclusiveAmount>
+        <cbc:TaxInclusiveAmount currencyID="EUR">127.10</cbc:TaxInclusiveAmount>
+        <cbc:AllowanceTotalAmount currencyID="EUR">1.60</cbc:AllowanceTotalAmount>
+        <cbc:PayableAmount currencyID="EUR">127.10</cbc:PayableAmount>
+    </cac:LegalMonetaryTotal>
+    <cac:InvoiceLine>
+        <cbc:ID>1</cbc:ID>
+        <cbc:InvoicedQuantity unitCode="H87">2.00</cbc:InvoicedQuantity>
+        <cbc:LineExtensionAmount currencyID="EUR">22.29</cbc:LineExtensionAmount>
+        <cac:OrderLineReference>
+            <cbc:LineID>2885839</cbc:LineID>
+        </cac:OrderLineReference>
+        <cac:Item>
+            <cbc:Description>Pastilles de detartrage - 3 x 3 - JURA</cbc:Description>
+            <cbc:Name>P JU 61848 (618484)</cbc:Name>
+            <cac:SellersItemIdentification>
+                <cbc:ID>225175</cbc:ID>
+            </cac:SellersItemIdentification>
+            <cac:ClassifiedTaxCategory>
+                <cbc:ID>S</cbc:ID>
+                <cbc:Percent>21</cbc:Percent>
+                <cac:TaxScheme>
+                    <cbc:ID>VAT</cbc:ID>
+                </cac:TaxScheme>
+            </cac:ClassifiedTaxCategory>
+        </cac:Item>
+        <cac:Price>
+            <cbc:PriceAmount currencyID="EUR">11.15</cbc:PriceAmount>
+        </cac:Price>
+    </cac:InvoiceLine>
+    <cac:InvoiceLine>
+        <cbc:ID>1</cbc:ID>
+        <cbc:InvoicedQuantity unitCode="H87">2.00</cbc:InvoicedQuantity>
+        <cbc:LineExtensionAmount currencyID="EUR">65.45</cbc:LineExtensionAmount>
+        <cac:OrderLineReference>
+            <cbc:LineID>2885840</cbc:LineID>
+        </cac:OrderLineReference>
+        <cac:Item>
+            <cbc:Description>Filtre Claris Smart+ - 3 pieces - JURA</cbc:Description>
+            <cbc:Name>P JU 24233 (242337)</cbc:Name>
+            <cac:SellersItemIdentification>
+                <cbc:ID>225164</cbc:ID>
+            </cac:SellersItemIdentification>
+            <cac:ClassifiedTaxCategory>
+                <cbc:ID>S</cbc:ID>
+                <cbc:Percent>21</cbc:Percent>
+                <cac:TaxScheme>
+                    <cbc:ID>VAT</cbc:ID>
+                </cac:TaxScheme>
+            </cac:ClassifiedTaxCategory>
+        </cac:Item>
+        <cac:Price>
+            <cbc:PriceAmount currencyID="EUR">32.72</cbc:PriceAmount>
+        </cac:Price>
+    </cac:InvoiceLine>
+    <cac:InvoiceLine>
+        <cbc:ID>1</cbc:ID>
+        <cbc:InvoicedQuantity unitCode="H87">2.00</cbc:InvoicedQuantity>
+        <cbc:LineExtensionAmount currencyID="EUR">14.90</cbc:LineExtensionAmount>
+        <cac:OrderLineReference>
+            <cbc:LineID>2885841</cbc:LineID>
+        </cac:OrderLineReference>
+        <cac:Item>
+            <cbc:Description>Pastilles de nettoyage 3en1 - 6 pcs. - JURA</cbc:Description>
+            <cbc:Name>P JU 24225 (242252)</cbc:Name>
+            <cac:SellersItemIdentification>
+                <cbc:ID>311521</cbc:ID>
+            </cac:SellersItemIdentification>
+            <cac:ClassifiedTaxCategory>
+                <cbc:ID>S</cbc:ID>
+                <cbc:Percent>21</cbc:Percent>
+                <cac:TaxScheme>
+                    <cbc:ID>VAT</cbc:ID>
+                </cac:TaxScheme>
+            </cac:ClassifiedTaxCategory>
+        </cac:Item>
+        <cac:Price>
+            <cbc:PriceAmount currencyID="EUR">7.45</cbc:PriceAmount>
+        </cac:Price>
+    </cac:InvoiceLine>
+    <cac:InvoiceLine>
+        <cbc:ID>1</cbc:ID>
+        <cbc:InvoicedQuantity unitCode="H87">1.00</cbc:InvoicedQuantity>
+        <cbc:LineExtensionAmount currencyID="EUR">4.00</cbc:LineExtensionAmount>
+        <cac:OrderLineReference>
+            <cbc:LineID>2885842</cbc:LineID>
+        </cac:OrderLineReference>
+        <cac:Item>
+            <cbc:Description>Participation Frais Logistiques</cbc:Description>
+            <cbc:Name>Participation Frais Logistiques @7410</cbc:Name>
+            <cac:SellersItemIdentification>
+                <cbc:ID>20627</cbc:ID>
+            </cac:SellersItemIdentification>
+            <cac:ClassifiedTaxCategory>
+                <cbc:ID>S</cbc:ID>
+                <cbc:Percent>21</cbc:Percent>
+                <cac:TaxScheme>
+                    <cbc:ID>VAT</cbc:ID>
+                </cac:TaxScheme>
+            </cac:ClassifiedTaxCategory>
+        </cac:Item>
+        <cac:Price>
+            <cbc:PriceAmount currencyID="EUR">4</cbc:PriceAmount>
+        </cac:Price>
+    </cac:InvoiceLine>
+</Invoice>
 
 **Document Version:** 1.0  
 **Last Updated:** December 2025  

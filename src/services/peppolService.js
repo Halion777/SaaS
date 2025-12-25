@@ -644,17 +644,26 @@ const generatePaymentMeansAndTerms = (invoiceConfig) => {
   
   // Build Note field: include payment terms, invoice_type, and deposit/balance amounts if provided
   // Format: "Net within X days | INVOICE_TYPE:deposit | DEPOSIT_AMOUNT:500 | BALANCE_AMOUNT:1500"
+  // For deposit invoices: Only include deposit amount (no balance)
+  // For final invoices: Include both deposit and balance amounts
   let noteText = `Net within ${invoiceConfig.paymentDelay} days`;
   if (invoiceConfig.invoiceType) {
     noteText += ` | INVOICE_TYPE:${invoiceConfig.invoiceType}`;
   }
-  // Include deposit amount if present (for both deposit and final invoices)
-  if (invoiceConfig.depositAmount && invoiceConfig.depositAmount > 0) {
+  
+  // For deposit invoices: Only include deposit amount
+  if (invoiceConfig.invoiceType === 'deposit' && invoiceConfig.depositAmount && invoiceConfig.depositAmount > 0) {
     noteText += ` | DEPOSIT_AMOUNT:${invoiceConfig.depositAmount.toFixed(2)}`;
   }
-  // Include balance amount if present (for both deposit and final invoices)
-  if (invoiceConfig.balanceAmount && invoiceConfig.balanceAmount > 0) {
-    noteText += ` | BALANCE_AMOUNT:${invoiceConfig.balanceAmount.toFixed(2)}`;
+  
+  // For final invoices: Include both deposit and balance amounts
+  if (invoiceConfig.invoiceType === 'final') {
+    if (invoiceConfig.depositAmount && invoiceConfig.depositAmount > 0) {
+      noteText += ` | DEPOSIT_AMOUNT:${invoiceConfig.depositAmount.toFixed(2)}`;
+    }
+    if (invoiceConfig.balanceAmount && invoiceConfig.balanceAmount > 0) {
+      noteText += ` | BALANCE_AMOUNT:${invoiceConfig.balanceAmount.toFixed(2)}`;
+    }
   }
   
   return `
@@ -672,6 +681,51 @@ const generatePaymentMeansAndTerms = (invoiceConfig) => {
   <cbc:Note>${xmlEscape(noteText)}</cbc:Note>
 </cac:PaymentTerms>
 `;
+};
+
+// Generate AllowanceCharge element for final invoices (to deduct deposit)
+const generateAllowanceCharge = (invoiceConfig) => {
+  // Only add AllowanceCharge for final invoices when deposit amount exists
+  if (invoiceConfig.invoiceType !== 'final' || !invoiceConfig.depositAmount || invoiceConfig.depositAmount <= 0) {
+    return '';
+  }
+  
+  // Get the primary VAT rate from invoice lines (most common one)
+  const vatRate = invoiceConfig.invoiceLines && invoiceConfig.invoiceLines.length > 0
+    ? invoiceConfig.invoiceLines[0].taxPercentage || 21
+    : 21;
+  
+  // AllowanceCharge for deposit deduction
+  // ChargeIndicator = false means it's an allowance (deduction)
+  // Amount is the deposit amount EXCLUDING VAT (as per Peppol BIS Billing 3.0)
+  // VAT is applied on this amount via TaxCategory
+  // Note: BaseAmount is removed to avoid PEPPOL-EN16931-R042 error (would require MultiplierFactorNumeric)
+  return `
+<cac:AllowanceCharge>
+  <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
+  <cbc:AllowanceChargeReason>${xmlEscape('Deposit already paid')}</cbc:AllowanceChargeReason>
+  <cbc:Amount currencyID="EUR">${invoiceConfig.depositAmount.toFixed(2)}</cbc:Amount>
+  <cac:TaxCategory>
+    <cbc:ID>S</cbc:ID>
+    <cbc:Percent>${vatRate.toFixed(2)}</cbc:Percent>
+    <cac:TaxScheme>
+      <cbc:ID>VAT</cbc:ID>
+    </cac:TaxScheme>
+  </cac:TaxCategory>
+</cac:AllowanceCharge>`;
+};
+
+// Generate OrderReference for final invoices (reference to deposit invoice)
+const generateOrderReference = (invoiceConfig) => {
+  // Only add OrderReference for final invoices when deposit invoice number exists
+  if (invoiceConfig.invoiceType !== 'final' || !invoiceConfig.depositInvoiceNumber) {
+    return '';
+  }
+  
+  return `
+<cac:OrderReference>
+  <cbc:ID>${xmlEscape(invoiceConfig.depositInvoiceNumber)}</cbc:ID>
+</cac:OrderReference>`;
 };
 
 const generateTaxSubtotals = (taxCategories) => Object.values(taxCategories).map((category) => {
@@ -778,8 +832,135 @@ export const generatePEPPOLXML = (invoiceData) => {
   }
   
   const timestamp = formatDate(new Date());
+  const invoiceType = invoiceData.invoiceType || 'final';
+  const isDepositInvoice = invoiceType === 'deposit';
+  const isFinalInvoice = invoiceType === 'final';
+  
+  // Calculate tax categories and totals from invoice lines
   const taxCategories = calculateTaxCategories(invoiceData.invoiceLines);
   const totals = calculateTotals(invoiceData.invoiceLines);
+  
+  // For deposit invoices: Calculate totals based on deposit amount only
+  // For final invoices: Use full totals (with AllowanceCharge deduction later)
+  // For normal invoices: Use full totals as-is
+  let finalTaxableAmount = totals.taxableAmount;
+  let finalTaxTotal = 0;
+  let finalPayableAmount = totals.taxableAmount + totals.taxAmount;
+  let allowanceChargeAmount = 0;
+  
+  if (isDepositInvoice && invoiceData.depositAmount && invoiceData.depositAmount > 0) {
+    // Deposit invoice: Create a single simplified invoice line for deposit amount
+    // This is cleaner and more legally correct than showing full project lines
+    
+    const primaryVatRate = invoiceData.invoiceLines && invoiceData.invoiceLines.length > 0
+      ? invoiceData.invoiceLines[0].taxPercentage || 21
+      : 21;
+    
+    const primaryVatCode = invoiceData.invoiceLines && invoiceData.invoiceLines.length > 0
+      ? invoiceData.invoiceLines[0].vatCode || 'S'
+      : 'S';
+    
+    // Calculate tax on deposit amount
+    const depositTaxAmount = Math.round((invoiceData.depositAmount * (primaryVatRate / 100)) * 100) / 100;
+    const depositTotal = invoiceData.depositAmount + depositTaxAmount;
+    
+    // Create single invoice line for deposit
+    invoiceData.invoiceLines = [{
+      description: 'Deposit payment',
+      quantity: 1,
+      unitPrice: invoiceData.depositAmount,
+      taxableAmount: invoiceData.depositAmount,
+      taxAmount: depositTaxAmount,
+      totalAmount: depositTotal,
+      vatCode: primaryVatCode,
+      taxPercentage: primaryVatRate
+    }];
+    
+    // Recalculate totals and tax categories from new single-line invoice
+    const depositTotals = calculateTotals(invoiceData.invoiceLines);
+    const depositTaxCategories = calculateTaxCategories(invoiceData.invoiceLines);
+    
+    // Use deposit amounts
+    finalTaxableAmount = depositTotals.taxableAmount;
+    finalTaxTotal = Object.values(depositTaxCategories).reduce((sum, category) => {
+      if (category.taxPercentage === 0) return sum;
+      const calculatedTaxAmount = Math.round((category.taxableAmount * (category.taxPercentage / 100)) * 100) / 100;
+      return sum + calculatedTaxAmount;
+    }, 0);
+    finalPayableAmount = finalTaxableAmount + finalTaxTotal;
+    
+    // Replace taxCategories with deposit ones
+    Object.keys(taxCategories).forEach(key => delete taxCategories[key]);
+    Object.assign(taxCategories, depositTaxCategories);
+    
+    // Update totals to use deposit values
+    totals.taxableAmount = depositTotals.taxableAmount;
+    totals.taxAmount = depositTotals.taxAmount;
+    totals.totalAmount = depositTotals.totalAmount;
+  } else if (isFinalInvoice && invoiceData.depositAmount && invoiceData.depositAmount > 0) {
+    // Final invoice: Use full totals, AllowanceCharge will deduct deposit
+    // Get primary VAT rate from invoice lines
+    const primaryVatRate = invoiceData.invoiceLines && invoiceData.invoiceLines.length > 0
+      ? invoiceData.invoiceLines[0].taxPercentage || 21
+      : 21;
+    const depositVATAmount = Math.round((invoiceData.depositAmount * (primaryVatRate / 100)) * 100) / 100;
+    // AllowanceCharge amount should be EXCLUDING VAT (as per Peppol BIS Billing 3.0)
+    allowanceChargeAmount = invoiceData.depositAmount; // Excluding VAT
+    
+    // For final invoices: 
+    // BR-S-08: TaxSubtotal.TaxableAmount = Sum(InvoiceLines with same VAT rate) - AllowanceCharge.BaseAmount (if same VAT rate)
+    // BR-CO-10: LegalMonetaryTotal.LineExtensionAmount = Sum(InvoiceLines) [full project]
+    
+    // Update each tax category to subtract the deposit amount proportionally
+    // For each VAT rate, calculate: TaxableAmount = Sum(InvoiceLines with that rate) - DepositAmount (if same rate)
+    const updatedTaxCategories = {};
+    let totalBalanceTax = 0;
+    
+    Object.values(taxCategories).forEach(category => {
+      if (category.taxPercentage === primaryVatRate && category.vatCode === (invoiceData.invoiceLines[0]?.vatCode || 'S')) {
+        // This category matches the deposit VAT rate - subtract deposit amount
+        const balanceTaxableAmount = category.taxableAmount - invoiceData.depositAmount;
+        const balanceTaxAmount = Math.round((balanceTaxableAmount * (category.taxPercentage / 100)) * 100) / 100;
+        
+        updatedTaxCategories[`${category.vatCode}${category.taxPercentage}`] = {
+          vatCode: category.vatCode,
+          taxPercentage: category.taxPercentage,
+          taxableAmount: balanceTaxableAmount, // Full - Deposit (for BR-S-08)
+          taxAmount: balanceTaxAmount
+        };
+        totalBalanceTax += balanceTaxAmount;
+      } else {
+        // Other VAT rates - keep as is (no deposit deduction for different rates)
+        updatedTaxCategories[`${category.vatCode}${category.taxPercentage}`] = category;
+        if (category.taxPercentage !== 0) {
+          const calculatedTaxAmount = Math.round((category.taxableAmount * (category.taxPercentage / 100)) * 100) / 100;
+          totalBalanceTax += calculatedTaxAmount;
+        }
+      }
+    });
+    
+    // Replace taxCategories with updated ones
+    Object.keys(taxCategories).forEach(key => delete taxCategories[key]);
+    Object.assign(taxCategories, updatedTaxCategories);
+    
+    // For LegalMonetaryTotal:
+    // LineExtensionAmount = Sum of all invoice lines (full project) - BR-CO-10 requirement
+    finalTaxableAmount = totals.taxableAmount; // Full project amount (for BR-CO-10 LineExtensionAmount)
+    
+    // TaxExclusiveAmount = LineExtensionAmount - AllowanceCharge.BaseAmount
+    // TaxInclusiveAmount = TaxExclusiveAmount + TaxAmount
+    // PayableAmount = TaxInclusiveAmount
+    finalPayableAmount = (totals.taxableAmount - invoiceData.depositAmount) + totalBalanceTax;
+    finalTaxTotal = totalBalanceTax; // Tax on balance amount
+  } else {
+    // Normal invoice: Use full totals as-is
+    finalTaxTotal = Object.values(taxCategories).reduce((sum, category) => {
+      if (category.taxPercentage === 0) return sum;
+      const calculatedTaxAmount = Math.round((category.taxableAmount * (category.taxPercentage / 100)) * 100) / 100;
+      return sum + calculatedTaxAmount;
+    }, 0);
+    finalPayableAmount = totals.taxableAmount + finalTaxTotal;
+  }
   
   // Ensure dates are in YYYY-MM-DD format (UBL requires date-only, not datetime)
   const formatUBLDate = (dateValue) => {
@@ -809,12 +990,9 @@ export const generatePEPPOLXML = (invoiceData) => {
   // This ensures the supplier sees the same invoice number as the client
   const finalBuyerReference = buyerReference || invoiceData.billName;
   
-  // Recalculate total tax amount from tax categories to ensure accuracy
-  const recalculatedTaxTotal = Object.values(taxCategories).reduce((sum, category) => {
-    if (category.taxPercentage === 0) return sum;
-    const calculatedTaxAmount = Math.round((category.taxableAmount * (category.taxPercentage / 100)) * 100) / 100;
-    return sum + calculatedTaxAmount;
-  }, 0);
+  // For final invoices: Get deposit invoice number for OrderReference
+  // This should be passed in invoiceData.depositInvoiceNumber
+  const depositInvoiceNumber = invoiceData.depositInvoiceNumber || null;
   
   return `<?xml version="1.0" encoding="UTF-8"?>
   <Invoice xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
@@ -828,20 +1006,26 @@ export const generatePEPPOLXML = (invoiceData) => {
     <cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>
     <cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>
     <cbc:BuyerReference>${xmlEscape(finalBuyerReference)}</cbc:BuyerReference>
+  ${generateOrderReference({ ...invoiceData, depositInvoiceNumber })}
   ${generatePartyInfo(invoiceData.sender, true)}
   ${generatePartyInfo(invoiceData.receiver, false)}
   ${generateDelivery({ ...invoiceData, deliveryDate })}
   ${generatePaymentMeansAndTerms(invoiceData)}
+  ${generateAllowanceCharge({ ...invoiceData, invoiceLines: invoiceData.invoiceLines })}
     <cac:TaxTotal>
-      <cbc:TaxAmount currencyID="EUR">${recalculatedTaxTotal.toFixed(2)}</cbc:TaxAmount>
+      <cbc:TaxAmount currencyID="EUR">${finalTaxTotal.toFixed(2)}</cbc:TaxAmount>
       ${generateTaxSubtotals(taxCategories)}
     </cac:TaxTotal>
 
     <cac:LegalMonetaryTotal>
       <cbc:LineExtensionAmount currencyID="EUR">${totals.taxableAmount.toFixed(2)}</cbc:LineExtensionAmount>
-      <cbc:TaxExclusiveAmount currencyID="EUR">${totals.taxableAmount.toFixed(2)}</cbc:TaxExclusiveAmount>
-      <cbc:TaxInclusiveAmount currencyID="EUR">${(totals.taxableAmount + recalculatedTaxTotal).toFixed(2)}</cbc:TaxInclusiveAmount>
-      <cbc:PayableAmount currencyID="EUR">${(totals.taxableAmount + recalculatedTaxTotal).toFixed(2)}</cbc:PayableAmount>
+      ${isFinalInvoice && invoiceData.depositAmount && invoiceData.depositAmount > 0 
+        ? `<cbc:TaxExclusiveAmount currencyID="EUR">${(totals.taxableAmount - invoiceData.depositAmount).toFixed(2)}</cbc:TaxExclusiveAmount>
+      <cbc:TaxInclusiveAmount currencyID="EUR">${finalPayableAmount.toFixed(2)}</cbc:TaxInclusiveAmount>
+      <cbc:AllowanceTotalAmount currencyID="EUR">${allowanceChargeAmount.toFixed(2)}</cbc:AllowanceTotalAmount>`
+        : `<cbc:TaxExclusiveAmount currencyID="EUR">${totals.taxableAmount.toFixed(2)}</cbc:TaxExclusiveAmount>
+      <cbc:TaxInclusiveAmount currencyID="EUR">${(totals.taxableAmount + finalTaxTotal).toFixed(2)}</cbc:TaxInclusiveAmount>`}
+      <cbc:PayableAmount currencyID="EUR">${finalPayableAmount.toFixed(2)}</cbc:PayableAmount>
     </cac:LegalMonetaryTotal>
   ${generateInvoiceLines(invoiceData.invoiceLines)}
   </Invoice>`;
@@ -1568,6 +1752,8 @@ export class PeppolService {
       // Include deposit and balance amounts for deposit/final invoices
       depositAmount: parseFloat(haliqoInvoice.deposit_amount || 0),
       balanceAmount: parseFloat(haliqoInvoice.balance_amount || 0),
+      // Include deposit invoice number for final invoices (for OrderReference)
+      depositInvoiceNumber: haliqoInvoice.deposit_invoice_number || null,
       sender: {
         vatNumber: cleanVATNumber(senderInfo.vat_number), // Clean VAT number (remove Peppol scheme prefixes)
         name: senderInfo.company_name || senderInfo.full_name || 'Company Name Required',
