@@ -883,10 +883,69 @@ export const generateExpenseInvoicePDF = async (expenseInvoiceData, invoiceNumbe
       throw new Error('Invoice data is required');
     }
 
+    // Fetch quote data for final invoices (to show materials as subcategories)
+    let quoteData = null;
+    const invoice = expenseInvoiceData.invoice;
+    const finalInvoiceType = invoiceType || invoice.invoice_type || invoice.peppol_metadata?.invoice_type || 'final';
+    const metadata = invoice.peppol_metadata || {};
+    const depositAmount = metadata.deposit_amount || 0;
+    const depositEnabled = depositAmount > 0;
+    const isFinalInvoice = finalInvoiceType === 'final';
+    
+    // Fetch quote data for final invoices (to show materials as subcategories like in client invoice)
+    if (isFinalInvoice && metadata.buyerReference) {
+      try {
+        const { supabase } = await import('../services/supabaseClient');
+        
+        // buyerReference is the client invoice number - fetch the client invoice first
+        const { data: clientInvoice, error: invoiceError } = await supabase
+          .from('invoices')
+          .select(`
+            id,
+            quote_id,
+            quotes!inner (
+              id,
+              quote_tasks (
+                id,
+                name,
+                description,
+                quantity,
+                unit,
+                total_price,
+                order_index
+              ),
+              quote_materials (
+                id,
+                quote_task_id,
+                name,
+                description,
+                quantity,
+                unit,
+                unit_price,
+                total_price
+              )
+            )
+          `)
+          .eq('invoice_number', metadata.buyerReference)
+          .single();
+        
+        if (!invoiceError && clientInvoice && clientInvoice.quotes) {
+          const quote = clientInvoice.quotes;
+          quoteData = {
+            quote_tasks: (quote.quote_tasks || []).sort((a, b) => (a.order_index || 0) - (b.order_index || 0)),
+            quote_materials: quote.quote_materials || []
+          };
+        }
+      } catch (fetchError) {
+        console.error('Error fetching quote data for PDF:', fetchError);
+        // Continue without quote data - will use invoice lines instead
+      }
+    }
+
     // Generate HTML content
     let htmlContent;
     try {
-      htmlContent = generateExpenseInvoiceHTML(expenseInvoiceData, invoiceNumber, language, invoiceType, showWarning);
+      htmlContent = generateExpenseInvoiceHTML(expenseInvoiceData, invoiceNumber, language, invoiceType, showWarning, quoteData);
     } catch (htmlError) {
       console.error('Error generating expense invoice HTML:', htmlError);
       throw new Error(`Failed to generate HTML: ${htmlError.message}`);
@@ -987,7 +1046,7 @@ export const generateExpenseInvoicePDF = async (expenseInvoiceData, invoiceNumbe
 /**
  * Generate HTML content for the expense invoice
  */
-const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language = 'fr', invoiceType = null, showWarning = false) => {
+const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language = 'fr', invoiceType = null, showWarning = false, quoteData = null) => {
   const { companyInfo, supplier, invoice } = expenseInvoiceData;
   
   // Get invoice_type from parameter, invoice object, or peppol_metadata
@@ -1100,11 +1159,48 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
   
   const t = labels[language] || labels.fr;
   
-  // Get invoice lines from Peppol metadata if available, otherwise create a single line
-  // Use EXACT values from UBL XML - NO calculations, NO modifications
-  // Show all lines as flat items (no grouping of materials under tasks)
+  // Get invoice lines - prioritize quote data for final invoices (to show materials as subcategories)
   let invoiceLines = [];
-  if (invoice.invoiceLines && Array.isArray(invoice.invoiceLines) && invoice.invoiceLines.length > 0) {
+  
+  // If we have quote data (for final invoices), build structured lines with materials
+  if (quoteData && quoteData.quote_tasks && quoteData.quote_tasks.length > 0) {
+    
+    // Group materials by task_id
+    const materialsByTaskId = {};
+    if (quoteData.quote_materials && quoteData.quote_materials.length > 0) {
+      quoteData.quote_materials.forEach((material) => {
+        const taskId = material.quote_task_id;
+        if (!materialsByTaskId[taskId]) {
+          materialsByTaskId[taskId] = [];
+        }
+        materialsByTaskId[taskId].push({
+          name: material.name || '',
+          quantity: material.quantity || 1,
+          unit: material.unit || 'piece',
+          unitPrice: parseFloat(material.unit_price || 0),
+          totalPrice: parseFloat(material.total_price || 0)
+        });
+      });
+    }
+    
+    // Build invoice lines with tasks and their materials
+    quoteData.quote_tasks.forEach((task, taskIndex) => {
+      const taskMaterials = materialsByTaskId[task.id] || [];
+      const taskPrice = parseFloat(task.total_price || 0);
+      
+  
+      invoiceLines.push({
+        number: String(taskIndex + 1),
+        description: task.description || task.name || '',
+        quantity: task.quantity || 1,
+        unit: task.unit || '',
+        unitPrice: taskPrice,
+        totalPrice: taskPrice,
+        materials: taskMaterials
+      });
+    });
+  } else if (invoice.invoiceLines && Array.isArray(invoice.invoiceLines) && invoice.invoiceLines.length > 0) {
+    // Fallback: Use invoice lines from Peppol metadata (for non-final or deposit invoices)
     // Map all lines with their EXACT data from UBL XML (no parsing, no calculation, no grouping)
     invoiceLines = invoice.invoiceLines.map((line, index) => {
       // Use EXACT values as stored in peppol_metadata (already parsed from UBL XML)

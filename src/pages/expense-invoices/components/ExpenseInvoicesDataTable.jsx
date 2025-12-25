@@ -815,7 +815,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                             <div className="text-xs text-muted-foreground">{invoice.category || 'N/A'}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            {getInvoiceTypeBadge(invoice.invoice_type)}
+                      {getInvoiceTypeBadge(invoice.invoice_type)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-foreground">{invoice.supplier_name}</div>
