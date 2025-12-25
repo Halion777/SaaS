@@ -747,6 +747,13 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
             }).join('')}
           </tbody>
           <tfoot>
+            ${depositEnabled && depositAmount > 0 ? `
+            ${isDepositInvoice ? `
+            <!-- Deposit Invoice: Total first, then subtotal/VAT, then payment info -->
+            <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${t.total}</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatNumberWithComma(totalWithVAT)} €</td>
+            </tr>
             <tr style="background-color: #f9fafb;">
               <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: bold; color: ${primaryColor}; font-size: 10px;" colspan="4">${t.subtotal}</td>
               <td style="border: 1px solid #d1d5db; padding: 10px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 10px;">${formatNumberWithComma(subtotal)} €</td>
@@ -757,47 +764,56 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
               <td style="border: 1px solid #d1d5db; padding: 10px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 10px;">${formatNumberWithComma(taxAmount)} €</td>
             </tr>
             ` : ''}
-            ${depositEnabled && depositAmount > 0 ? `
-            ${isDepositInvoice ? `
-            <!-- Deposit Invoice: Show deposit info (highlighted), remaining balance (not highlighted), and total -->
             <tr style="background-color: #dbeafe; border-left: 4px solid #3b82f6;">
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: #1e40af; font-size: 12px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'PAIEMENT AVANT TRAVAUX:' : language === 'en' ? 'PAYMENT BEFORE WORK:' : 'BETALING VOOR WERK:'}</td>
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: #1e40af; font-size: 14px;">${formatNumberWithComma(depositAmount)} €</td>
             </tr>
             ${balanceAmount > 0 ? `
             <tr style="background-color: ${primaryColorLight};">
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'MONTANT RESTANT À PAYER APRÈS TRAVAUX:' : language === 'en' ? 'REMAINING AMOUNT TO PAY AFTER WORK:' : 'RESTEREND BEDRAG TE BETALEN NA WERK:'}</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'RESTANT (APRÈS TRAVAUX):' : language === 'en' ? 'REMAINING (AFTER WORK):' : 'RESTEREND (NA WERK):'}</td>
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatNumberWithComma(balanceAmount)} €</td>
             </tr>
             ` : ''}
+            ` : isFinalInvoice ? `
+            <!-- Final Invoice: Total first, then subtotal/VAT, then paid deposit, then remaining -->
             <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${t.total}</td>
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatNumberWithComma(totalWithVAT)} €</td>
             </tr>
-            ` : isFinalInvoice ? `
-            <!-- Final Invoice: Show remaining amount to pay (highlighted), then paid deposit (if paid), then total -->
-            <tr style="background-color: #dbeafe; border-left: 4px solid #3b82f6;">
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: #1e40af; font-size: 12px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'MONTANT RESTANT À PAYER:' : language === 'en' ? 'REMAINING AMOUNT TO PAY:' : 'RESTEREND BEDRAG TE BETALEN:'}</td>
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: #1e40af; font-size: 14px;">${formatNumberWithComma(balanceAmount)} €</td>
+            <tr style="background-color: #f9fafb;">
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: bold; color: ${primaryColor}; font-size: 10px;" colspan="4">${t.subtotal}</td>
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 10px;">${formatNumberWithComma(subtotal)} €</td>
             </tr>
-            ${isDepositPaid ? `
-            <tr style="background-color: #f0fdf4; border-left: 4px solid #10b981;">
-              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: 600; color: #065f46; font-size: 10px; font-style: italic;" colspan="5">
-                ${language === 'fr' ? '✓ Acompte payé: ' : language === 'en' ? '✓ Paid deposit: ' : '✓ Betaald voorschot: '}
-                <span style="font-weight: bold;">${formatNumberWithComma(depositAmount)} €</span>
-              </td>
+            ${taxAmount > 0 ? `
+            <tr style="background-color: #f9fafb;">
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: bold; color: ${primaryColor}; font-size: 10px;" colspan="4">${t.vat}</td>
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 10px;">${formatNumberWithComma(taxAmount)} €</td>
             </tr>
             ` : ''}
-            <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${t.total}</td>
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatNumberWithComma(totalWithVAT)} €</td>
+            <tr style="background-color: #f0fdf4; border-left: 4px solid #10b981;">
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: #065f46; font-size: 12px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'PAYÉ:' : language === 'en' ? 'PAID:' : 'BETAALD:'}</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: #065f46; font-size: 14px;">${formatNumberWithComma(depositAmount)} €</td>
+            </tr>
+            <tr style="background-color: #dbeafe; border-left: 4px solid #3b82f6;">
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: #1e40af; font-size: 12px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'RESTANT:' : language === 'en' ? 'REMAINING:' : 'RESTEREND:'}</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: #1e40af; font-size: 14px;">${formatNumberWithComma(balanceAmount)} €</td>
             </tr>
             ` : `
-            <!-- No deposit/final distinction: Show both (backward compatibility) -->
+            <!-- No deposit/final distinction: Show total first, then breakdown -->
             <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${t.total}</td>
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatNumberWithComma(totalWithVAT)} €</td>
             </tr>
+            <tr style="background-color: #f9fafb;">
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: bold; color: ${primaryColor}; font-size: 10px;" colspan="4">${t.subtotal}</td>
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 10px;">${formatNumberWithComma(subtotal)} €</td>
+            </tr>
+            ${taxAmount > 0 ? `
+            <tr style="background-color: #f9fafb;">
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: bold; color: ${primaryColor}; font-size: 10px;" colspan="4">${t.vat}</td>
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 10px;">${formatNumberWithComma(taxAmount)} €</td>
+            </tr>
+            ` : ''}
             <tr style="background-color: #f9fafb;">
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 11px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'PAIEMENT AVANT TRAVAUX:' : language === 'en' ? 'PAYMENT BEFORE WORK:' : 'BETALING VOOR WERK:'}</td>
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 11px;">${formatNumberWithComma(depositAmount)} €</td>
@@ -808,7 +824,17 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
             </tr>
             `}
             ` : `
-            <!-- No deposit: Show total only -->
+            <!-- No deposit: Standard format with subtotal, VAT, total -->
+            <tr style="background-color: #f9fafb;">
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: bold; color: ${primaryColor}; font-size: 10px;" colspan="4">${t.subtotal}</td>
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 10px;">${formatNumberWithComma(subtotal)} €</td>
+            </tr>
+            ${taxAmount > 0 ? `
+            <tr style="background-color: #f9fafb;">
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: bold; color: ${primaryColor}; font-size: 10px;" colspan="4">${t.vat}</td>
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 10px;">${formatNumberWithComma(taxAmount)} €</td>
+            </tr>
+            ` : ''}
             <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${t.total}</td>
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatNumberWithComma(totalWithVAT)} €</td>
@@ -1083,8 +1109,8 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
     invoiceLines = invoice.invoiceLines.map((line, index) => {
       // Use EXACT values as stored in peppol_metadata (already parsed from UBL XML)
       // These values come directly from <cac:InvoiceLine> in UBL XML
-      // Use same logic as expense invoice detail modal - simple and consistent
-      const exactQuantity = line.quantity || 1;
+      // Use cleanQuantity to properly extract numeric quantity from strings like "1 1I"
+      const exactQuantity = cleanQuantity(line.quantity);
       const exactUnitPrice = typeof line.unitPrice === 'number' ? line.unitPrice : 
                             typeof line.priceAmount === 'number' ? line.priceAmount :
                             typeof line.unit_price === 'number' ? line.unit_price :
@@ -1321,24 +1347,28 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
           <tbody>
             ${invoiceLines.map((line, index) => {
               const hasMaterials = line.materials && line.materials.length > 0;
-              // Use quantity directly - same as detail modal (no cleanQuantity, no processing)
+              // Quantity is already cleaned during invoiceLines mapping above
               const displayQuantity = line.quantity || 1;
+              // Filter out technical unit codes (like "1I", "C62", etc.) - only show descriptive units
+              const displayUnit = line.unit && line.unit.length > 2 ? line.unit : '';
               return `
               <tr style="${index % 2 === 0 ? 'background-color: #fafafa;' : 'background-color: #ffffff;'}">
                 <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: center; color: ${secondaryColor}; font-size: 10px;">${line.number}</td>
                 <td style="border: 1px solid #d1d5db; padding: 8px 6px; color: ${secondaryColor}; font-size: 10px;">${escapeHtml(line.description)}</td>
-                <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: center; color: ${secondaryColor}; font-size: 10px;">${hasMaterials ? '' : `${displayQuantity} ${escapeHtml(line.unit || '')}`}</td>
+                <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: center; color: ${secondaryColor}; font-size: 10px;">${hasMaterials ? '' : `${displayQuantity}${displayUnit ? ' ' + escapeHtml(displayUnit) : ''}`}</td>
                 <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: right; color: ${secondaryColor}; font-size: 10px; font-weight: 500;">${hasMaterials ? '' : `${formatNumberWithComma(line.unitPrice)} €`}</td>
                 <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: right; color: ${secondaryColor}; font-size: 10px; font-weight: 500;">${formatNumberWithComma(line.totalPrice)} €</td>
               </tr>
               ${hasMaterials ? line.materials.map((mat, matIndex) => {
-                // Use quantity directly - same as detail modal (no cleanQuantity, no processing)
-                const matQuantity = mat.quantity || 1;
+                // Use cleanQuantity to properly extract numeric quantity
+                const matQuantity = cleanQuantity(mat.quantity);
+                // Filter out technical unit codes - only show descriptive units
+                const matDisplayUnit = mat.unit && mat.unit.length > 2 ? mat.unit : '';
                 return `
               <tr style="background-color: #f9fafb;">
                 <td style="border: 1px solid #d1d5db; padding: 6px 6px; text-align: center; color: ${secondaryColor}; font-size: 9px; padding-left: 24px;">${line.number}.${matIndex + 1}</td>
                 <td style="border: 1px solid #d1d5db; padding: 6px 6px; color: ${secondaryColor}; font-size: 9px; padding-left: 24px;">${escapeHtml(mat.name || mat.description || '')}</td>
-                <td style="border: 1px solid #d1d5db; padding: 6px 6px; text-align: center; color: ${secondaryColor}; font-size: 9px;">${matQuantity} ${escapeHtml(mat.unit || '')}</td>
+                <td style="border: 1px solid #d1d5db; padding: 6px 6px; text-align: center; color: ${secondaryColor}; font-size: 9px;">${matQuantity}${matDisplayUnit ? ' ' + escapeHtml(matDisplayUnit) : ''}</td>
                 <td style="border: 1px solid #d1d5db; padding: 6px 6px; text-align: right; color: ${secondaryColor}; font-size: 9px; font-weight: 500;">${formatNumberWithComma(mat.unitPrice || mat.price || 0)} €</td>
                 <td style="border: 1px solid #d1d5db; padding: 6px 6px; text-align: right; color: ${secondaryColor}; font-size: 9px; font-weight: 500;">${formatNumberWithComma(mat.totalPrice || mat.amount || 0)} €</td>
               </tr>
@@ -1348,6 +1378,20 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
             }).join('')}
           </tbody>
           <tfoot>
+            ${depositEnabled && depositAmount > 0 ? `
+            ${(() => {
+              // Calculate deposit with VAT for display (deposit_amount is stored excl VAT)
+              let depositWithVAT = depositAmount;
+              if (netAmount > 0 && depositAmount > 0 && vatAmount > 0) {
+                const vatRate = vatAmount / netAmount;
+                depositWithVAT = depositAmount * (1 + vatRate);
+              }
+              
+              // For final invoices, the remaining amount is the invoice total (payable amount)
+              const finalInvoiceRemaining = totalWithVAT;
+              
+              return isDepositInvoice ? `
+            <!-- Deposit Invoice: Subtotal/VAT, then payment info -->
             <tr style="background-color: #f9fafb;">
               <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: bold; color: ${primaryColor}; font-size: 10px;" colspan="4">${t.subtotal}</td>
               <td style="border: 1px solid #d1d5db; padding: 10px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 10px;">${formatNumberWithComma(netAmount)} €</td>
@@ -1358,58 +1402,64 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
               <td style="border: 1px solid #d1d5db; padding: 10px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 10px;">${formatNumberWithComma(vatAmount)} €</td>
             </tr>
             ` : ''}
-            ${depositEnabled && depositAmount > 0 ? `
-            ${isDepositInvoice ? `
-            <!-- Deposit Invoice: Show deposit info (highlighted), remaining balance (not highlighted), and total -->
             <tr style="background-color: #dbeafe; border-left: 4px solid #3b82f6;">
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: #1e40af; font-size: 12px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'PAIEMENT AVANT TRAVAUX:' : language === 'en' ? 'PAYMENT BEFORE WORK:' : 'BETALING VOOR WERK:'}</td>
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: #1e40af; font-size: 14px;">${formatNumberWithComma(depositAmount)} €</td>
-            </tr>
-            ${balanceAmount > 0 ? `
-            <tr style="background-color: ${primaryColorLight};">
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'MONTANT RESTANT À PAYER APRÈS TRAVAUX:' : language === 'en' ? 'REMAINING AMOUNT TO PAY AFTER WORK:' : 'RESTEREND BEDRAG TE BETALEN NA WERK:'}</td>
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatNumberWithComma(balanceAmount)} €</td>
-            </tr>
-            ` : ''}
-            <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${t.total}</td>
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatNumberWithComma(totalWithVAT)} €</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: #1e40af; font-size: 14px;">${formatNumberWithComma(depositWithVAT)} €</td>
             </tr>
             ` : isFinalInvoice ? `
-            <!-- Final Invoice: Show remaining amount to pay (highlighted), then paid deposit (if paid), then total -->
-            <tr style="background-color: #dbeafe; border-left: 4px solid #3b82f6;">
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: #1e40af; font-size: 12px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'MONTANT RESTANT À PAYER:' : language === 'en' ? 'REMAINING AMOUNT TO PAY:' : 'RESTEREND BEDRAG TE BETALEN:'}</td>
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: #1e40af; font-size: 14px;">${formatNumberWithComma(balanceAmount)} €</td>
+            <!-- Final Invoice: Subtotal/VAT, then paid deposit, then remaining -->
+            <tr style="background-color: #f9fafb;">
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: bold; color: ${primaryColor}; font-size: 10px;" colspan="4">${t.subtotal}</td>
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 10px;">${formatNumberWithComma(netAmount)} €</td>
             </tr>
-            ${isDepositPaid ? `
-            <tr style="background-color: #f0fdf4; border-left: 4px solid #10b981;">
-              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: 600; color: #065f46; font-size: 10px; font-style: italic;" colspan="5">
-                ${language === 'fr' ? '✓ Acompte payé: ' : language === 'en' ? '✓ Paid deposit: ' : '✓ Betaald voorschot: '}
-                <span style="font-weight: bold;">${formatNumberWithComma(depositAmount)} €</span>
-              </td>
+            ${vatAmount > 0 ? `
+            <tr style="background-color: #f9fafb;">
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: bold; color: ${primaryColor}; font-size: 10px;" colspan="4">${t.vat}</td>
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 10px;">${formatNumberWithComma(vatAmount)} €</td>
             </tr>
             ` : ''}
-            <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${t.total}</td>
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatNumberWithComma(totalWithVAT)} €</td>
+            <tr style="background-color: #f0fdf4; border-left: 4px solid #10b981;">
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: #065f46; font-size: 12px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'PAYÉ:' : language === 'en' ? 'PAID:' : 'BETAALD:'}</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: #065f46; font-size: 14px;">${formatNumberWithComma(depositWithVAT)} €</td>
+            </tr>
+            <tr style="background-color: #dbeafe; border-left: 4px solid #3b82f6;">
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: #1e40af; font-size: 12px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'RESTANT:' : language === 'en' ? 'REMAINING:' : 'RESTEREND:'}</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: #1e40af; font-size: 14px;">${formatNumberWithComma(finalInvoiceRemaining)} €</td>
             </tr>
             ` : `
-            <!-- No deposit/final distinction: Show both (backward compatibility) -->
-            <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${t.total}</td>
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatNumberWithComma(totalWithVAT)} €</td>
+            <!-- No deposit/final distinction: Show breakdown with payment info -->
+            <tr style="background-color: #f9fafb;">
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: bold; color: ${primaryColor}; font-size: 10px;" colspan="4">${t.subtotal}</td>
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 10px;">${formatNumberWithComma(netAmount)} €</td>
             </tr>
+            ${vatAmount > 0 ? `
+            <tr style="background-color: #f9fafb;">
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: bold; color: ${primaryColor}; font-size: 10px;" colspan="4">${t.vat}</td>
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 10px;">${formatNumberWithComma(vatAmount)} €</td>
+            </tr>
+            ` : ''}
             <tr style="background-color: #f9fafb;">
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 11px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'PAIEMENT AVANT TRAVAUX:' : language === 'en' ? 'PAYMENT BEFORE WORK:' : 'BETALING VOOR WERK:'}</td>
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 11px;">${formatNumberWithComma(depositAmount)} €</td>
+              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 11px;">${formatNumberWithComma(depositWithVAT)} €</td>
             </tr>
             <tr style="background-color: #f9fafb;">
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 11px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'PAIEMENT APRÈS TRAVAUX:' : language === 'en' ? 'PAYMENT AFTER WORK:' : 'BETALING NA WERK:'}</td>
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 11px;">${formatNumberWithComma(balanceAmount)} €</td>
             </tr>
-            `}
+            `;
+            })()}
             ` : `
-            <!-- No deposit: Show total only -->
+            <!-- No deposit: Standard format with subtotal, VAT, total -->
+            <tr style="background-color: #f9fafb;">
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: bold; color: ${primaryColor}; font-size: 10px;" colspan="4">${t.subtotal}</td>
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 10px;">${formatNumberWithComma(netAmount)} €</td>
+            </tr>
+            ${vatAmount > 0 ? `
+            <tr style="background-color: #f9fafb;">
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: bold; color: ${primaryColor}; font-size: 10px;" colspan="4">${t.vat}</td>
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 10px;">${formatNumberWithComma(vatAmount)} €</td>
+            </tr>
+            ` : ''}
             <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${t.total}</td>
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatNumberWithComma(totalWithVAT)} €</td>

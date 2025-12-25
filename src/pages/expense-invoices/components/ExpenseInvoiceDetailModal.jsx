@@ -3,11 +3,14 @@ import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import { ExpenseInvoicesService } from '../../../services/expenseInvoicesService';
+import { supabase } from '../../../services/supabaseClient';
 
 const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState('details');
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
+  const [quoteData, setQuoteData] = useState(null);
+  const [isLoadingQuote, setIsLoadingQuote] = useState(false);
 
   // Reset tab to 'details' when invoice changes or if invoice is not Peppol
   useEffect(() => {
@@ -17,6 +20,74 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
         setActiveTab('details');
       }
     }
+  }, [invoice?.id, isOpen]);
+
+  // Fetch quote data for Peppol invoices to display materials
+  useEffect(() => {
+    const fetchQuoteData = async () => {
+      // Only fetch for Peppol invoices with buyerReference
+      if (!invoice || !isOpen || invoice.source !== 'peppol' || !invoice.peppol_metadata?.buyerReference) {
+        setQuoteData(null);
+        return;
+      }
+
+      setIsLoadingQuote(true);
+      try {
+        const buyerRef = invoice.peppol_metadata.buyerReference;
+        
+        // Fetch client invoice by invoice number (buyerReference)
+        const { data: clientInvoice, error: invoiceError } = await supabase
+          .from('invoices')
+          .select(`
+            id,
+            quote_id,
+            quotes!inner (
+              id,
+              quote_tasks (
+                id,
+                name,
+                description,
+                quantity,
+                unit,
+                total_price,
+                order_index
+              ),
+              quote_materials (
+                id,
+                quote_task_id,
+                name,
+                description,
+                quantity,
+                unit,
+                unit_price,
+                total_price,
+                order_index
+              )
+            )
+          `)
+          .eq('invoice_number', buyerRef)
+          .maybeSingle();
+
+        if (invoiceError) {
+          console.error('Error fetching client invoice:', invoiceError);
+          setQuoteData(null);
+          return;
+        }
+
+        if (clientInvoice && clientInvoice.quotes) {
+          setQuoteData(clientInvoice.quotes);
+        } else {
+          setQuoteData(null);
+        }
+      } catch (error) {
+        console.error('Error fetching quote data:', error);
+        setQuoteData(null);
+      } finally {
+        setIsLoadingQuote(false);
+      }
+    };
+
+    fetchQuoteData();
   }, [invoice?.id, isOpen]);
 
   if (!isOpen || !invoice) return null;
@@ -280,28 +351,65 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
 
               {/* Invoice Line Items */}
               {(() => {
-                // Build invoice lines from peppol_metadata.invoiceLines
+                // Build invoice lines - use quote data if available for material subcategories
                 let invoiceLines = [];
                 const metadata = invoice.peppol_metadata || {};
                 
-                if (metadata.invoiceLines && metadata.invoiceLines.length > 0) {
+                // If we have quote data, build structured lines with materials as subcategories
+                if (quoteData && quoteData.quote_tasks && quoteData.quote_tasks.length > 0) {
+                  // Group materials by task_id
+                  const materialsByTaskId = {};
+                  if (quoteData.quote_materials && quoteData.quote_materials.length > 0) {
+                    quoteData.quote_materials.forEach((material) => {
+                      const taskId = material.quote_task_id;
+                      if (!materialsByTaskId[taskId]) {
+                        materialsByTaskId[taskId] = [];
+                      }
+                      materialsByTaskId[taskId].push({
+                        name: material.name || '',
+                        quantity: material.quantity || 1,
+                        unit: material.unit || 'piece',
+                        unitPrice: parseFloat(material.unit_price || 0),
+                        totalPrice: parseFloat(material.total_price || 0)
+                      });
+                    });
+                  }
+                  
+                  // Build invoice lines with tasks and their materials
+                  quoteData.quote_tasks.forEach((task, taskIndex) => {
+                    const taskMaterials = materialsByTaskId[task.id] || [];
+                    const taskPrice = parseFloat(task.total_price || 0);
+                    
+                    invoiceLines.push({
+                      number: taskIndex + 1,
+                      description: task.description || task.name || '',
+                      quantity: task.quantity || 1,
+                      unit: task.unit || '',
+                      unitPrice: taskPrice,
+                      totalPrice: taskPrice,
+                      materials: taskMaterials
+                    });
+                  });
+                } else if (metadata.invoiceLines && metadata.invoiceLines.length > 0) {
+                  // Fallback: Use invoice lines from peppol_metadata
                   invoiceLines = metadata.invoiceLines.map((line, index) => {
-                          // Use EXACT values from UBL XML - no calculations, no fallbacks
-                          const exactUnitPrice = typeof line.priceAmount === 'number' ? line.priceAmount :
-                                                 typeof line.unitPrice === 'number' ? line.unitPrice :
-                                                 typeof line.unit_price === 'number' ? line.unit_price :
-                                                 0;
-                          const exactLineTotal = typeof line.lineExtensionAmount === 'number' ? line.lineExtensionAmount :
-                                                 typeof line.amount === 'number' ? line.amount :
-                                                 0;
-                          
+                    // Use EXACT values from UBL XML - no calculations, no fallbacks
+                    const exactUnitPrice = typeof line.priceAmount === 'number' ? line.priceAmount :
+                                           typeof line.unitPrice === 'number' ? line.unitPrice :
+                                           typeof line.unit_price === 'number' ? line.unit_price :
+                                           0;
+                    const exactLineTotal = typeof line.lineExtensionAmount === 'number' ? line.lineExtensionAmount :
+                                           typeof line.amount === 'number' ? line.amount :
+                                           0;
+                    
                     return {
                       number: index + 1,
                       description: line.description || line.itemName || 'Service',
                       quantity: line.quantity || 1,
                       unit: line.unit || '',
                       unitPrice: exactUnitPrice,
-                      totalPrice: exactLineTotal
+                      totalPrice: exactLineTotal,
+                      materials: []
                     };
                   });
                 } else {
@@ -312,7 +420,8 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                     quantity: 1,
                     unit: '',
                     unitPrice: parseFloat(invoice.net_amount || invoice.amount || 0),
-                    totalPrice: parseFloat(invoice.net_amount || invoice.amount || 0)
+                    totalPrice: parseFloat(invoice.net_amount || invoice.amount || 0),
+                    materials: []
                   }];
                 }
                 
@@ -327,22 +436,32 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                 let total = parseFloat(invoice.amount || 0);
                 let totalWithVAT = subtotal + taxAmount;
                 
-                // For deposit invoices, calculate total from deposit + balance
+                // For deposit invoices, use the invoice amounts directly (already contains deposit amounts)
                 if (invoiceType === 'deposit' && depositEnabled) {
-                  totalWithVAT = depositAmount + balanceAmount;
-                  total = depositAmount;
-                  // Calculate proportional subtotal and VAT for deposit
-                  if (totalWithVAT > 0) {
-                    const totalNet = invoice.net_amount || 0;
-                    const totalVAT = invoice.vat_amount || 0;
-                    if (totalNet > 0 || totalVAT > 0) {
-                      subtotal = (depositAmount / totalWithVAT) * totalNet;
-                      taxAmount = (depositAmount / totalWithVAT) * totalVAT;
-                    }
-                  }
+                  // For deposit invoices, net_amount and vat_amount already represent the deposit
+                  subtotal = parseFloat(invoice.net_amount || 0);
+                  taxAmount = parseFloat(invoice.vat_amount || 0);
+                  totalWithVAT = subtotal + taxAmount; // Deposit including VAT
+                  total = totalWithVAT;
                 } else if (invoiceType === 'final' && depositEnabled) {
-                  totalWithVAT = depositAmount + balanceAmount;
-                  total = balanceAmount || invoice.amount;
+                  // For final invoices: Use invoice amounts directly (they already contain full project)
+                  // The invoice.net_amount and invoice.vat_amount already represent the full project
+                  const fullProjectNet = parseFloat(invoice.net_amount || 0);
+                  const fullProjectVAT = parseFloat(invoice.vat_amount || 0);
+                  
+                  subtotal = fullProjectNet; // Full project subtotal (excl VAT)
+                  taxAmount = fullProjectVAT; // Full project VAT
+                  totalWithVAT = fullProjectNet + fullProjectVAT; // Full project total with VAT
+                  
+                  // Calculate deposit with VAT for display
+                  let depositWithVAT = depositAmount;
+                  if (fullProjectNet > 0 && depositAmount > 0) {
+                    const vatRate = fullProjectVAT / fullProjectNet;
+                    depositWithVAT = depositAmount * (1 + vatRate);
+                  }
+                  
+                  // Balance to pay = Total - Deposit (both with VAT)
+                  total = totalWithVAT - depositWithVAT;
                 }
                 
                 return (
@@ -370,7 +489,7 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                                 <tr className={index % 2 === 0 ? 'bg-background' : 'bg-muted/20'}>
                                   <td className="px-4 py-3 text-sm text-foreground border-b border-border text-center font-medium">{line.number}</td>
                                   <td className="px-4 py-3 text-sm text-foreground border-b border-border font-medium">{line.description}</td>
-                                  <td className="px-4 py-3 text-sm text-foreground border-b border-border text-center">{hasMaterials ? '' : `${typeof line.quantity === 'number' ? line.quantity : parseFloat(String(line.quantity).trim().split(' ')[0]) || 1} ${line.unit || ''}`}</td>
+                                  <td className="px-4 py-3 text-sm text-foreground border-b border-border text-center">{hasMaterials ? '' : `${typeof line.quantity === 'number' ? line.quantity : parseFloat(String(line.quantity).trim().split(' ')[0]) || 1}${line.unit && line.unit.length > 2 ? ' ' + line.unit : ''}`}</td>
                                   <td className="px-4 py-3 text-sm text-foreground border-b border-border text-right">{hasMaterials ? '' : formatCurrency(line.unitPrice)}</td>
                                   <td className="px-4 py-3 text-sm text-foreground border-b border-border text-right font-medium">{formatCurrency(line.totalPrice)}</td>
                                 </tr>
@@ -378,7 +497,7 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                                   <tr key={`${index}-${matIndex}`} className="bg-muted/10">
                                     <td className="px-4 py-2 text-xs text-muted-foreground border-b border-border text-center pl-8">{line.number}.{matIndex + 1}</td>
                                     <td className="px-4 py-2 text-xs text-muted-foreground border-b border-border pl-8">{mat.name || mat.description}</td>
-                                    <td className="px-4 py-2 text-xs text-muted-foreground border-b border-border text-center">{mat.quantity} {mat.unit}</td>
+                                    <td className="px-4 py-2 text-xs text-muted-foreground border-b border-border text-center">{mat.quantity}{mat.unit && mat.unit.length > 2 ? ' ' + mat.unit : ''}</td>
                                     <td className="px-4 py-2 text-xs text-muted-foreground border-b border-border text-right">{formatCurrency(mat.unitPrice || mat.price)}</td>
                                     <td className="px-4 py-2 text-xs text-muted-foreground border-b border-border text-right">{formatCurrency(mat.totalPrice || mat.amount)}</td>
                             </tr>
@@ -388,58 +507,88 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                         })}
                       </tbody>
                         <tfoot>
-                          <tr className="bg-muted/30">
-                            <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-foreground border-t border-border">Subtotal Excl. VAT</td>
-                            <td className="px-4 py-3 text-sm font-semibold text-foreground border-t border-border text-right">{formatCurrency(subtotal)}</td>
-                          </tr>
-                          {taxAmount > 0 && (
-                            <tr className="bg-muted/30">
-                              <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-foreground">VAT</td>
-                              <td className="px-4 py-3 text-sm font-semibold text-foreground text-right">{formatCurrency(taxAmount)}</td>
-                            </tr>
-                          )}
-                          {invoiceType === 'deposit' && depositEnabled && (
-                            <>
-                              <tr className="bg-blue-50 border-l-4 border-blue-500">
-                                <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-blue-700">
-                                  {i18n.language === 'fr' ? 'Paiement avant travaux:' : i18n.language === 'nl' ? 'Betaling voor werk:' : 'Payment before work:'}
-                                </td>
-                                <td className="px-4 py-3 text-sm font-bold text-blue-700 text-right">{formatCurrency(depositAmount)}</td>
-                              </tr>
-                              {balanceAmount > 0 && (
-                                <tr className="bg-muted/20">
-                                  <td colSpan="4" className="px-4 py-3 text-xs text-muted-foreground italic">
-                                    {i18n.language === 'fr' ? 'Montant restant à payer après travaux:' : i18n.language === 'nl' ? 'Resterend bedrag te betalen na werk:' : 'Remaining amount to pay after work:'}
-                                  </td>
-                                  <td className="px-4 py-3 text-xs font-medium text-muted-foreground text-right">{formatCurrency(balanceAmount)}</td>
-                                </tr>
-                              )}
-                              <tr className="bg-primary/10 border-t-2 border-primary">
-                                <td colSpan="4" className="px-4 py-3 text-base font-bold text-foreground">{t('expenseInvoices.modal.invoiceLinesTable.totalInclVat', 'Total Incl. VAT')}</td>
-                                <td className="px-4 py-3 text-base font-bold text-foreground text-right">{formatCurrency(totalWithVAT)}</td>
-                              </tr>
-                            </>
-                          )}
-                          {invoiceType === 'final' && depositEnabled && (
-                            <>
-                              <tr className="bg-blue-50 border-l-4 border-blue-500">
-                                <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-blue-700">
-                                  {i18n.language === 'fr' ? 'MONTANT RESTANT À PAYER:' : i18n.language === 'nl' ? 'RESTEREND BEDRAG TE BETALEN:' : 'REMAINING AMOUNT TO PAY:'}
-                                </td>
-                                <td className="px-4 py-3 text-sm font-bold text-blue-700 text-right">{formatCurrency(balanceAmount || total)}</td>
-                              </tr>
-                              <tr className="bg-primary/10 border-t-2 border-primary">
-                                <td colSpan="4" className="px-4 py-3 text-base font-bold text-foreground">{t('expenseInvoices.modal.invoiceLinesTable.totalInclVat', 'Total Incl. VAT')}</td>
-                                <td className="px-4 py-3 text-base font-bold text-foreground text-right">{formatCurrency(totalWithVAT)}</td>
-                              </tr>
-                            </>
-                          )}
-                          {!depositEnabled && (
-                            <tr className="bg-primary/10 border-t-2 border-primary">
-                              <td colSpan="4" className="px-4 py-3 text-base font-bold text-foreground">Total Incl. VAT</td>
-                              <td className="px-4 py-3 text-base font-bold text-foreground text-right">{formatCurrency(total)}</td>
-                            </tr>
-                          )}
+                          {(() => {
+                            if (invoiceType === 'deposit' && depositEnabled) {
+                              return (
+                                <>
+                                  <tr className="bg-muted/30 border-t-2 border-border">
+                                    <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-foreground">Subtotal Excl. VAT</td>
+                                    <td className="px-4 py-3 text-sm font-semibold text-foreground text-right">{formatCurrency(subtotal)}</td>
+                                  </tr>
+                                  {taxAmount > 0 && (
+                                    <tr className="bg-muted/30">
+                                      <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-foreground">VAT</td>
+                                      <td className="px-4 py-3 text-sm font-semibold text-foreground text-right">{formatCurrency(taxAmount)}</td>
+                                    </tr>
+                                  )}
+                                  <tr className="bg-blue-50 border-l-4 border-blue-500">
+                                    <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-blue-700">
+                                      {i18n.language === 'fr' ? 'Paiement avant travaux:' : i18n.language === 'nl' ? 'Betaling voor werk:' : 'Payment before work:'}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm font-bold text-blue-700 text-right">{formatCurrency(subtotal + taxAmount)}</td>
+                                  </tr>
+                                </>
+                              );
+                            } else if (invoiceType === 'final' && depositEnabled) {
+                              return (
+                                <>
+                                  <tr className="bg-muted/30 border-t-2 border-border">
+                                    <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-foreground">Subtotal Excl. VAT</td>
+                                    <td className="px-4 py-3 text-sm font-semibold text-foreground text-right">{formatCurrency(subtotal)}</td>
+                                  </tr>
+                                  {taxAmount > 0 && (
+                                    <tr className="bg-muted/30">
+                                      <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-foreground">VAT</td>
+                                      <td className="px-4 py-3 text-sm font-semibold text-foreground text-right">{formatCurrency(taxAmount)}</td>
+                                    </tr>
+                                  )}
+                                  <tr className="bg-blue-50 border-l-4 border-blue-500">
+                                    <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-blue-700">
+                                      {i18n.language === 'fr' ? 'Restant:' : i18n.language === 'nl' ? 'Resterend:' : 'Remaining:'}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm font-bold text-blue-700 text-right">{formatCurrency(subtotal + taxAmount)}</td>
+                                  </tr>
+                                  <tr className="bg-green-50 border-l-4 border-green-500">
+                                    <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-green-700">
+                                      {i18n.language === 'fr' ? 'Payé:' : i18n.language === 'nl' ? 'Betaald:' : 'Paid:'}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm font-semibold text-green-700 text-right">
+                                      {(() => {
+                                        // Calculate deposit with VAT from deposit amount (excl VAT)
+                                        const fullProjectNet = parseFloat(invoice.net_amount || 0);
+                                        const fullProjectVAT = parseFloat(invoice.vat_amount || 0);
+                                        let depositWithVAT = depositAmount;
+                                        if (fullProjectNet > 0 && depositAmount > 0) {
+                                          const vatRate = fullProjectVAT / fullProjectNet;
+                                          depositWithVAT = depositAmount * (1 + vatRate);
+                                        }
+                                        return formatCurrency(depositWithVAT);
+                                      })()}
+                                    </td>
+                                  </tr>
+                                </>
+                              );
+                            } else {
+                              return (
+                                <>
+                                  <tr className="bg-muted/30">
+                                    <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-foreground border-t border-border">Subtotal Excl. VAT</td>
+                                    <td className="px-4 py-3 text-sm font-semibold text-foreground border-t border-border text-right">{formatCurrency(subtotal)}</td>
+                                  </tr>
+                                  {taxAmount > 0 && (
+                                    <tr className="bg-muted/30">
+                                      <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-foreground">VAT</td>
+                                      <td className="px-4 py-3 text-sm font-semibold text-foreground text-right">{formatCurrency(taxAmount)}</td>
+                                    </tr>
+                                  )}
+                                  <tr className="bg-primary/10 border-t-2 border-primary">
+                                    <td colSpan="4" className="px-4 py-3 text-base font-bold text-foreground">Total Incl. VAT</td>
+                                    <td className="px-4 py-3 text-base font-bold text-foreground text-right">{formatCurrency(total)}</td>
+                                  </tr>
+                                </>
+                              );
+                            }
+                          })()}
                         </tfoot>
                     </table>
                   </div>

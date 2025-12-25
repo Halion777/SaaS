@@ -431,7 +431,7 @@ const PeppolNetworkPage = () => {
           // Only navigate to login if it's not a network error
           // Network errors will be handled by PermissionGuard's internet connectivity check
           if (!isNetworkError) {
-            navigate('/login');
+          navigate('/login');
           }
           return;
         }

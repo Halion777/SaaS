@@ -98,18 +98,10 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
           displayVAT = depositAmount - displayNet;
         }
       } else if (invoiceType === 'final') {
-        // For final invoice: show balance net and VAT
-        const totalWithVAT = depositAmount + balanceAmount;
-        const totalNet = invoice.net_amount || 0;
-        const totalVAT = invoice.vat_amount || 0;
-        if (totalWithVAT > 0 && (totalNet > 0 || totalVAT > 0)) {
-          displayNet = (balanceAmount / totalWithVAT) * totalNet;
-          displayVAT = (balanceAmount / totalWithVAT) * totalVAT;
-        } else {
-          // Fallback: estimate from balance amount (assuming 21% VAT)
-          displayNet = balanceAmount / 1.21;
-          displayVAT = balanceAmount - displayNet;
-        }
+        // For final invoice: show FULL PROJECT net and VAT (not proportional)
+        // The invoice.net_amount and invoice.vat_amount already contain full project amounts from UBL
+        displayNet = invoice.net_amount || 0;
+        displayVAT = invoice.vat_amount || 0;
       }
     }
     
@@ -168,9 +160,9 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
       },
       pending: { 
         label: t('expenseInvoices.status.pending', 'Pending'), 
-        color: 'bg-gradient-to-r from-red-500 to-rose-600 text-white',
-        border: 'border border-red-400/30',
-        shadow: 'shadow-sm shadow-red-500/20'
+        color: 'bg-gradient-to-r from-orange-500 to-amber-600 text-white',
+        border: 'border border-orange-400/30',
+        shadow: 'shadow-sm shadow-orange-500/20'
       },
       overdue: { 
         label: t('expenseInvoices.status.overdue', 'Overdue'), 
@@ -849,7 +841,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                                 <span className="text-xs text-error">+{daysOverdue} {t('expenseInvoices.table.days', 'days')}</span>
                               )}
                             </div>
-                          </td>
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col space-y-1">
                     {getSourceBadge(invoice.source)}

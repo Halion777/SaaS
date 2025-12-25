@@ -57,9 +57,9 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
       },
       unpaid: { 
         label: t('invoicesManagement.status.unpaid'), 
-        color: 'bg-gradient-to-r from-red-500 to-rose-600 text-white',
-        border: 'border border-red-400/30',
-        shadow: 'shadow-sm shadow-red-500/20'
+        color: 'bg-gradient-to-r from-orange-500 to-amber-600 text-white',
+        border: 'border border-orange-400/30',
+        shadow: 'shadow-sm shadow-orange-500/20'
       },
       overdue: { 
         label: t('invoicesManagement.status.overdue'), 
@@ -310,7 +310,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                           onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
                         />
                         <div>
-                          <div className="text-sm font-medium text-foreground">{invoice.number}</div>
+                            <div className="text-sm font-medium text-foreground">{invoice.number}</div>
                         </div>
                       </div>
                     </div>
@@ -687,7 +687,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                           />
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-foreground">{invoice.number}</div>
+                            <div className="text-sm font-medium text-foreground">{invoice.number}</div>
                           {invoice.quoteNumber && !groupByQuote && (
                             <div className="text-xs text-muted-foreground">{t('invoicesManagement.table.quote')}: {invoice.quoteNumber}</div>
                           )}
