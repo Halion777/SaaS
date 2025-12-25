@@ -284,7 +284,7 @@ const generateQuoteHTML = (quoteData, quoteNumber) => {
  * @param {string} language - User's preferred language (fr, en, nl)
  * @returns {Promise<Blob>} PDF blob
  */
-export const generateInvoicePDF = async (invoiceData, invoiceNumber, elementToCapture = null, language = 'fr', hideBankInfo = false, invoiceType = null) => {
+export const generateInvoicePDF = async (invoiceData, invoiceNumber, elementToCapture = null, language = 'fr', hideBankInfo = false, invoiceType = null, showWarning = false) => {
   try {
     let target = elementToCapture;
     
@@ -298,7 +298,7 @@ export const generateInvoicePDF = async (invoiceData, invoiceNumber, elementToCa
       tempDiv.style.backgroundColor = 'white';
       tempDiv.style.padding = '0';
       tempDiv.style.fontFamily = 'Arial, sans-serif';
-      tempDiv.innerHTML = generateInvoiceHTML(invoiceData, invoiceNumber, language, hideBankInfo, invoiceType);
+      tempDiv.innerHTML = generateInvoiceHTML(invoiceData, invoiceNumber, language, hideBankInfo, invoiceType, showWarning);
       document.body.appendChild(tempDiv);
       target = tempDiv;
     }
@@ -385,7 +385,7 @@ export const generateInvoicePDF = async (invoiceData, invoiceNumber, elementToCa
 /**
  * Generate HTML content for the invoice (improved styling matching quote preview)
  */
-const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBankInfo = false, invoiceType = null) => {
+const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBankInfo = false, invoiceType = null, showWarning = false) => {
   const { companyInfo, client, invoice, quote } = invoiceData;
   
   // Get invoice_type from parameter, invoice object, or peppol_metadata
@@ -844,8 +844,8 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
         </table>
       </div>
       
-      <!-- PDF Warning Notice - Only show for professional clients (companies), not individual clients -->
-      ${((client?.client_type === 'company' || client?.client_type === 'professional' || client?.type === 'company' || client?.type === 'professional') && client?.client_type !== 'individual' && client?.type !== 'individual') ? `
+      <!-- PDF Warning Notice - Only show for professional clients when explicitly requested (e.g., email attachments) -->
+      ${showWarning && ((client?.client_type === 'company' || client?.client_type === 'professional' || client?.type === 'company' || client?.type === 'professional') && client?.client_type !== 'individual' && client?.type !== 'individual') ? `
       <div style="margin-top: 40px; padding: 15px; background-color: #fef3c7; border: 2px solid #f59e0b; border-radius: 6px;">
         <div style="display: flex; align-items: flex-start; gap: 10px;">
           <div style="flex-shrink: 0; color: #d97706; font-size: 16px; font-weight: bold;">⚠</div>
@@ -867,7 +867,7 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
  * @param {string} invoiceNumber - Invoice number
  * @returns {Promise<Blob>} PDF blob
  */
-export const generateExpenseInvoicePDF = async (expenseInvoiceData, invoiceNumber, language = 'fr', invoiceType = null) => {
+export const generateExpenseInvoicePDF = async (expenseInvoiceData, invoiceNumber, language = 'fr', invoiceType = null, showWarning = false) => {
   try {
     // Validate required data
     if (!expenseInvoiceData) {
@@ -886,7 +886,7 @@ export const generateExpenseInvoicePDF = async (expenseInvoiceData, invoiceNumbe
     // Generate HTML content
     let htmlContent;
     try {
-      htmlContent = generateExpenseInvoiceHTML(expenseInvoiceData, invoiceNumber, language, invoiceType);
+      htmlContent = generateExpenseInvoiceHTML(expenseInvoiceData, invoiceNumber, language, invoiceType, showWarning);
     } catch (htmlError) {
       console.error('Error generating expense invoice HTML:', htmlError);
       throw new Error(`Failed to generate HTML: ${htmlError.message}`);
@@ -987,7 +987,7 @@ export const generateExpenseInvoicePDF = async (expenseInvoiceData, invoiceNumbe
 /**
  * Generate HTML content for the expense invoice
  */
-const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language = 'fr', invoiceType = null) => {
+const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language = 'fr', invoiceType = null, showWarning = false) => {
   const { companyInfo, supplier, invoice } = expenseInvoiceData;
   
   // Get invoice_type from parameter, invoice object, or peppol_metadata
@@ -1469,7 +1469,8 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
         </table>
       </div>
       
-      <!-- PDF Warning Notice - Expense invoices are always from suppliers (companies), so always show warning -->
+      <!-- PDF Warning Notice - Only show when explicitly requested (e.g., email attachments) -->
+      ${showWarning ? `
       <div style="margin-top: 40px; padding: 15px; background-color: #fef3c7; border: 2px solid #f59e0b; border-radius: 6px;">
         <div style="display: flex; align-items: flex-start; gap: 10px;">
           <div style="flex-shrink: 0; color: #d97706; font-size: 16px; font-weight: bold;">⚠</div>
@@ -1479,6 +1480,7 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
           </div>
         </div>
       </div>
+      ` : ''}
       
     </div>
   `;

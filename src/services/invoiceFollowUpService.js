@@ -332,7 +332,9 @@ export class InvoiceFollowUpService {
       let pdfBase64 = null;
       try {
         const invoiceType = invoice.invoice_type || 'final';
-        const pdfBlob = await generateInvoicePDF(invoiceDataForPDF, invoice.invoice_number, null, 'fr', false, invoiceType);
+        // Show warning for professional clients in email attachments
+        const isProfessionalClient = client.client_type === 'company' || client.client_type === 'professional';
+        const pdfBlob = await generateInvoicePDF(invoiceDataForPDF, invoice.invoice_number, null, 'fr', false, invoiceType, isProfessionalClient);
         
         // Convert PDF blob to base64 for email attachment
         pdfBase64 = await new Promise((resolve, reject) => {

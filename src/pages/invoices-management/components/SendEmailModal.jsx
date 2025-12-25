@@ -185,8 +185,10 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
       };
 
       // Generate PDF blob (hide bank info for professional clients, but show it if from invalid Peppol ID flow or Peppol failed/not sent)
+      // Show warning in email attachments for professional clients
       const hideBankInfo = isProfessionalClient && !fromInvalidPeppolId && !shouldShowEmailWarning;
-      const pdfBlob = await generateInvoicePDF(invoiceData, invoiceNumber, null, i18n.language, hideBankInfo, invoiceType);
+      const showWarning = isProfessionalClient; // Show warning for professional clients in emails
+      const pdfBlob = await generateInvoicePDF(invoiceData, invoiceNumber, null, i18n.language, hideBankInfo, invoiceType, showWarning);
       
       // Convert PDF blob to base64 for email attachment
       const pdfBase64 = await new Promise((resolve, reject) => {
