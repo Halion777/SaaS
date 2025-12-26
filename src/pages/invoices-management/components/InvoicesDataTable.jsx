@@ -40,10 +40,11 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
     return new Intl.DateTimeFormat(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US').format(new Date(date));
   };
 
-  // Status options for manual update - EXCLUDES 'overdue' because it's auto-calculated based on due_date
+  // Status options for manual update - includes 'overdue' for manual selection
   const statusOptions = [
     { value: 'paid', label: t('invoicesManagement.status.paid') },
     { value: 'unpaid', label: t('invoicesManagement.status.unpaid') },
+    { value: 'overdue', label: t('invoicesManagement.status.overdue') },
     { value: 'cancelled', label: t('invoicesManagement.status.cancelled') }
   ];
 
@@ -130,8 +131,8 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
     // For invoices with deposits, calculate proportional net/VAT
     // NOTE: depositAmount is stored EXCL VAT, balanceAmount is stored INCL VAT
     if (depositEnabled && depositAmount > 0 && balanceAmount > 0) {
-      const totalNet = invoice.netAmount || 0;
-      const totalVAT = invoice.taxAmount || 0;
+        const totalNet = invoice.netAmount || 0;
+        const totalVAT = invoice.taxAmount || 0;
       
       if (invoiceType === 'deposit') {
         // For deposit invoice: depositAmount is the net amount (EXCL VAT)
@@ -324,13 +325,13 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                       {renderAmountInfo(invoice)}
                     </div>
 
-                    {/* Status */}
+                    {/* Status and Invoice Type */}
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex flex-col space-y-1">
-                        <div>
-                          <div className="text-xs text-muted-foreground mb-1">{t('invoicesManagement.table.headers.status')}</div>
-                          {getStatusBadge(invoice.status, invoice)}
-                        </div>
+                        {getInvoiceTypeBadge(invoice.invoiceType)}
+                      </div>
+                      <div className="flex flex-col items-end space-y-1">
+                        {getStatusBadge(invoice.status, invoice)}
                         {daysOverdue && (
                           <span className="text-xs text-error">+{daysOverdue} {t('invoicesManagement.table.days')}</span>
                         )}
@@ -435,10 +436,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                   onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
                 />
                 <div>
-                  <div className="flex items-center space-x-2">
                   <div className="text-sm font-medium text-foreground">{invoice.number}</div>
-                    {getInvoiceTypeBadge(invoice.invoiceType)}
-                  </div>
                   {invoice.quoteNumber && (
                     <div className="text-xs text-muted-foreground">{t('invoicesManagement.table.quote')}: {invoice.quoteNumber}</div>
                   )}
@@ -459,13 +457,13 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
               {renderAmountInfo(invoice)}
             </div>
 
-            {/* Status */}
+            {/* Status and Invoice Type */}
             <div className="flex items-center justify-between mb-3">
               <div className="flex flex-col space-y-1">
-                <div>
-                  <div className="text-xs text-muted-foreground mb-1">{t('invoicesManagement.table.headers.status')}</div>
-                  {getStatusBadge(invoice.status, invoice)}
-                </div>
+                {getInvoiceTypeBadge(invoice.invoiceType)}
+              </div>
+              <div className="flex flex-col items-end space-y-1">
+                {getStatusBadge(invoice.status, invoice)}
                 {daysOverdue && (
                   <span className="text-xs text-error">+{daysOverdue} {t('invoicesManagement.table.days')}</span>
                 )}

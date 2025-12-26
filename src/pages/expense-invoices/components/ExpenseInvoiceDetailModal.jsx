@@ -117,7 +117,7 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
   const getStatusBadge = (status) => {
     const statusConfig = {
       paid: { label: t('expenseInvoices.status.paid', 'Paid'), color: 'bg-success text-success-foreground' },
-      pending: { label: t('expenseInvoices.status.pending', 'Pending'), color: 'bg-error text-error-foreground' },
+      pending: { label: t('expenseInvoices.status.pending', 'Pending'), color: 'bg-orange-500 text-white' },
       overdue: { label: t('expenseInvoices.status.overdue', 'Overdue'), color: 'bg-error text-error-foreground' },
       cancelled: { label: t('expenseInvoices.status.cancelled', 'Cancelled'), color: 'bg-purple-500 text-white' }
     };

@@ -40,7 +40,7 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose, allInvoices = [] }) => {
   const getStatusBadge = (status) => {
     const statusConfig = {
       paid: { label: t('invoicesManagement.status.paid'), color: 'bg-success text-success-foreground' },
-      unpaid: { label: t('invoicesManagement.status.unpaid'), color: 'bg-error text-error-foreground' },
+      unpaid: { label: t('invoicesManagement.status.unpaid'), color: 'bg-orange-500 text-white' },
       overdue: { label: t('invoicesManagement.status.overdue'), color: 'bg-error text-error-foreground' },
       cancelled: { label: t('invoicesManagement.status.cancelled'), color: 'bg-purple-500 text-white' }
     };
@@ -350,11 +350,7 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose, allInvoices = [] }) => {
                             )}
                             {invoiceType === 'deposit' && depositEnabled && (
                               <>
-                                <tr className="bg-primary/10 border-t-2 border-primary">
-                                  <td colSpan="4" className="px-4 py-3 text-base font-bold text-foreground">{t('invoicesManagement.modal.invoiceLinesTable.totalInclVat', 'Total Incl. VAT')}</td>
-                                  <td className="px-4 py-3 text-base font-bold text-foreground text-right">{formatCurrency(totalWithVAT)}</td>
-                                </tr>
-                                <tr className="bg-blue-50">
+                                <tr className="bg-blue-50 border-l-4 border-blue-500">
                                   <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-blue-700">
                                     {i18n.language === 'fr' ? 'Paiement avant travaux:' : i18n.language === 'nl' ? 'Betaling voor werk:' : 'Payment before work:'}
                                   </td>
@@ -372,14 +368,6 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose, allInvoices = [] }) => {
                                   </td>
                                   <td className="px-4 py-2 text-xs text-blue-600 text-right">{formatCurrency(depositVATAmount)}</td>
                                 </tr>
-                                {balanceAmount > 0 && (
-                                  <tr className="bg-muted/20">
-                                    <td colSpan="4" className="px-4 py-3 text-sm text-muted-foreground">
-                                      {i18n.language === 'fr' ? 'Restant (après travaux):' : i18n.language === 'nl' ? 'Resterend (na werk):' : 'Remaining (after work):'}
-                                    </td>
-                                    <td className="px-4 py-3 text-sm font-medium text-muted-foreground text-right">{formatCurrency(balanceAmount)}</td>
-                                  </tr>
-                                )}
                               </>
                             )}
                             {invoiceType === 'final' && depositEnabled && (

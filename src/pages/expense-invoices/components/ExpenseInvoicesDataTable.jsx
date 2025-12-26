@@ -117,11 +117,12 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
     return null;
   };
 
-  // Status options for manual update - EXCLUDES 'overdue' because it's auto-calculated based on due_date
+  // Status options for manual update - includes 'overdue' for manual selection
   // No badgeColor to prevent dots from showing in dropdown
   const statusOptions = [
     { value: 'paid', label: t('expenseInvoices.status.paid', 'Paid') },
     { value: 'pending', label: t('expenseInvoices.status.pending', 'Pending') },
+    { value: 'overdue', label: t('expenseInvoices.status.overdue', 'Overdue') },
     { value: 'cancelled', label: t('expenseInvoices.status.cancelled', 'Cancelled') }
   ];
 
@@ -504,160 +505,38 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-end space-x-2 pt-3 border-t border-border">
+        <div className="flex items-center justify-between pt-3 border-t border-border">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => onExpenseInvoiceAction('view', invoice)}
             iconName="Eye"
-            iconPosition="left"
-            className="text-xs"
-          >
-            {t('expenseInvoices.table.actions.viewDetails', 'View')}
-          </Button>
+            className="text-primary hover:text-primary/80"
+            title={t('expenseInvoices.table.actions.viewDetails', 'View Details')}
+          />
           <Button
             variant="ghost"
             size="sm"
             onClick={() => onExpenseInvoiceAction('export', invoice)}
             iconName="Download"
-            iconPosition="left"
-            className="text-xs"
+            className="text-primary hover:text-primary/80"
+            title={t('expenseInvoices.table.actions.exportPDF', 'Export PDF')}
             loading={downloadingInvoiceId === invoice.id}
             disabled={downloadingInvoiceId === invoice.id}
-          >
-            {t('expenseInvoices.table.actions.exportPDF', 'Export')}
-          </Button>
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onExpenseInvoiceAction('send_to_accountant', invoice)}
+            iconName="Mail"
+            className="text-primary hover:text-primary/80"
+            title={!canEdit ? t('permissions.noFullAccess') : t('expenseInvoices.table.actions.sendToAccountant', 'Send to Accountant')}
+            disabled={!canEdit}
+          />
         </div>
       </div>
     );
   };
-  
-  // Keep old rendering logic
-  const renderCardViewOld = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-      {expenseInvoices.map((invoice) => {
-        const daysOverdue = getDaysOverdue(invoice.due_date, invoice.status);
-        return (
-          <div key={invoice.id} className="bg-card border border-border rounded-lg p-4 hover:shadow-md transition-shadow duration-150 overflow-visible">
-            {/* Header with checkbox and invoice number */}
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  checked={selectedExpenseInvoices.includes(invoice.id)}
-                  onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
-                />
-                <div>
-                  <div className="text-sm font-medium text-foreground">{getDisplayInvoiceNumber(invoice)}</div>
-                  {invoice.quoteNumber && (
-                    <div className="text-xs text-muted-foreground">{t('expenseInvoices.table.quote', 'Quote')}: {invoice.quoteNumber}</div>
-                  )}
-                  <div className="text-xs text-muted-foreground">{invoice.category || 'N/A'}</div>
-                </div>
-              </div>
-              <div className="flex items-center space-x-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  iconName="Eye"
-                  onClick={() => onExpenseInvoiceAction('view', invoice)}
-                  title={t('expenseInvoices.table.actions.viewDetails', 'View Details')}
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  iconName="Download"
-                  onClick={() => onExpenseInvoiceAction('export', invoice)}
-                  title={t('expenseInvoices.table.actions.exportPDF', 'Export PDF')}
-                  className="text-primary hover:text-primary/80"
-                  loading={downloadingInvoiceId === invoice.id}
-                  disabled={downloadingInvoiceId === invoice.id}
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  iconName="Mail"
-                  onClick={() => onExpenseInvoiceAction('send_to_accountant', invoice)}
-                  title={!canEdit ? t('permissions.noFullAccess') : t('expenseInvoices.table.actions.sendToAccountant', 'Send to Accountant')}
-                  className="text-primary hover:text-primary/80"
-                  disabled={!canEdit}
-                />
-                {invoice.source === 'manual' && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  iconName="Edit"
-                  onClick={() => onExpenseInvoiceAction('edit', invoice)}
-                  title={!canEdit ? t('permissions.noFullAccess') : t('expenseInvoices.table.actions.edit', 'Edit')}
-                  disabled={!canEdit}
-                />
-                )}
-              </div>
-            </div>
-
-            {/* Supplier Info */}
-            <div className="mb-3">
-              <div className="text-sm font-medium text-foreground">{invoice.supplier_name}</div>
-              <div className="text-xs text-muted-foreground">{invoice.supplier_email}</div>
-              {invoice.supplier_vat_number && (
-                <div className="text-xs text-muted-foreground">VAT: {invoice.supplier_vat_number}</div>
-              )}
-              {invoice.source === 'peppol' && invoice.sender_peppol_id && (
-                <div className="text-xs text-blue-600 mt-1 flex items-center">
-                  <Icon name="Globe" size={10} className="mr-1" />
-                  {invoice.sender_peppol_id}
-                </div>
-              )}
-            </div>
-
-            {/* Amount and Payment Method */}
-            <div className="mb-3">
-              <div className="text-lg font-bold text-foreground">{formatCurrency(invoice.amount)}</div>
-              {invoice.net_amount !== null && invoice.net_amount !== undefined && invoice.net_amount > 0 && (
-                <div className="text-xs text-muted-foreground">{t('expenseInvoices.table.net', 'Net')}: {formatCurrency(invoice.net_amount)}</div>
-              )}
-              {invoice.vat_amount !== null && invoice.vat_amount !== undefined && invoice.vat_amount > 0 && (
-                <div className="text-xs text-muted-foreground">{t('expenseInvoices.table.vat', 'VAT')}: {formatCurrency(invoice.vat_amount)}</div>
-              )}
-              {/* Balance amount (same as total for expense invoices) */}
-              <div className="text-xs text-muted-foreground mt-1">{t('expenseInvoices.table.balance', 'Balance')}: {formatCurrency(invoice.amount)}</div>
-              {invoice.payment_method && (
-                <div className="text-xs text-muted-foreground mt-1">{invoice.payment_method}</div>
-              )}
-            </div>
-
-            {/* Status and Invoice Type */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex flex-col space-y-1">
-                {getInvoiceTypeBadge(invoice.invoice_type)}
-              </div>
-              <div className="flex flex-col items-end space-y-1">
-                {getStatusBadge(invoice.status, invoice.id)}
-                {daysOverdue && (
-                  <span className="text-xs text-error">+{daysOverdue} {t('expenseInvoices.table.days', 'days')}</span>
-                )}
-              </div>
-            </div>
-
-            {/* Dates */}
-            <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground mb-3">
-              <div>
-                <div className="font-medium">{t('expenseInvoices.table.issue', 'Issue')}:</div>
-                <div>{formatDate(invoice.issue_date)}</div>
-              </div>
-              <div>
-                <div className="font-medium">{t('expenseInvoices.table.due', 'Due')}:</div>
-                <div className={`${invoice.status === 'overdue' ? 'text-error font-medium' : ''}`}>
-                  {formatDate(invoice.due_date)}
-                </div>
-              </div>
-            </div>
-
-          </div>
-        );
-      })}
-    </div>
-  );
-
   return (
     <div className="bg-card border border-border rounded-lg overflow-visible">
       {/* Search Bar */}

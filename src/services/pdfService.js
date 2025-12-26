@@ -766,11 +766,7 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
           <tfoot>
             ${depositEnabled && depositAmount > 0 ? `
             ${isDepositInvoice ? `
-            <!-- Deposit Invoice: Total first, then payment info -->
-            <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${t.total}</td>
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatNumberWithComma(totalWithVAT)} €</td>
-            </tr>
+            <!-- Deposit Invoice: Payment info with breakdown -->
             <tr style="background-color: #dbeafe; border-left: 4px solid #3b82f6;">
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: #1e40af; font-size: 12px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'PAIEMENT AVANT TRAVAUX:' : language === 'en' ? 'PAYMENT BEFORE WORK:' : 'BETALING VOOR WERK:'}</td>
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: #1e40af; font-size: 14px;">${formatNumberWithComma(depositWithVAT)} €</td>
@@ -783,12 +779,6 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
               <td style="border: 1px solid #d1d5db; padding: 8px 6px 8px 20px; font-size: 10px; color: #1e40af;" colspan="4">${language === 'fr' ? 'TVA:' : language === 'en' ? 'VAT:' : 'BTW:'}</td>
               <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: right; font-size: 10px; color: #1e40af;">${formatNumberWithComma(depositWithVAT - depositAmount)} €</td>
             </tr>
-            ${balanceAmount > 0 ? `
-            <tr style="background-color: ${primaryColorLight};">
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${language === 'fr' ? 'RESTANT (APRÈS TRAVAUX):' : language === 'en' ? 'REMAINING (AFTER WORK):' : 'RESTEREND (NA WERK):'}</td>
-              <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatNumberWithComma(balanceAmount)} €</td>
-            </tr>
-            ` : ''}
             ` : isFinalInvoice ? `
             <!-- Final Invoice: Total first, then remaining with breakdown, then paid deposit -->
             <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
@@ -912,7 +902,7 @@ export const generateExpenseInvoicePDF = async (expenseInvoiceData, invoiceNumbe
       throw new Error('Invoice data is required');
     }
 
-    // Fetch quote data for final invoices (to show materials as subcategories)
+    // Fetch quote data for all invoices with buyerReference (to show materials as subcategories)
     let quoteData = null;
     const invoice = expenseInvoiceData.invoice;
     const finalInvoiceType = invoiceType || invoice.invoice_type || invoice.peppol_metadata?.invoice_type || 'final';
@@ -920,9 +910,10 @@ export const generateExpenseInvoicePDF = async (expenseInvoiceData, invoiceNumbe
     const depositAmount = metadata.deposit_amount || 0;
     const depositEnabled = depositAmount > 0;
     const isFinalInvoice = finalInvoiceType === 'final';
+    const isDepositInvoice = finalInvoiceType === 'deposit';
     
-    // Fetch quote data for final invoices (to show materials as subcategories like in client invoice)
-    if (isFinalInvoice && metadata.buyerReference) {
+    // Fetch quote data for both deposit and final invoices (to show materials as subcategories like in detail modal)
+    if (metadata.buyerReference) {
       try {
         const { supabase } = await import('../services/supabaseClient');
         
@@ -1188,10 +1179,10 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
   
   const t = labels[language] || labels.fr;
   
-  // Get invoice lines - prioritize quote data for final invoices (to show materials as subcategories)
+  // Get invoice lines - prioritize quote data (to show materials as subcategories)
   let invoiceLines = [];
   
-  // If we have quote data (for final invoices), build structured lines with materials
+  // If we have quote data, build structured lines with materials
   if (quoteData && quoteData.quote_tasks && quoteData.quote_tasks.length > 0) {
     
     // Group materials by task_id
