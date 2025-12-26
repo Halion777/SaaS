@@ -492,9 +492,35 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
   
   const t = labels[language] || labels.fr;
   
-  // Get invoice lines from quote tasks and materials if available, otherwise create a single line
+  // Get invoice lines - for deposit invoices, show simple "Deposit payment", for others show full breakdown
   let invoiceLines = [];
-  if (quote && quote.quote_tasks && quote.quote_tasks.length > 0) {
+  
+  // Get deposit amount early to use for deposit invoice line
+  let depositAmountForLine = 0;
+  if (quote && (quote.deposit_amount !== undefined || quote.balance_amount !== undefined)) {
+    depositAmountForLine = parseFloat(quote.deposit_amount || 0); // This is EXCL VAT
+  } else if (invoice.peppol_metadata && typeof invoice.peppol_metadata === 'object') {
+    const metadata = invoice.peppol_metadata;
+    depositAmountForLine = typeof metadata.deposit_amount === 'number' ? metadata.deposit_amount :
+                          parseFloat(metadata.deposit_amount || 0); // This is EXCL VAT
+  }
+  
+  if (isDepositInvoice) {
+    // For deposit invoices: Show simple "Deposit payment" line
+    const depositLabel = language === 'fr' ? 'Paiement d\'acompte' : 
+                        language === 'nl' ? 'Aanbetaling' : 
+                        'Deposit payment';
+    invoiceLines = [{
+      number: 1,
+      description: depositLabel,
+      quantity: 1,
+      unit: '',
+      unitPrice: depositAmountForLine,
+      totalPrice: depositAmountForLine,
+      materials: []
+    }];
+  } else if (quote && quote.quote_tasks && quote.quote_tasks.length > 0) {
+    // For final/regular invoices: Show full task/material breakdown
     // Group materials by task_id
     const materialsByTaskId = {};
     if (quote.quote_materials && quote.quote_materials.length > 0) {
@@ -549,7 +575,8 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
       quantity: 1,
       unit: '',
       unitPrice: parseFloat(invoice.amount || 0),
-      totalPrice: parseFloat(invoice.amount || 0)
+      totalPrice: parseFloat(invoice.amount || 0),
+      materials: []
     }];
   }
   
@@ -902,7 +929,7 @@ export const generateExpenseInvoicePDF = async (expenseInvoiceData, invoiceNumbe
       throw new Error('Invoice data is required');
     }
 
-    // Fetch quote data for all invoices with buyerReference (to show materials as subcategories)
+    // Fetch quote data only for FINAL invoices with buyerReference (to show materials as subcategories)
     let quoteData = null;
     const invoice = expenseInvoiceData.invoice;
     const finalInvoiceType = invoiceType || invoice.invoice_type || invoice.peppol_metadata?.invoice_type || 'final';
@@ -912,8 +939,8 @@ export const generateExpenseInvoicePDF = async (expenseInvoiceData, invoiceNumbe
     const isFinalInvoice = finalInvoiceType === 'final';
     const isDepositInvoice = finalInvoiceType === 'deposit';
     
-    // Fetch quote data for both deposit and final invoices (to show materials as subcategories like in detail modal)
-    if (metadata.buyerReference) {
+    // Fetch quote data only for FINAL invoices (not deposit) to show materials as subcategories
+    if (metadata.buyerReference && isFinalInvoice) {
       try {
         const { supabase } = await import('../services/supabaseClient');
         

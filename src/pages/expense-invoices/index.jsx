@@ -353,49 +353,6 @@ const ExpenseInvoicesManagement = () => {
       }
     }
 
-    // Filter: Hide final invoices until deposit invoice is paid
-    // Only apply this logic if invoice type filter is NOT active (to allow users to see all invoices when filtering by type)
-    if (!newFilters.invoiceType) {
-      filtered = filtered.filter(invoice => {
-        // Get invoice type (default to 'final' if not set)
-        const invoiceType = invoice.invoice_type || 'final';
-        
-        // Always show deposit invoices
-        if (invoiceType === 'deposit') {
-          return true;
-        }
-        
-        // For final invoices, check if there's a related deposit invoice from the same supplier
-        // Use peppol_metadata to check for original invoice number (buyerReference)
-        if (invoiceType === 'final') {
-          const buyerReference = invoice.peppol_metadata?.buyerReference || null;
-          
-          // If no buyerReference, show the invoice (it's not part of a deposit/final pair)
-          if (!buyerReference) {
-            return true;
-          }
-          
-          // Find deposit invoice with the same buyerReference
-          const depositInvoice = expenseInvoices.find(inv => {
-            const invType = inv.invoice_type || 'final';
-            const invBuyerRef = inv.peppol_metadata?.buyerReference || null;
-            return invType === 'deposit' && invBuyerRef === buyerReference;
-          });
-          
-          // If deposit invoice exists, only show final invoice if deposit is paid
-          if (depositInvoice) {
-            return depositInvoice.status === 'paid';
-          }
-          
-          // If no deposit invoice exists, show final invoice (standalone invoice)
-          return true;
-        }
-        
-        // For other invoice types or invoices without invoice_type, show them (backward compatibility)
-        return true;
-      });
-    }
-
     setFilteredExpenseInvoices(filtered);
   };
 

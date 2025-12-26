@@ -433,9 +433,6 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                 />
                 <div>
               <div className="font-semibold text-foreground">{getDisplayInvoiceNumber(invoice)}</div>
-              {invoice.quoteNumber && (
-                <div className="text-xs text-muted-foreground">{t('expenseInvoices.table.quote', 'Quote')}: {invoice.quoteNumber}</div>
-              )}
             </div>
           </div>
         </div>
@@ -688,11 +685,8 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-foreground">{getDisplayInvoiceNumber(invoice)}</div>
-                            {invoice.quoteNumber && (
-                              <div className="text-xs text-muted-foreground">{t('expenseInvoices.table.quote', 'Quote')}: {invoice.quoteNumber}</div>
-                            )}
-                            <div className="text-xs text-muted-foreground">{invoice.category || 'N/A'}</div>
-                          </td>
+                    <div className="text-xs text-muted-foreground">{invoice.category || 'N/A'}</div>
+                  </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                       {getInvoiceTypeBadge(invoice.invoice_type)}
                   </td>
@@ -811,9 +805,6 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-foreground">{getDisplayInvoiceNumber(invoice)}</div>
-                    {invoice.quoteNumber && (
-                      <div className="text-xs text-muted-foreground">{t('expenseInvoices.table.quote', 'Quote')}: {invoice.quoteNumber}</div>
-                    )}
                     <div className="text-xs text-muted-foreground">{invoice.category || 'N/A'}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">

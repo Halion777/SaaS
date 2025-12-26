@@ -174,11 +174,28 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose, allInvoices = [] }) => {
 
                 {/* Invoice Line Items */}
                 {(() => {
-                  // Build invoice lines from quote tasks and materials (similar to PDF)
-                  let invoiceLines = [];
+                  // Calculate invoice type first to determine how to build invoice lines
+                  const invoiceType = invoice.invoiceType || invoice.invoice_type || invoice.peppol_metadata?.invoice_type || 'final';
                   const quote = invoice.quote;
+                  const depositAmount = invoice.peppol_metadata?.deposit_amount || (quote?.deposit_amount ? parseFloat(quote.deposit_amount) : 0);
+                  const isDepositInvoice = invoiceType === 'deposit';
                   
-                  if (quote && quote.quote_tasks && quote.quote_tasks.length > 0) {
+                  // Build invoice lines from quote tasks and materials (only for FINAL invoices)
+                  let invoiceLines = [];
+                  
+                  if (isDepositInvoice) {
+                    // For deposit invoices: Show simple "Deposit payment" line
+                    invoiceLines = [{
+                      number: 1,
+                      description: i18n.language === 'fr' ? 'Paiement d\'acompte' : i18n.language === 'nl' ? 'Aanbetaling' : 'Deposit payment',
+                      quantity: 1,
+                      unit: '',
+                      unitPrice: depositAmount,
+                      totalPrice: depositAmount,
+                      materials: []
+                    }];
+                  } else if (quote && quote.quote_tasks && quote.quote_tasks.length > 0) {
+                    // For final/regular invoices: Show full task/material breakdown
                     // Group materials by task_id
                     const materialsByTaskId = {};
                     if (quote.quote_materials && quote.quote_materials.length > 0) {
@@ -225,9 +242,7 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose, allInvoices = [] }) => {
                     }];
                   }
                   
-                  // Calculate totals - handle deposit invoices
-                  const invoiceType = invoice.invoiceType || invoice.invoice_type || invoice.peppol_metadata?.invoice_type || 'final';
-                  const depositAmount = invoice.peppol_metadata?.deposit_amount || (quote?.deposit_amount ? parseFloat(quote.deposit_amount) : 0);
+                  // Calculate totals - handle deposit invoices (depositAmount already defined above)
                   const balanceAmount = invoice.peppol_metadata?.balance_amount || (quote?.balance_amount ? parseFloat(quote.balance_amount) : 0);
                   const depositEnabled = depositAmount > 0;
                   

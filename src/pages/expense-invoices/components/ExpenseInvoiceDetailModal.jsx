@@ -22,18 +22,21 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
     }
   }, [invoice?.id, isOpen]);
 
-  // Fetch quote data for Peppol invoices to display materials
+  // Fetch quote data only for FINAL invoices with buyerReference to display materials
   useEffect(() => {
     const fetchQuoteData = async () => {
-      // Only fetch for Peppol invoices with buyerReference
-      if (!invoice || !isOpen || invoice.source !== 'peppol' || !invoice.peppol_metadata?.buyerReference) {
+      // Only fetch for FINAL invoices (not deposit) with buyerReference
+      const buyerRef = invoice?.peppol_metadata?.buyerReference;
+      const invoiceType = invoice?.invoice_type || invoice?.peppol_metadata?.invoice_type || 'final';
+      const isDepositInvoice = invoiceType === 'deposit';
+      
+      if (!invoice || !isOpen || !buyerRef || isDepositInvoice) {
         setQuoteData(null);
         return;
       }
 
       setIsLoadingQuote(true);
       try {
-        const buyerRef = invoice.peppol_metadata.buyerReference;
         
         // Fetch client invoice by invoice number (buyerReference)
         const { data: clientInvoice, error: invoiceError } = await supabase
@@ -393,15 +396,15 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                 } else if (metadata.invoiceLines && metadata.invoiceLines.length > 0) {
                   // Fallback: Use invoice lines from peppol_metadata
                   invoiceLines = metadata.invoiceLines.map((line, index) => {
-                    // Use EXACT values from UBL XML - no calculations, no fallbacks
-                    const exactUnitPrice = typeof line.priceAmount === 'number' ? line.priceAmount :
-                                           typeof line.unitPrice === 'number' ? line.unitPrice :
-                                           typeof line.unit_price === 'number' ? line.unit_price :
-                                           0;
-                    const exactLineTotal = typeof line.lineExtensionAmount === 'number' ? line.lineExtensionAmount :
-                                           typeof line.amount === 'number' ? line.amount :
-                                           0;
-                    
+                          // Use EXACT values from UBL XML - no calculations, no fallbacks
+                          const exactUnitPrice = typeof line.priceAmount === 'number' ? line.priceAmount :
+                                                 typeof line.unitPrice === 'number' ? line.unitPrice :
+                                                 typeof line.unit_price === 'number' ? line.unit_price :
+                                                 0;
+                          const exactLineTotal = typeof line.lineExtensionAmount === 'number' ? line.lineExtensionAmount :
+                                                 typeof line.amount === 'number' ? line.amount :
+                                                 0;
+                          
                     return {
                       number: index + 1,
                       description: line.description || line.itemName || 'Service',
@@ -618,20 +621,20 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                             } else {
                               return (
                                 <>
-                                  <tr className="bg-muted/30">
-                                    <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-foreground border-t border-border">Subtotal Excl. VAT</td>
-                                    <td className="px-4 py-3 text-sm font-semibold text-foreground border-t border-border text-right">{formatCurrency(subtotal)}</td>
-                                  </tr>
-                                  {taxAmount > 0 && (
-                                    <tr className="bg-muted/30">
-                                      <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-foreground">VAT</td>
-                                      <td className="px-4 py-3 text-sm font-semibold text-foreground text-right">{formatCurrency(taxAmount)}</td>
-                                    </tr>
-                                  )}
-                                  <tr className="bg-primary/10 border-t-2 border-primary">
-                                    <td colSpan="4" className="px-4 py-3 text-base font-bold text-foreground">Total Incl. VAT</td>
-                                    <td className="px-4 py-3 text-base font-bold text-foreground text-right">{formatCurrency(total)}</td>
-                                  </tr>
+                          <tr className="bg-muted/30">
+                            <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-foreground border-t border-border">Subtotal Excl. VAT</td>
+                            <td className="px-4 py-3 text-sm font-semibold text-foreground border-t border-border text-right">{formatCurrency(subtotal)}</td>
+                          </tr>
+                          {taxAmount > 0 && (
+                            <tr className="bg-muted/30">
+                              <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-foreground">VAT</td>
+                              <td className="px-4 py-3 text-sm font-semibold text-foreground text-right">{formatCurrency(taxAmount)}</td>
+                            </tr>
+                          )}
+                            <tr className="bg-primary/10 border-t-2 border-primary">
+                              <td colSpan="4" className="px-4 py-3 text-base font-bold text-foreground">Total Incl. VAT</td>
+                              <td className="px-4 py-3 text-base font-bold text-foreground text-right">{formatCurrency(total)}</td>
+                            </tr>
                                 </>
                               );
                             }
