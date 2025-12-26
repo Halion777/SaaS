@@ -399,9 +399,16 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
         // Extract message ID from result if available
         const messageId = result.messageId || result.data?.messageId || null;
 
+        // Verify invoice exists and has an ID before updating
+        if (!invoice.id) {
+          console.error('[SendPeppolModal] Invoice ID is missing:', invoice);
+          setError(t('invoicesManagement.sendPeppolModal.errors.updateError') + ': Invoice ID is missing. Please refresh and try again.');
+          return;
+        }
+
         // Update invoice with Peppol status and UBL XML
         // Clear error message on successful send
-        const { error: updateError } = await supabase
+        const { data: updatedInvoice, error: updateError } = await supabase
           .from('invoices')
           .update({
             peppol_enabled: true,
@@ -412,12 +419,20 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
             ubl_xml: ublXml,
             peppol_error_message: null // Clear any previous error messages
           })
-          .eq('id', invoice.id);
+          .eq('id', invoice.id)
+          .select('id')
+          .single();
 
         if (updateError) {
           // Error updating invoice
+          console.error('[SendPeppolModal] Database update error:', updateError);
           setError(t('invoicesManagement.sendPeppolModal.errors.updateError') + ': ' + updateError.message);
+        } else if (!updatedInvoice) {
+          // Invoice not found in database - this shouldn't happen but handle it
+          console.error('[SendPeppolModal] Invoice not found in database after send. Invoice ID:', invoice.id, 'Invoice Number:', invoice.invoice_number || invoice.invoiceNumber);
+          setError(t('invoicesManagement.sendPeppolModal.errors.updateError') + ': Invoice not found in database. The invoice was sent via Peppol but could not be updated. Please refresh the page.');
         } else {
+          // Successfully updated
           if (onSuccess) {
             onSuccess();
           }
