@@ -3,10 +3,14 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import { Checkbox } from '../../../components/ui/Checkbox';
+import Pagination from '../../../components/ui/Pagination';
+import SortableHeader from '../../../components/ui/SortableHeader';
 import { useTranslation } from 'react-i18next';
 
 const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuoteAction, onQuoteSelect, viewMode = 'table', setViewMode = () => {}, searchTerm = '', setSearchTerm = () => {}, canEdit = true, canDelete = true, convertingQuoteId = null }) => {
   const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   const { t } = useTranslation();
 
   // Auto-switch to card view on smaller screens
@@ -36,6 +40,12 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
         } else if (sortConfig.key === 'createdAt' || sortConfig.key === 'validUntil') {
           aValue = new Date(aValue);
           bValue = new Date(bValue);
+        } else if (sortConfig.key === 'number') {
+          // Extract numeric part for proper sorting
+          const aNum = parseInt((aValue || '').replace(/\D/g, '')) || 0;
+          const bNum = parseInt((bValue || '').replace(/\D/g, '')) || 0;
+          aValue = aNum;
+          bValue = bNum;
         }
 
         if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -46,6 +56,17 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
 
     return filtered;
   }, [quotes, sortConfig]);
+
+  // Pagination
+  const totalPages = Math.ceil(sortedAndFilteredQuotes.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedQuotes = sortedAndFilteredQuotes.slice(startIndex, endIndex);
+
+  // Reset to first page when quotes change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [quotes.length]);
 
   const handleSort = (key) => {
     setSortConfig(prev => ({
@@ -156,65 +177,59 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
 
   const renderTableView = () => (
     <div className="overflow-x-auto">
-      <table className="w-full">
+      <table className="w-full min-w-[800px]">
         <thead className="bg-muted/50">
           <tr>
             <th className="p-3 md:p-4 text-left">
               <Checkbox
-                checked={selectedQuotes.length === sortedAndFilteredQuotes.length && sortedAndFilteredQuotes.length > 0}
+                checked={paginatedQuotes.length > 0 && paginatedQuotes.every(quote => selectedQuotes.includes(quote.id))}
                 onChange={onSelectAll}
                 aria-label="Select all quotes"
               />
             </th>
-            <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" onClick={() => handleSort('number')}>
-              <div className="flex items-center space-x-1">
-                <span>{t('quotesManagement.table.headers.number')}</span>
-                {sortConfig.key === 'number' && (
-                  <Icon name={sortConfig.direction === 'asc' ? 'ChevronUp' : 'ChevronDown'} size={14} />
-                )}
-              </div>
+            <SortableHeader
+              label={t('quotesManagement.table.headers.number')}
+              sortKey="number"
+              currentSortKey={sortConfig.key}
+              sortDirection={sortConfig.direction}
+              onSort={handleSort}
+              showIcon={true}
+            />
+            <SortableHeader
+              label={t('quotesManagement.table.headers.client')}
+              sortKey="clientName"
+              currentSortKey={sortConfig.key}
+              sortDirection={sortConfig.direction}
+              onSort={handleSort}
+              showIcon={false}
+            />
+            <SortableHeader
+              label={t('quotesManagement.table.headers.amount')}
+              sortKey="amount"
+              currentSortKey={sortConfig.key}
+              sortDirection={sortConfig.direction}
+              onSort={handleSort}
+              showIcon={true}
+            />
+            <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground">
+              {t('quotesManagement.table.headers.status')}
             </th>
-            <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" onClick={() => handleSort('clientName')}>
-              <div className="flex items-center space-x-1">
-                <span>{t('quotesManagement.table.headers.client')}</span>
-                {sortConfig.key === 'clientName' && (
-                  <Icon name={sortConfig.direction === 'asc' ? 'ChevronUp' : 'ChevronDown'} size={14} />
-                )}
-              </div>
-            </th>
-            <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" onClick={() => handleSort('amount')}>
-              <div className="flex items-center space-x-1">
-                <span>{t('quotesManagement.table.headers.amount')}</span>
-                {sortConfig.key === 'amount' && (
-                  <Icon name={sortConfig.direction === 'asc' ? 'ChevronUp' : 'ChevronDown'} size={14} />
-                )}
-              </div>
-            </th>
-            <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" onClick={() => handleSort('status')}>
-              <div className="flex items-center space-x-1">
-                <span>{t('quotesManagement.table.headers.status')}</span>
-                {sortConfig.key === 'status' && (
-                  <Icon name={sortConfig.direction === 'asc' ? 'ChevronUp' : 'ChevronDown'} size={14} />
-                )}
-              </div>
-            </th>
-
-            <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" onClick={() => handleSort('createdAt')}>
-              <div className="flex items-center space-x-1">
-                <span>{t('quotesManagement.table.headers.createdAt')}</span>
-                {sortConfig.key === 'createdAt' && (
-                  <Icon name={sortConfig.direction === 'asc' ? 'ChevronUp' : 'ChevronDown'} size={14} />
-                )}
-              </div>
-            </th>
-            <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" onClick={() => handleSort('validUntil')}>
-              <div className="flex items-center space-x-1">
-                <span>{t('quotesManagement.table.headers.validUntil')}</span>
-                {sortConfig.key === 'validUntil' && (
-                  <Icon name={sortConfig.direction === 'asc' ? 'ChevronUp' : 'ChevronDown'} size={14} />
-                )}
-              </div>
-            </th>
+            <SortableHeader
+              label={t('quotesManagement.table.headers.createdAt')}
+              sortKey="createdAt"
+              currentSortKey={sortConfig.key}
+              sortDirection={sortConfig.direction}
+              onSort={handleSort}
+              showIcon={true}
+            />
+            <SortableHeader
+              label={t('quotesManagement.table.headers.validUntil')}
+              sortKey="validUntil"
+              currentSortKey={sortConfig.key}
+              sortDirection={sortConfig.direction}
+              onSort={handleSort}
+              showIcon={true}
+            />
             <th className="p-3 md:p-4 text-left text-xs sm:text-sm font-medium text-muted-foreground">
               {t('quotesManagement.table.headers.followUps')}
             </th>
@@ -227,7 +242,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
-          {sortedAndFilteredQuotes.map((quote) => (
+          {paginatedQuotes.map((quote) => (
             <tr 
               key={quote.id} 
               className="border-b border-border hover:bg-muted/30 transition-colors cursor-pointer"
@@ -368,7 +383,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
 
   const renderCardView = () => (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {sortedAndFilteredQuotes.map((quote) => (
+      {paginatedQuotes.map((quote) => (
         <div
           key={quote.id}
           className="bg-card border border-border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
@@ -568,6 +583,17 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
         <>
           {viewMode === 'table' && renderTableView()}
           {viewMode === 'card' && renderCardView()}
+          {sortedAndFilteredQuotes.length > itemsPerPage && (
+            <div className="mt-4 px-4 pb-4">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={sortedAndFilteredQuotes.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+              />
+            </div>
+          )}
         </>
       )}
     </div>

@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import { Checkbox } from '../../../components/ui/Checkbox';
+import Pagination from '../../../components/ui/Pagination';
+import SortableHeader from '../../../components/ui/SortableHeader';
 
 const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, selectedExpenseInvoices, onSelectionChange, filters, onFiltersChange, onStatusUpdate, downloadingInvoiceId = null, canEdit = true, canDelete = true, groupBySupplier = false }) => {
   const { t, i18n } = useTranslation();
@@ -14,6 +16,8 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
     return window.innerWidth < 1024 ? 'card' : 'table';
   }); // 'table' or 'card'
   const [expandedGroups, setExpandedGroups] = useState({}); // Track which supplier groups are expanded
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   // Helper to get display invoice number (prefer original client invoice number from buyerReference)
   const getDisplayInvoiceNumber = (invoice) => {
@@ -279,9 +283,13 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
 
   const handleSelectAll = (checked) => {
     if (checked) {
-      onSelectionChange(expenseInvoices.map(invoice => invoice.id));
+      // Select all invoices on current page
+      const currentPageInvoiceIds = paginatedInvoices.map(invoice => invoice.id);
+      onSelectionChange([...new Set([...selectedExpenseInvoices, ...currentPageInvoiceIds])]);
     } else {
-      onSelectionChange([]);
+      // Deselect all invoices on current page
+      const currentPageInvoiceIds = paginatedInvoices.map(invoice => invoice.id);
+      onSelectionChange(selectedExpenseInvoices.filter(id => !currentPageInvoiceIds.includes(id)));
     }
   };
 
@@ -332,25 +340,83 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
     }
   };
 
-  const SortableHeader = ({ label, sortKey }) => (
-    <th 
-      className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-muted/50"
-      onClick={() => handleSort(sortKey)}
-    >
-      <div className="flex items-center space-x-1">
-        <span>{label}</span>
-        <Icon 
-          name={sortConfig.key === sortKey && sortConfig.direction === 'desc' ? 'ChevronDown' : 'ChevronUp'} 
-          size={14} 
-          color="currentColor" 
-        />
-      </div>
-    </th>
-  );
+  // Sort and paginate expense invoices
+  const sortedAndPaginatedInvoices = useMemo(() => {
+    let sorted = [...expenseInvoices];
+
+    // Apply sorting
+    if (sortConfig.key) {
+      sorted.sort((a, b) => {
+        let aValue, bValue;
+
+        // Handle special case for invoice number - use getDisplayInvoiceNumber
+        if (sortConfig.key === 'number') {
+          aValue = getDisplayInvoiceNumber(a) || '';
+          bValue = getDisplayInvoiceNumber(b) || '';
+          // Extract numeric part for proper sorting
+          const aNum = parseInt((aValue || '').replace(/\D/g, '')) || 0;
+          const bNum = parseInt((bValue || '').replace(/\D/g, '')) || 0;
+          aValue = aNum;
+          bValue = bNum;
+        } else {
+          // For other fields, use the sortKey directly
+          aValue = a[sortConfig.key];
+          bValue = b[sortConfig.key];
+
+          if (sortConfig.key === 'amount') {
+            aValue = parseFloat(aValue || 0);
+            bValue = parseFloat(bValue || 0);
+          } else if (sortConfig.key === 'issueDate' || sortConfig.key === 'dueDate') {
+            aValue = new Date(aValue || 0);
+            bValue = new Date(bValue || 0);
+          } else if (typeof aValue === 'string') {
+            aValue = aValue.toLowerCase();
+            bValue = (bValue || '').toLowerCase();
+          }
+        }
+
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return sorted;
+  }, [expenseInvoices, sortConfig]);
+
+  // Pagination
+  const totalPages = Math.ceil(sortedAndPaginatedInvoices.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedInvoices = sortedAndPaginatedInvoices.slice(startIndex, endIndex);
+
+  // Reset to first page when invoices change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [expenseInvoices.length]);
+
+  // Use SortableHeader from ui components
+  const SortableHeaderComponent = ({ label, sortKey }) => {
+    // Determine if this is a numeric/date column
+    const numericDateKeys = ['number', 'amount', 'issueDate', 'dueDate'];
+    const showIcon = numericDateKeys.includes(sortKey);
+    
+    return (
+      <SortableHeader
+        label={label}
+        sortKey={sortKey}
+        currentSortKey={sortConfig.key}
+        sortDirection={sortConfig.direction}
+        onSort={handleSort}
+        showIcon={showIcon}
+      />
+    );
+  };
 
   const renderCardView = () => {
     if (groupBySupplier) {
-      const groups = groupInvoicesBySupplier(expenseInvoices);
+      // Use paginated invoices for grouped view to ensure pagination works
+      const groups = groupInvoicesBySupplier(paginatedInvoices);
       
       return (
         <div className="space-y-4 p-4">
@@ -407,7 +473,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
     // Ungrouped view
     return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-      {expenseInvoices.map((invoice) => {
+      {paginatedInvoices.map((invoice) => {
         const daysOverdue = getDaysOverdue(invoice.due_date, invoice.status);
           return renderInvoiceCard(invoice, daysOverdue);
         })}
@@ -612,24 +678,42 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
             <tr>
               <th className="px-6 py-3 text-left">
                 <Checkbox
-                  checked={selectedExpenseInvoices.length === expenseInvoices.length && expenseInvoices.length > 0}
+                  checked={
+                    paginatedInvoices.length > 0 && 
+                    paginatedInvoices.every(invoice => selectedExpenseInvoices.includes(invoice.id))
+                  }
                   onChange={(e) => handleSelectAll(e.target.checked)}
                 />
               </th>
-              <SortableHeader label={t('expenseInvoices.table.headers.invoiceNumber', 'Invoice #')} sortKey="number" />
+              <SortableHeaderComponent 
+                label={t('expenseInvoices.table.headers.invoiceNumber', 'Invoice #')} 
+                sortKey="number"
+              />
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 {t('expenseInvoices.table.headers.invoiceType', 'Type')}
               </th>
-              <SortableHeader label={t('expenseInvoices.table.headers.supplier', 'Supplier')} sortKey="supplier_name" />
-              <SortableHeader label={t('expenseInvoices.table.headers.amount', 'Amount')} sortKey="amount" />
+              <SortableHeaderComponent 
+                label={t('expenseInvoices.table.headers.supplier', 'Supplier')} 
+                sortKey="supplier_name"
+              />
+              <SortableHeaderComponent 
+                label={t('expenseInvoices.table.headers.amount', 'Amount')} 
+                sortKey="amount"
+              />
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 {t('expenseInvoices.table.headers.status', 'Status')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 {t('expenseInvoices.table.headers.source', 'Source')}
               </th>
-              <SortableHeader label={t('expenseInvoices.table.headers.issueDate', 'Issue Date')} sortKey="issueDate" />
-              <SortableHeader label={t('expenseInvoices.table.headers.dueDate', 'Due Date')} sortKey="dueDate" />
+              <SortableHeaderComponent 
+                label={t('expenseInvoices.table.headers.issueDate', 'Issue Date')} 
+                sortKey="issueDate"
+              />
+              <SortableHeaderComponent 
+                label={t('expenseInvoices.table.headers.dueDate', 'Due Date')} 
+                sortKey="dueDate"
+              />
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 {t('expenseInvoices.table.headers.actions', 'Actions')}
               </th>
@@ -793,7 +877,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
               })
             ) : (
               // Ungrouped view
-              expenseInvoices.map((invoice) => {
+              paginatedInvoices.map((invoice) => {
                 const daysOverdue = getDaysOverdue(invoice.due_date, invoice.status);
                 return (
                   <tr key={invoice.id} className="hover:bg-muted/30 transition-colors duration-150" style={{ position: 'relative' }}>
@@ -900,6 +984,17 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
             )}
           </tbody>
         </table>
+        </div>
+      )}
+      {sortedAndPaginatedInvoices.length > itemsPerPage && (
+        <div className="mt-4 px-4 pb-4">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={sortedAndPaginatedInvoices.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+          />
         </div>
       )}
     </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { cn } from "../../utils/cn";
 import { isValidEmail, validateNumberInput, limitNumberLength } from "../../utils/validation";
+import Icon from "../AppIcon";
 
 const Input = React.forwardRef(({
     className,
@@ -36,6 +37,7 @@ const Input = React.forwardRef(({
     // Internal state for email validation
     const [emailError, setEmailError] = useState('');
     const [internalValue, setInternalValue] = useState(value || '');
+    const [showPassword, setShowPassword] = useState(false);
 
     // Sync internal value with external value
     useEffect(() => {
@@ -237,25 +239,38 @@ const Input = React.forwardRef(({
                 </label>
             )}
 
-            <input
-                type={type}
-                value={internalValue}
-                onChange={handleChange}
-                onKeyDown={handleKeyDown}
-                onClick={type === "date" || type === "datetime-local" || type === "time" || type === "month" || type === "week" ? handleDateClick : undefined}
-                className={cn(
-                    baseInputClasses,
-                    finalError && "border-destructive focus-visible:ring-destructive",
-                    (type === "date" || type === "datetime-local" || type === "time" || type === "month" || type === "week") && "cursor-pointer",
-                    className
+            <div className="relative">
+                <input
+                    type={type === "password" ? (showPassword ? "text" : "password") : type}
+                    value={internalValue}
+                    onChange={handleChange}
+                    onKeyDown={handleKeyDown}
+                    onClick={type === "date" || type === "datetime-local" || type === "time" || type === "month" || type === "week" ? handleDateClick : undefined}
+                    className={cn(
+                        baseInputClasses,
+                        finalError && "border-destructive focus-visible:ring-destructive",
+                        (type === "date" || type === "datetime-local" || type === "time" || type === "month" || type === "week") && "cursor-pointer",
+                        type === "password" && "pr-10",
+                        className
+                    )}
+                    ref={inputRef}
+                    id={inputId}
+                    min={type === "number" ? (min !== undefined ? min : 0) : undefined}
+                    max={type === "number" ? max : undefined}
+                    maxLength={getDefaultMaxLength()}
+                    {...props}
+                />
+                {type === "password" && (
+                    <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none"
+                        tabIndex={-1}
+                    >
+                        <Icon name={showPassword ? "EyeOff" : "Eye"} size={18} />
+                    </button>
                 )}
-                ref={inputRef}
-                id={inputId}
-                min={type === "number" ? (min !== undefined ? min : 0) : undefined}
-                max={type === "number" ? max : undefined}
-                maxLength={getDefaultMaxLength()}
-                {...props}
-            />
+            </div>
 
             {description && !finalError && (
                 <p className="text-sm text-muted-foreground">

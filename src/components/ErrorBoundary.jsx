@@ -111,14 +111,12 @@ class ErrorBoundary extends React.Component {
   };
 
   render() {
-    // Only show error boundary for actual React errors, not network errors
-    // Network errors should be handled by InternetConnectionCheck
+    // Disabled error boundary UI - just log errors and continue rendering
+    // Errors are logged to console but UI is not shown to avoid disrupting user experience
     if (this.state.hasError && !this.state.isOffline) {
-      return (
-        <ErrorBoundaryContent 
-          error={this.state.error}
-        />
-      );
+      // Log error but don't show UI - continue rendering children
+      // This prevents the error boundary from blocking the UI
+      return this.props.children;
     }
 
     // If it's just an internet issue, don't show error boundary - let InternetConnectionCheck handle it

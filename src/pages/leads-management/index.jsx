@@ -7,6 +7,7 @@ import PermissionGuard, { usePermissionCheck } from '../../components/Permission
 import LimitedAccessGuard from '../../components/LimitedAccessGuard';
 import TableLoader from '../../components/ui/TableLoader';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
+import Pagination from '../../components/ui/Pagination';
 import LeadsFilterToolbar from './components/LeadsFilterToolbar';
 import { useScrollPosition } from '../../utils/useScrollPosition';
 import { LeadManagementService } from '../../services/leadManagementService';
@@ -37,6 +38,9 @@ const LeadsManagementPage = () => {
   const [leads, setLeads] = useState([]);
   const [filteredLeads, setFilteredLeads] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [sortConfig, setSortConfig] = useState({ key: 'created_at', direction: 'desc' });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [filters, setFilters] = useState({
@@ -318,11 +322,39 @@ const LeadsManagementPage = () => {
     });
   };
 
-  // Apply filters whenever filters change
+  // Apply filters, sorting, and pagination whenever filters, leads, or sort config change
   useEffect(() => {
-    const filtered = filterLeads(leads, filters);
+    let filtered = filterLeads(leads, filters);
+    
+    // Apply sorting
+    if (sortConfig.key) {
+      filtered.sort((a, b) => {
+        let aValue = a[sortConfig.key];
+        let bValue = b[sortConfig.key];
+
+        if (sortConfig.key === 'created_at' || sortConfig.key === 'updated_at') {
+          aValue = new Date(aValue || 0);
+          bValue = new Date(bValue || 0);
+        } else if (typeof aValue === 'string') {
+          aValue = aValue.toLowerCase();
+          bValue = (bValue || '').toLowerCase();
+        }
+
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+    
     setFilteredLeads(filtered);
-  }, [filters, leads]);
+    setCurrentPage(1); // Reset to first page when filters change
+  }, [filters, leads, sortConfig]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedLeads = filteredLeads.slice(startIndex, endIndex);
 
   const handleCategoryToggle = async (category) => {
     const newSettings = {
@@ -390,11 +422,29 @@ const LeadsManagementPage = () => {
       <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4">{t('leadsManagement.leadsTab.title')}</h2>
       
       {/* Filter Toolbar */}
-      <LeadsFilterToolbar
-        filters={filters}
-        onFiltersChange={handleFiltersChange}
-        filteredCount={filteredLeads.length}
-      />
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+        <LeadsFilterToolbar
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          filteredCount={filteredLeads.length}
+        />
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-muted-foreground">{t('common.sort', 'Sort by')}:</label>
+          <select
+            value={`${sortConfig.key}-${sortConfig.direction}`}
+            onChange={(e) => {
+              const [key, direction] = e.target.value.split('-');
+              setSortConfig({ key, direction });
+            }}
+            className="px-3 py-1.5 text-sm border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="created_at-desc">{t('leadsManagement.sort.newest', 'Newest first')}</option>
+            <option value="created_at-asc">{t('leadsManagement.sort.oldest', 'Oldest first')}</option>
+            <option value="client_name-asc">{t('leadsManagement.sort.nameAsc', 'Name (A-Z)')}</option>
+            <option value="client_name-desc">{t('leadsManagement.sort.nameDesc', 'Name (Z-A)')}</option>
+          </select>
+        </div>
+      </div>
       
       <div className="mt-4 sm:mt-6">
       {loading ? (
@@ -413,8 +463,9 @@ const LeadsManagementPage = () => {
           </div>
         </div>
       ) : (
-        <div className="space-y-6">
-          {filteredLeads.map((lead) => (
+        <>
+          <div className="space-y-6">
+            {paginatedLeads.map((lead) => (
             <div key={lead.lead_id} className="relative bg-gradient-to-br from-card to-card/80 border border-border rounded-xl p-4 sm:p-6 overflow-hidden">
               {/* Subtle background pattern */}
               <div className="absolute inset-0 opacity-5">
@@ -610,7 +661,19 @@ const LeadsManagementPage = () => {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+          {filteredLeads.length > itemsPerPage && (
+            <div className="mt-6">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredLeads.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+              />
+            </div>
+          )}
+        </>
       )}
       </div>
     </div>

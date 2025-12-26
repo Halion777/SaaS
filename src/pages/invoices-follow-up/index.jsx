@@ -5,6 +5,8 @@ import MainSidebar from '../../components/ui/MainSidebar';
 import PermissionGuard, { usePermissionCheck } from '../../components/PermissionGuard';
 import TableLoader from '../../components/ui/TableLoader';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
+import Pagination from '../../components/ui/Pagination';
+import SortableHeader from '../../components/ui/SortableHeader';
 import FilterToolbar from '../follow-up-management/components/FilterToolbar';
 import { useScrollPosition } from '../../utils/useScrollPosition';
 import { useAuth } from '../../context/AuthContext';
@@ -31,6 +33,9 @@ const InvoicesFollowUp = () => {
     status: 'all',
     days: 'all'
   });
+  const [sortConfig, setSortConfig] = useState({ key: 'followUpDate', direction: 'asc' });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   const filterScrollRef = useScrollPosition('followup-filter-scroll');
   
   // Real data states
@@ -526,10 +531,53 @@ const InvoicesFollowUp = () => {
     return true;
   });
 
+  // Sort and paginate filtered follow-ups
+  const sortedFollowUps = [...filteredFollowUps].sort((a, b) => {
+    let aValue = a[sortConfig.key];
+    let bValue = b[sortConfig.key];
+
+    if (sortConfig.key === 'followUpDate') {
+      // Handle followUpDate - use scheduledAt or nextFollowUp
+      aValue = new Date(a.scheduledAt || a.nextFollowUp || 0);
+      bValue = new Date(b.scheduledAt || b.nextFollowUp || 0);
+    } else if (sortConfig.key === 'dueDate') {
+      aValue = new Date(a.dueDate || 0);
+      bValue = new Date(b.dueDate || 0);
+    } else if (sortConfig.key === 'amount' || sortConfig.key === 'potentialRevenue') {
+      aValue = parseFloat(a.potentialRevenue || a.amount || 0);
+      bValue = parseFloat(b.potentialRevenue || b.amount || 0);
+    } else if (typeof aValue === 'string') {
+      aValue = aValue.toLowerCase();
+      bValue = (bValue || '').toLowerCase();
+    }
+
+    if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  // Pagination
+  const totalPages = Math.ceil(sortedFollowUps.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedFollowUps = sortedFollowUps.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [filters, searchTerm]);
+
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
   const invoiceFollowUps = followUps.filter(f => f.type === 'invoice' && !f.isPaid);
-  const totalFollowUpsCount = filteredFollowUps.length;
-  const highPriorityCount = filteredFollowUps.filter(f => f.priority === 'high').length;
-  const totalRevenue = filteredFollowUps.reduce((sum, f) => sum + f.potentialRevenue, 0);
+  const totalFollowUpsCount = sortedFollowUps.length;
+  const highPriorityCount = sortedFollowUps.filter(f => f.priority === 'high').length;
+  const totalRevenue = sortedFollowUps.reduce((sum, f) => sum + f.potentialRevenue, 0);
 
   const getPriorityColor = (priority) => {
     const colors = {
@@ -648,23 +696,58 @@ const InvoicesFollowUp = () => {
   const renderTableView = () => (
     <div className="bg-card border border-border rounded-lg overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full min-w-[800px]">
           <thead className="bg-muted/50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">{t('followUpManagement.tableHeaders.client')}</th>
-              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">{t('invoiceFollowUp.tableHeaders.invoice')}</th>
+              <SortableHeader 
+                label={t('followUpManagement.tableHeaders.client')}
+                sortKey="name"
+                currentSortKey={sortConfig.key}
+                sortDirection={sortConfig.direction}
+                onSort={handleSort}
+                showIcon={false}
+              />
+              <SortableHeader 
+                label={t('invoiceFollowUp.tableHeaders.invoice')}
+                sortKey="number"
+                currentSortKey={sortConfig.key}
+                sortDirection={sortConfig.direction}
+                onSort={handleSort}
+                showIcon={false}
+              />
               <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">{t('followUpManagement.tableHeaders.title')}</th>
-              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">{t('invoiceFollowUp.tableHeaders.dueDate')}</th>
-              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">{t('followUpManagement.tableHeaders.followUpDate')}</th>
-              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">{t('followUpManagement.tableHeaders.amount')}</th>
+              <SortableHeader 
+                label={t('invoiceFollowUp.tableHeaders.dueDate')}
+                sortKey="dueDate"
+                currentSortKey={sortConfig.key}
+                sortDirection={sortConfig.direction}
+                onSort={handleSort}
+                showIcon={true}
+              />
+              <SortableHeader 
+                label={t('followUpManagement.tableHeaders.followUpDate')}
+                sortKey="followUpDate"
+                currentSortKey={sortConfig.key}
+                sortDirection={sortConfig.direction}
+                onSort={handleSort}
+                showIcon={true}
+              />
+              <SortableHeader 
+                label={t('followUpManagement.tableHeaders.amount')}
+                sortKey="potentialRevenue"
+                currentSortKey={sortConfig.key}
+                sortDirection={sortConfig.direction}
+                onSort={handleSort}
+                showIcon={true}
+              />
               <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">{t('followUpManagement.tableHeaders.priority')}</th>
-              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">{t('followUpManagement.tableHeaders.followUpType')}</th>
+              <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap min-w-[160px]">{t('followUpManagement.tableHeaders.followUpType')}</th>
               <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">{t('followUpManagement.tableHeaders.status')}</th>
               <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-muted-foreground">{t('followUpManagement.tableHeaders.actions')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {filteredFollowUps.map((followUp) => (
+            {paginatedFollowUps.map((followUp) => (
               <tr key={followUp.id} className="hover:bg-muted/30 transition-colors">
                 <td className="px-4 py-3">
                   <div className="flex items-center space-x-2">
@@ -711,7 +794,7 @@ const InvoicesFollowUp = () => {
                     {getPriorityLabel(followUp.priority)}
                   </span>
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 whitespace-nowrap">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${getFollowUpTypeColor(followUp.followUpType)}`}>
                     {getFollowUpTypeLabel(followUp.followUpType)}
                   </span>
@@ -742,12 +825,23 @@ const InvoicesFollowUp = () => {
           </tbody>
         </table>
       </div>
+      {sortedFollowUps.length > itemsPerPage && (
+        <div className="mt-4 px-4 pb-4">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={sortedFollowUps.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      )}
     </div>
   );
 
   const renderCardView = () => (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
-      {filteredFollowUps.map((followUp) => (
+      {paginatedFollowUps.map((followUp) => (
         <div key={followUp.id} className="bg-card border border-border rounded-lg p-4 sm:p-6">
           <div className="flex flex-col gap-4">
             {/* Header with client info and tags */}
@@ -827,6 +921,17 @@ const InvoicesFollowUp = () => {
           </div>
         </div>
       ))}
+      {sortedFollowUps.length > itemsPerPage && (
+        <div className="mt-4">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={sortedFollowUps.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      )}
     </div>
   );
 
@@ -899,7 +1004,7 @@ const InvoicesFollowUp = () => {
           <FilterToolbar
             filters={filters}
             onFiltersChange={handleFiltersChange}
-            filteredCount={filteredFollowUps.length}
+            filteredCount={sortedFollowUps.length}
             isInvoiceFollowUp={true}
           />
 
@@ -972,7 +1077,7 @@ const InvoicesFollowUp = () => {
                         title={t('invoiceFollowUp.errors.loadError', 'Error Loading Invoice Follow-ups')}
                       />
                     </div>
-                  ) : filteredFollowUps.length === 0 ? (
+                  ) : sortedFollowUps.length === 0 ? (
                     <div className="p-8 text-center">
                       <Icon name="Bell" size={48} className="text-muted-foreground mx-auto mb-4" />
                       <h3 className="text-lg font-medium text-foreground mb-4">

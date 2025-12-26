@@ -7,6 +7,8 @@ import MainSidebar from '../../../components/ui/MainSidebar';
 import PermissionGuard, { usePermissionCheck } from '../../../components/PermissionGuard';
 import LimitedAccessGuard from '../../../components/LimitedAccessGuard';
 import TableLoader from '../../../components/ui/TableLoader';
+import Pagination from '../../../components/ui/Pagination';
+import SortableHeader from '../../../components/ui/SortableHeader';
 import { useMultiUser } from '../../../context/MultiUserContext';
 import { useAuth } from '../../../context/AuthContext';
 import Input from '../../../components/ui/Input';
@@ -77,6 +79,11 @@ const PeppolNetworkPage = () => {
   const [receivedViewMode, setReceivedViewMode] = useState('table');
   const [isSentFiltersExpanded, setIsSentFiltersExpanded] = useState(false);
   const [isReceivedFiltersExpanded, setIsReceivedFiltersExpanded] = useState(false);
+  const [sentSortConfig, setSentSortConfig] = useState({ key: 'date', direction: 'desc' });
+  const [receivedSortConfig, setReceivedSortConfig] = useState({ key: 'date', direction: 'desc' });
+  const [sentCurrentPage, setSentCurrentPage] = useState(1);
+  const [receivedCurrentPage, setReceivedCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   const [peppolStats, setPeppolStats] = useState({
     totalSent: 0,
     totalReceived: 0,
@@ -1153,9 +1160,108 @@ const PeppolNetworkPage = () => {
       });
     };
 
-    setFilteredSentInvoices(applyFilters(sentInvoices, true));
-    setFilteredReceivedInvoices(applyFilters(receivedInvoices, false));
-  }, [filters, sentInvoices, receivedInvoices]);
+    const filteredSent = applyFilters(sentInvoices, true);
+    const filteredReceived = applyFilters(receivedInvoices, false);
+    
+    // Sort sent invoices
+    const sortedSent = [...filteredSent].sort((a, b) => {
+      let aValue, bValue;
+      
+      if (sentSortConfig.key === 'id') {
+        aValue = a.id || '';
+        bValue = b.id || '';
+        // Extract numeric part for proper sorting
+        const aNum = parseInt((aValue.toString() || '').replace(/\D/g, '')) || 0;
+        const bNum = parseInt((bValue.toString() || '').replace(/\D/g, '')) || 0;
+        aValue = aNum;
+        bValue = bNum;
+      } else {
+        aValue = a[sentSortConfig.key === 'date' ? 'date' : sentSortConfig.key === 'amount' ? 'amount' : 'recipient'];
+        bValue = b[sentSortConfig.key === 'date' ? 'date' : sentSortConfig.key === 'amount' ? 'amount' : 'recipient'];
+        
+        if (sentSortConfig.key === 'date') {
+          aValue = new Date(aValue || 0);
+          bValue = new Date(bValue || 0);
+        } else if (sentSortConfig.key === 'amount') {
+          aValue = parseFloat(aValue || 0);
+          bValue = parseFloat(bValue || 0);
+        } else if (typeof aValue === 'string') {
+          aValue = aValue.toLowerCase();
+          bValue = (bValue || '').toLowerCase();
+        }
+      }
+      
+      if (aValue < bValue) return sentSortConfig.direction === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sentSortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+    
+    // Sort received invoices
+    const sortedReceived = [...filteredReceived].sort((a, b) => {
+      let aValue, bValue;
+      
+      if (receivedSortConfig.key === 'id') {
+        aValue = a.id || '';
+        bValue = b.id || '';
+        // Extract numeric part for proper sorting
+        const aNum = parseInt((aValue.toString() || '').replace(/\D/g, '')) || 0;
+        const bNum = parseInt((bValue.toString() || '').replace(/\D/g, '')) || 0;
+        aValue = aNum;
+        bValue = bNum;
+      } else {
+        aValue = a[receivedSortConfig.key === 'date' ? 'date' : receivedSortConfig.key === 'amount' ? 'amount' : 'sender'];
+        bValue = b[receivedSortConfig.key === 'date' ? 'date' : receivedSortConfig.key === 'amount' ? 'amount' : 'sender'];
+        
+        if (receivedSortConfig.key === 'date') {
+          aValue = new Date(aValue || 0);
+          bValue = new Date(bValue || 0);
+        } else if (receivedSortConfig.key === 'amount') {
+          aValue = parseFloat(aValue || 0);
+          bValue = parseFloat(bValue || 0);
+        } else if (typeof aValue === 'string') {
+          aValue = aValue.toLowerCase();
+          bValue = (bValue || '').toLowerCase();
+        }
+      }
+      
+      if (aValue < bValue) return receivedSortConfig.direction === 'asc' ? -1 : 1;
+      if (aValue > bValue) return receivedSortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+    
+    setFilteredSentInvoices(sortedSent);
+    setFilteredReceivedInvoices(sortedReceived);
+    
+    // Reset pages when filters change
+    setSentCurrentPage(1);
+    setReceivedCurrentPage(1);
+  }, [filters, sentInvoices, receivedInvoices, sentSortConfig, receivedSortConfig]);
+  
+  // Pagination for sent invoices
+  const sentTotalPages = Math.ceil(filteredSentInvoices.length / itemsPerPage);
+  const sentStartIndex = (sentCurrentPage - 1) * itemsPerPage;
+  const sentEndIndex = sentStartIndex + itemsPerPage;
+  const paginatedSentInvoices = filteredSentInvoices.slice(sentStartIndex, sentEndIndex);
+  
+  // Pagination for received invoices
+  const receivedTotalPages = Math.ceil(filteredReceivedInvoices.length / itemsPerPage);
+  const receivedStartIndex = (receivedCurrentPage - 1) * itemsPerPage;
+  const receivedEndIndex = receivedStartIndex + itemsPerPage;
+  const paginatedReceivedInvoices = filteredReceivedInvoices.slice(receivedStartIndex, receivedEndIndex);
+  
+  const handleSentSort = (key) => {
+    setSentSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+  
+  const handleReceivedSort = (key) => {
+    setReceivedSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
 
   const handleFilterChange = (field, value) => {
     setFilters(prev => ({ ...prev, [field]: value }));
@@ -1181,16 +1287,44 @@ const PeppolNetworkPage = () => {
       <table className="w-full min-w-[800px]">
         <thead className="bg-muted/50">
           <tr>
-            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">{t('peppol.invoices.invoiceNumber')}</th>
-            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">{t('peppol.invoices.recipient')}</th>
+            <SortableHeader 
+              label={t('peppol.invoices.invoiceNumber')}
+              sortKey="id"
+              currentSortKey={sentSortConfig.key}
+              sortDirection={sentSortConfig.direction}
+              onSort={handleSentSort}
+              showIcon={true}
+            />
+            <SortableHeader 
+              label={t('peppol.invoices.recipient')}
+              sortKey="recipient"
+              currentSortKey={sentSortConfig.key}
+              sortDirection={sentSortConfig.direction}
+              onSort={handleSentSort}
+              showIcon={false}
+            />
             <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">{t('peppol.invoices.peppolId')}</th>
-            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">{t('peppol.invoices.amount')}</th>
-            <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">{t('peppol.invoices.date')}</th>
+            <SortableHeader 
+              label={t('peppol.invoices.amount')}
+              sortKey="amount"
+              currentSortKey={sentSortConfig.key}
+              sortDirection={sentSortConfig.direction}
+              onSort={handleSentSort}
+              showIcon={true}
+            />
+            <SortableHeader 
+              label={t('peppol.invoices.date')}
+              sortKey="date"
+              currentSortKey={sentSortConfig.key}
+              sortDirection={sentSortConfig.direction}
+              onSort={handleSentSort}
+              showIcon={true}
+            />
             <th className="text-left p-3 sm:p-4 font-medium text-xs sm:text-sm">{t('peppol.invoices.status')}</th>
           </tr>
         </thead>
         <tbody>
-          {filteredSentInvoices.map((invoice) => (
+          {paginatedSentInvoices.map((invoice) => (
             <tr key={invoice.id} className="border-t border-border hover:bg-muted/30">
               <td className="p-4 font-medium">{invoice.id}</td>
               <td className="p-4">
@@ -1215,13 +1349,24 @@ const PeppolNetworkPage = () => {
           ))}
         </tbody>
       </table>
+      {filteredSentInvoices.length > itemsPerPage && (
+        <div className="mt-4 px-4 pb-4">
+          <Pagination
+            currentPage={sentCurrentPage}
+            totalPages={sentTotalPages}
+            totalItems={filteredSentInvoices.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setSentCurrentPage}
+          />
+        </div>
+      )}
     </div>
   );
 
   const renderSentCardView = () => (
     <div className="p-2 sm:p-3 md:p-4">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
-        {filteredSentInvoices.map((invoice) => (
+        {paginatedSentInvoices.map((invoice) => (
           <div key={invoice.id} className="bg-card border border-border rounded-lg p-2 sm:p-3 md:p-4">
             <div className="flex items-start justify-between mb-2">
               <div className="flex items-center space-x-2">
@@ -1261,6 +1406,17 @@ const PeppolNetworkPage = () => {
           </div>
         ))}
       </div>
+      {filteredSentInvoices.length > itemsPerPage && (
+        <div className="mt-4 px-4 pb-4">
+          <Pagination
+            currentPage={sentCurrentPage}
+            totalPages={sentTotalPages}
+            totalItems={filteredSentInvoices.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setSentCurrentPage}
+          />
+        </div>
+      )}
     </div>
   );
 
@@ -1269,16 +1425,44 @@ const PeppolNetworkPage = () => {
       <table className="w-full">
         <thead className="bg-muted/50">
           <tr>
-            <th className="text-left p-4 font-medium">{t('peppol.invoices.invoiceNumber')}</th>
-            <th className="text-left p-4 font-medium">{t('peppol.invoices.sender')}</th>
+            <SortableHeader 
+              label={t('peppol.invoices.invoiceNumber')}
+              sortKey="id"
+              currentSortKey={receivedSortConfig.key}
+              sortDirection={receivedSortConfig.direction}
+              onSort={handleReceivedSort}
+              showIcon={true}
+            />
+            <SortableHeader 
+              label={t('peppol.invoices.sender')}
+              sortKey="sender"
+              currentSortKey={receivedSortConfig.key}
+              sortDirection={receivedSortConfig.direction}
+              onSort={handleReceivedSort}
+              showIcon={false}
+            />
+            <SortableHeader 
+              label={t('peppol.invoices.amount')}
+              sortKey="amount"
+              currentSortKey={receivedSortConfig.key}
+              sortDirection={receivedSortConfig.direction}
+              onSort={handleReceivedSort}
+              showIcon={true}
+            />
+            <SortableHeader 
+              label={t('peppol.invoices.date')}
+              sortKey="date"
+              currentSortKey={receivedSortConfig.key}
+              sortDirection={receivedSortConfig.direction}
+              onSort={handleReceivedSort}
+              showIcon={true}
+            />
             <th className="text-left p-4 font-medium">{t('peppol.invoices.peppolId')}</th>
-            <th className="text-left p-4 font-medium">{t('peppol.invoices.amount')}</th>
-            <th className="text-left p-4 font-medium">{t('peppol.invoices.date')}</th>
             <th className="text-left p-4 font-medium">{t('peppol.invoices.status')}</th>
           </tr>
         </thead>
         <tbody>
-          {filteredReceivedInvoices.map((invoice) => (
+          {paginatedReceivedInvoices.map((invoice) => (
             <tr key={invoice.id} className="border-t border-border hover:bg-muted/30">
               <td className="p-4 font-medium">{invoice.id}</td>
               <td className="p-4">
@@ -1303,13 +1487,24 @@ const PeppolNetworkPage = () => {
           ))}
         </tbody>
       </table>
+      {filteredReceivedInvoices.length > itemsPerPage && (
+        <div className="mt-4 px-4 pb-4">
+          <Pagination
+            currentPage={receivedCurrentPage}
+            totalPages={receivedTotalPages}
+            totalItems={filteredReceivedInvoices.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setReceivedCurrentPage}
+          />
+        </div>
+      )}
     </div>
   );
 
   const renderReceivedCardView = () => (
     <div className="p-2 sm:p-3 md:p-4">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
-        {filteredReceivedInvoices.map((invoice) => (
+        {paginatedReceivedInvoices.map((invoice) => (
           <div key={invoice.id} className="bg-card border border-border rounded-lg p-2 sm:p-3 md:p-4">
             <div className="flex items-start justify-between mb-2">
               <div className="flex items-center space-x-2">
@@ -1349,6 +1544,17 @@ const PeppolNetworkPage = () => {
           </div>
         ))}
       </div>
+      {filteredReceivedInvoices.length > itemsPerPage && (
+        <div className="mt-4 px-4 pb-4">
+          <Pagination
+            currentPage={receivedCurrentPage}
+            totalPages={receivedTotalPages}
+            totalItems={filteredReceivedInvoices.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setReceivedCurrentPage}
+          />
+        </div>
+      )}
     </div>
   );
 

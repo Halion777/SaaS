@@ -5,6 +5,8 @@ import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import { Checkbox } from '../../../components/ui/Checkbox';
 import Select from '../../../components/ui/Select';
+import Pagination from '../../../components/ui/Pagination';
+import SortableHeader from '../../../components/ui/SortableHeader';
 
 const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSelectionChange, filters, onFiltersChange, onStatusUpdate, downloadingInvoiceId = null, canEdit = true, canDelete = true, groupByQuote = false }) => {
   const { t, i18n } = useTranslation();
@@ -13,6 +15,8 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
     // Default to card view on mobile/tablet, table view on desktop
     return window.innerWidth < 1024 ? 'card' : 'table';
   }); // 'table' or 'card'
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   // Auto-switch to card view on mobile/tablet
   React.useEffect(() => {
@@ -214,9 +218,17 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
 
   const handleSelectAll = (checked) => {
     if (checked) {
-      onSelectionChange(invoices.map(invoice => invoice.id));
+      // Select all invoices on current page
+      const currentPageInvoiceIds = paginatedInvoices.map(invoice => 
+        groupByQuote ? invoice.invoices.map(inv => inv.id) : invoice.id
+      ).flat();
+      onSelectionChange([...new Set([...selectedInvoices, ...currentPageInvoiceIds])]);
     } else {
-      onSelectionChange([]);
+      // Deselect all invoices on current page
+      const currentPageInvoiceIds = paginatedInvoices.map(invoice => 
+        groupByQuote ? invoice.invoices.map(inv => inv.id) : invoice.id
+      ).flat();
+      onSelectionChange(selectedInvoices.filter(id => !currentPageInvoiceIds.includes(id)));
     }
   };
 
@@ -228,14 +240,54 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
     }
   };
 
-  // Group invoices by quote when groupByQuote is enabled
-  const groupedInvoices = useMemo(() => {
+
+  // Sort invoices before pagination
+  const sortedInvoices = useMemo(() => {
+    if (!sortConfig.key) {
+      return invoices;
+    }
+
+    const sorted = [...invoices].sort((a, b) => {
+      let aValue = a[sortConfig.key];
+      let bValue = b[sortConfig.key];
+
+      // Handle different data types
+      if (sortConfig.key === 'amount' || sortConfig.key === 'finalAmount' || sortConfig.key === 'netAmount' || sortConfig.key === 'taxAmount') {
+        aValue = parseFloat(aValue || 0);
+        bValue = parseFloat(bValue || 0);
+      } else if (sortConfig.key === 'issueDate' || sortConfig.key === 'dueDate' || sortConfig.key === 'createdAt') {
+        aValue = new Date(aValue || 0);
+        bValue = new Date(bValue || 0);
+      } else if (sortConfig.key === 'clientName') {
+        aValue = (aValue || '').toLowerCase();
+        bValue = (bValue || '').toLowerCase();
+      } else if (sortConfig.key === 'number') {
+        // Extract numeric part for proper sorting
+        const aNum = parseInt((aValue || '').replace(/\D/g, '')) || 0;
+        const bNum = parseInt((bValue || '').replace(/\D/g, '')) || 0;
+        aValue = aNum;
+        bValue = bNum;
+      } else if (typeof aValue === 'string') {
+        aValue = aValue.toLowerCase();
+        bValue = (bValue || '').toLowerCase();
+      }
+
+      if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return sorted;
+  }, [invoices, sortConfig]);
+
+  // Group sorted invoices if needed
+  const sortedGroupedInvoices = useMemo(() => {
     if (!groupByQuote) {
-      return { ungrouped: invoices };
+      return { ungrouped: sortedInvoices };
     }
 
     const groups = {};
-    invoices.forEach(invoice => {
+    sortedInvoices.forEach(invoice => {
       const groupKey = invoice.quoteId || 'ungrouped';
       if (!groups[groupKey]) {
         groups[groupKey] = {
@@ -255,23 +307,48 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
     });
 
     return sortedGroups;
-  }, [invoices, groupByQuote]);
+  }, [sortedInvoices, groupByQuote]);
 
-  const SortableHeader = ({ label, sortKey }) => (
-    <th 
-      className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-muted/50"
-      onClick={() => handleSort(sortKey)}
-    >
-      <div className="flex items-center space-x-1">
-        <span>{label}</span>
-        <Icon 
-          name={sortConfig.key === sortKey && sortConfig.direction === 'desc' ? 'ChevronDown' : 'ChevronUp'} 
-          size={14} 
-          color="currentColor" 
-        />
-      </div>
-    </th>
-  );
+  // Pagination logic
+  const paginatedInvoices = useMemo(() => {
+    if (groupByQuote) {
+      // For grouped view, paginate groups
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      return sortedGroupedInvoices.slice(startIndex, endIndex);
+    } else {
+      // For ungrouped view, paginate invoices
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      return sortedInvoices.slice(startIndex, endIndex);
+    }
+  }, [groupByQuote ? sortedGroupedInvoices : sortedInvoices, currentPage, itemsPerPage, groupByQuote]);
+
+  const totalItems = groupByQuote ? sortedGroupedInvoices.length : sortedInvoices.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+  // Reset to first page when invoices change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [invoices.length]);
+
+  // Import SortableHeader from ui components
+  const SortableHeaderComponent = ({ label, sortKey }) => {
+    // Determine if this is a numeric/date column
+    const numericDateKeys = ['number', 'amount', 'issueDate', 'dueDate', 'finalAmount', 'netAmount', 'taxAmount'];
+    const showIcon = numericDateKeys.includes(sortKey);
+    
+    return (
+      <SortableHeader
+        label={label}
+        sortKey={sortKey}
+        currentSortKey={sortConfig.key}
+        sortDirection={sortConfig.direction}
+        onSort={handleSort}
+        showIcon={showIcon}
+      />
+    );
+  };
 
   const renderGroupedCardView = () => {
     if (!groupByQuote) {
@@ -280,7 +357,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
 
     return (
       <div className="p-4 space-y-6">
-        {groupedInvoices.map((group, groupIndex) => (
+        {paginatedInvoices.map((group, groupIndex) => (
           <div key={group.quoteId || `ungrouped-${groupIndex}`} className="space-y-4">
             {group.quoteId && (
               <div className="bg-muted/20 border border-border rounded-lg p-4">
@@ -424,7 +501,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
 
   const renderCardView = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-      {invoices.map((invoice) => {
+      {paginatedInvoices.map((invoice) => {
         const daysOverdue = getDaysOverdue(invoice.dueDate, invoice.status);
         return (
           <div key={invoice.id} className="bg-card border border-border rounded-lg p-4 hover:shadow-md transition-shadow duration-150">
@@ -628,24 +705,32 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
             <tr>
               <th className="px-6 py-3 text-left">
                 <Checkbox
-                  checked={selectedInvoices.length === invoices.length && invoices.length > 0}
+                  checked={
+                    (() => {
+                      const currentPageInvoiceIds = paginatedInvoices.map(invoice => 
+                        groupByQuote ? invoice.invoices.map(inv => inv.id) : invoice.id
+                      ).flat();
+                      return currentPageInvoiceIds.length > 0 && 
+                             currentPageInvoiceIds.every(id => selectedInvoices.includes(id));
+                    })()
+                  }
                   onChange={(e) => handleSelectAll(e.target.checked)}
                 />
               </th>
-              <SortableHeader label={t('invoicesManagement.table.headers.invoiceNumber')} sortKey="number" />
+              <SortableHeaderComponent label={t('invoicesManagement.table.headers.invoiceNumber')} sortKey="number" />
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 {t('invoicesManagement.table.headers.type', 'Type')}
               </th>
-              <SortableHeader label={t('invoicesManagement.table.headers.client')} sortKey="clientName" />
-              <SortableHeader label={t('invoicesManagement.table.headers.amount')} sortKey="amount" />
+              <SortableHeaderComponent label={t('invoicesManagement.table.headers.client')} sortKey="clientName" />
+              <SortableHeaderComponent label={t('invoicesManagement.table.headers.amount')} sortKey="amount" />
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 {t('invoicesManagement.table.headers.status')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 {t('invoicesManagement.table.headers.peppolStatus', 'Peppol Status')}
               </th>
-              <SortableHeader label={t('invoicesManagement.table.headers.issueDate')} sortKey="issueDate" />
-              <SortableHeader label={t('invoicesManagement.table.headers.dueDate')} sortKey="dueDate" />
+              <SortableHeaderComponent label={t('invoicesManagement.table.headers.issueDate')} sortKey="issueDate" />
+              <SortableHeaderComponent label={t('invoicesManagement.table.headers.dueDate')} sortKey="dueDate" />
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 {t('invoicesManagement.table.headers.actions')}
               </th>
@@ -654,7 +739,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
           <tbody className="bg-card divide-y divide-border">
             {groupByQuote ? (
               // Grouped view
-              groupedInvoices.map((group, groupIndex) => (
+              paginatedInvoices.map((group, groupIndex) => (
                 <React.Fragment key={group.quoteId || `ungrouped-${groupIndex}`}>
                   {group.quoteId && (
                     <tr className="bg-muted/20">
@@ -780,7 +865,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
               ))
             ) : (
               // Ungrouped view (original)
-              invoices.map((invoice) => {
+              paginatedInvoices.map((invoice) => {
               const daysOverdue = getDaysOverdue(invoice.dueDate, invoice.status);
               return (
                 <tr key={invoice.id} className="hover:bg-muted/30 transition-colors duration-150">
@@ -891,6 +976,17 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
             )}
           </tbody>
         </table>
+        </div>
+      )}
+      {totalItems > itemsPerPage && (
+        <div className="mt-4 px-4 pb-4">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+          />
         </div>
       )}
     </div>

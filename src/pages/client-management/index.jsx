@@ -8,6 +8,8 @@ import PermissionGuard, { usePermissionCheck } from '../../components/Permission
 import LimitedAccessGuard from '../../components/LimitedAccessGuard';
 import TableLoader from '../../components/ui/TableLoader';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
+import Pagination from '../../components/ui/Pagination';
+import SortableHeader from '../../components/ui/SortableHeader';
 import { useAuth } from '../../context/AuthContext';
 import { useMultiUser } from '../../context/MultiUserContext';
 import { supabase } from '../../services/supabaseClient';
@@ -51,16 +53,19 @@ const ClientManagement = () => {
     // Default to card view on mobile/tablet, table view on desktop
     return window.innerWidth < 1024 ? 'card' : 'table';
   });
+  const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'asc' });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   // Fetch clients on component mount
   useEffect(() => {
     loadClients();
   }, []);
 
-  // Filter clients when search term or filters change
+  // Filter clients when search term, filters, or sort config change
   useEffect(() => {
     filterClients();
-  }, [clients, searchTerm, filters]);
+  }, [clients, searchTerm, filters, sortConfig]);
 
   // Handle view mode resize
   useEffect(() => {
@@ -207,8 +212,46 @@ const ClientManagement = () => {
       );
     }
 
+    // Apply sorting
+    if (sortConfig.key) {
+      filtered.sort((a, b) => {
+        let aValue = a[sortConfig.key];
+        let bValue = b[sortConfig.key];
+
+        // Handle special cases
+        if (sortConfig.key === 'totalRevenue') {
+          aValue = parseFloat(aValue || 0);
+          bValue = parseFloat(bValue || 0);
+        } else if (sortConfig.key === 'projectsCount') {
+          aValue = parseInt(aValue || 0);
+          bValue = parseInt(bValue || 0);
+        } else if (typeof aValue === 'string') {
+          aValue = aValue.toLowerCase();
+          bValue = (bValue || '').toLowerCase();
+        }
+
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
     setFilteredClients(filtered);
+    setCurrentPage(1); // Reset to first page when filters change
   };
+
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  // Pagination
+  const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedClients = filteredClients.slice(startIndex, endIndex);
 
   const generateAnalytics = async () => {
     if (clients.length === 0) return;
@@ -760,28 +803,49 @@ const ClientManagement = () => {
             ) : (
               <>
                 {viewMode === 'table' && (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
+                  <>
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[800px]">
                     <thead className="bg-muted/50">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          {t('clientManagement.table.headers.client')}
-                        </th>
+                        <SortableHeader 
+                          label={t('clientManagement.table.headers.client')}
+                          sortKey="name"
+                          currentSortKey={sortConfig.key}
+                          sortDirection={sortConfig.direction}
+                          onSort={handleSort}
+                          showIcon={false}
+                        />
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           {t('clientManagement.table.headers.type')}
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          {t('clientManagement.table.headers.contact')}
-                        </th>
+                        <SortableHeader 
+                          label={t('clientManagement.table.headers.contact')}
+                          sortKey="email"
+                          currentSortKey={sortConfig.key}
+                          sortDirection={sortConfig.direction}
+                          onSort={handleSort}
+                          showIcon={false}
+                        />
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           {t('clientManagement.table.headers.peppol')}
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          {t('clientManagement.table.headers.projects')}
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          {t('clientManagement.table.headers.totalRevenue')}
-                        </th>
+                        <SortableHeader 
+                          label={t('clientManagement.table.headers.projects')}
+                          sortKey="projectsCount"
+                          currentSortKey={sortConfig.key}
+                          sortDirection={sortConfig.direction}
+                          onSort={handleSort}
+                          showIcon={true}
+                        />
+                        <SortableHeader 
+                          label={t('clientManagement.table.headers.totalRevenue')}
+                          sortKey="totalRevenue"
+                          currentSortKey={sortConfig.key}
+                          sortDirection={sortConfig.direction}
+                          onSort={handleSort}
+                          showIcon={true}
+                        />
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           {t('clientManagement.table.headers.status')}
                         </th>
@@ -791,7 +855,7 @@ const ClientManagement = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {filteredClients.map((client) => (
+                      {paginatedClients.map((client) => (
                         <tr key={client.id} className="hover:bg-muted/30 transition-colors">
                           <td className="px-4 py-4">
                             <div className="flex items-center">
@@ -874,14 +938,26 @@ const ClientManagement = () => {
                         </tr>
                       ))}
                     </tbody>
-                  </table>
-                  </div>
+                      </table>
+                    </div>
+                    {filteredClients.length > itemsPerPage && (
+                      <div className="mt-4">
+                        <Pagination
+                          currentPage={currentPage}
+                          totalPages={totalPages}
+                          totalItems={filteredClients.length}
+                          itemsPerPage={itemsPerPage}
+                          onPageChange={setCurrentPage}
+                        />
+                      </div>
+                    )}
+                  </>
                 )}
                 
                 {viewMode === 'card' && (
                   <div className="p-4 sm:p-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {filteredClients.map((client) => (
+                      {paginatedClients.map((client) => (
                         <ClientCard
                           key={client.id}
                           client={client}
@@ -894,6 +970,17 @@ const ClientManagement = () => {
                         />
                       ))}
                     </div>
+                    {filteredClients.length > itemsPerPage && (
+                      <div className="mt-4">
+                        <Pagination
+                          currentPage={currentPage}
+                          totalPages={totalPages}
+                          totalItems={filteredClients.length}
+                          itemsPerPage={itemsPerPage}
+                          onPageChange={setCurrentPage}
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
               </>
