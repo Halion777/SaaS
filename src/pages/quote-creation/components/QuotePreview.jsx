@@ -411,6 +411,10 @@ const QuotePreview = ({
   // Calculate totals using centralized calculator
   const financialBreakdown = calculateQuoteTotals(tasks, financialConfig);
   const { totalBeforeVAT, vatAmount, totalWithVAT, depositAmount, balanceAmount } = financialBreakdown;
+  
+  // depositAmount is EXCL VAT, calculate deposit WITH VAT for display
+  const vatRate = totalBeforeVAT > 0 ? vatAmount / totalBeforeVAT : 0;
+  const depositWithVAT = depositAmount > 0 ? depositAmount * (1 + vatRate) : 0;
 
   const displayQuoteNumber = quoteNumber || `${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
   
@@ -874,7 +878,7 @@ const QuotePreview = ({
                     {financialConfig.advanceConfig.enabled && (
                       <tr style={{ backgroundColor: `${customization.colors.primary}20` }}>
                         <td className={`font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} style={{ border: `1px solid ${customization.colors.primary}`, color: '#1f2937' }} colSpan="4">{t('quoteCreation.quotePreview.paymentBeforeWork', lang.startsWith('en') ? 'PAYMENT BEFORE WORK:' : lang.startsWith('nl') ? 'BETALING VOOR WERK:' : 'PAIEMENT AVANT TRAVAUX:')}</td>
-                        <td className={`text-right font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} style={{ border: `1px solid ${customization.colors.primary}`, color: '#1f2937' }}>{formatMoney(depositAmount)}</td>
+                        <td className={`text-right font-bold ${previewMode === 'mobile' ? 'p-2' : 'p-3 sm:p-4'}`} style={{ border: `1px solid ${customization.colors.primary}`, color: '#1f2937' }}>{formatMoney(depositWithVAT)}</td>
                       </tr>
                     )}
                     {financialConfig.advanceConfig.enabled && (

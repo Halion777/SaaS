@@ -398,7 +398,7 @@ class ClientQuoteService {
           vat_amount: formatAmount(financialBreakdown.vatAmount),
           total_with_vat: formatAmount(financialBreakdown.totalWithVAT),
           deposit_enabled: financialBreakdown.depositEnabled ? 'true' : 'false',
-          deposit_amount: formatAmount(financialBreakdown.depositAmount),
+          deposit_amount: formatAmount(financialBreakdown.depositWithVAT),
           balance_amount: formatAmount(financialBreakdown.balanceAmount)
         };
 

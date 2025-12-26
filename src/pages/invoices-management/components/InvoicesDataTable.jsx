@@ -128,34 +128,31 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
     let displayVAT = invoice.taxAmount || 0;
     
     // For invoices with deposits, calculate proportional net/VAT
+    // NOTE: depositAmount is stored EXCL VAT, balanceAmount is stored INCL VAT
     if (depositEnabled && depositAmount > 0 && balanceAmount > 0) {
+      const totalNet = invoice.netAmount || 0;
+      const totalVAT = invoice.taxAmount || 0;
+      
       if (invoiceType === 'deposit') {
-        // For deposit invoice: show deposit net and VAT
-        // Calculate proportionally based on deposit vs total
-        const totalWithVAT = depositAmount + balanceAmount;
-        const totalNet = invoice.netAmount || 0;
-        const totalVAT = invoice.taxAmount || 0;
-        if (totalWithVAT > 0 && (totalNet > 0 || totalVAT > 0)) {
-          displayNet = (depositAmount / totalWithVAT) * totalNet;
-          displayVAT = (depositAmount / totalWithVAT) * totalVAT;
+        // For deposit invoice: depositAmount is the net amount (EXCL VAT)
+        displayNet = depositAmount;
+        
+        // Calculate VAT proportionally from total VAT
+        if (totalNet > 0 && totalVAT > 0) {
+          displayVAT = (depositAmount / totalNet) * totalVAT;
         } else {
-          // Fallback: estimate from deposit amount (assuming 21% VAT)
-          displayNet = depositAmount / 1.21;
-          displayVAT = depositAmount - displayNet;
+          // Fallback: calculate VAT rate from amount
+          const vatRate = invoice.taxAmount && invoice.netAmount ? invoice.taxAmount / invoice.netAmount : 0.21;
+          displayVAT = depositAmount * vatRate;
         }
       } else if (invoiceType === 'final') {
-        // For final invoice: show balance net and VAT
-        const totalWithVAT = depositAmount + balanceAmount;
-        const totalNet = invoice.netAmount || 0;
-        const totalVAT = invoice.taxAmount || 0;
-        if (totalWithVAT > 0 && (totalNet > 0 || totalVAT > 0)) {
-          displayNet = (balanceAmount / totalWithVAT) * totalNet;
-          displayVAT = (balanceAmount / totalWithVAT) * totalVAT;
-        } else {
-          // Fallback: estimate from balance amount (assuming 21% VAT)
-          displayNet = balanceAmount / 1.21;
-          displayVAT = balanceAmount - displayNet;
-        }
+        // For final invoice: use BACK CALCULATION from balanceAmount (which is INCL VAT)
+        // balanceAmount = what customer pays = total WITH VAT - depositWithVAT
+        const vatRate = totalNet > 0 && totalVAT > 0 ? totalVAT / totalNet : 0.21;
+        
+        // Back calculation: HT = balanceAmount / (1 + vatRate), TVA = balanceAmount - HT
+        displayNet = balanceAmount / (1 + vatRate); // Final net (EXCL VAT)
+        displayVAT = balanceAmount - displayNet; // Final VAT
       }
     }
     

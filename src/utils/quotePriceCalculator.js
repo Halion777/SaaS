@@ -100,8 +100,15 @@ export function calculateQuoteTotals(tasks = [], financialConfig = {}, options =
   const depositEnabled = advanceConfig.enabled === true;
   const depositAmount = depositEnabled ? parseFloat(advanceConfig.amount || 0) : 0;
 
-  // Calculate balance (total with VAT minus deposit)
-  const balanceAmount = totalWithVAT - depositAmount;
+  // depositAmount is EXCLUDING VAT (user enters amount excl VAT)
+  // Calculate deposit INCLUDING VAT for proper balance calculation
+  const depositWithVAT = vatEnabled && depositAmount > 0 
+    ? depositAmount * (1 + vatRate / 100) 
+    : depositAmount;
+
+  // Calculate balance (total with VAT minus deposit WITH VAT)
+  // Both balanceAmount and depositWithVAT are INCLUDING VAT for consistency
+  const balanceAmount = totalWithVAT - depositWithVAT;
 
   return {
     // Base amounts

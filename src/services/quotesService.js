@@ -1778,32 +1778,33 @@ export async function convertQuoteToInvoice(quote, userId) {
     // Calculate netAmount (after discount, before VAT)
     const netAmount = totalBeforeVAT - discountAmount;
     
-    // Calculate totalWithVAT from stored values
-    const totalWithVAT = balanceAmount > 0 && depositAmount > 0 
-      ? balanceAmount + depositAmount 
+    // Get VAT rate from financial config
+    const financialConfig = quoteData.quote_financial_configs?.[0] || {};
+    const vatConfig = financialConfig?.vat_config || {};
+    const vatRate = parseFloat(vatConfig.rate || 21) / 100; // Default to 21%
+    const depositEnabled = depositAmount > 0 || financialConfig?.advance_config?.enabled === true;
+
+    // depositAmount is stored EXCLUDING VAT in the quotes table
+    // Calculate deposit net amount and VAT directly (not proportionally)
+    const depositNetAmount = depositAmount; // depositAmount is already excl VAT
+    const depositTaxAmount = depositAmount * vatRate; // Calculate VAT on deposit
+    const depositTotalWithVAT = depositNetAmount + depositTaxAmount;
+
+    // Calculate final invoice amounts (balance)
+    // balanceAmount is stored INCLUDING VAT in the quotes table
+    const finalNetAmount = netAmount - depositNetAmount;
+    const finalTaxAmount = taxAmount - depositTaxAmount;
+    const finalTotalWithVAT = balanceAmount; // balanceAmount already includes VAT
+
+    // Calculate totalWithVAT for the entire project
+    const totalWithVAT = depositEnabled && balanceAmount > 0 && depositAmount > 0 
+      ? balanceAmount + depositTotalWithVAT 
       : totalBeforeVAT + taxAmount - discountAmount;
 
     // For invoice final_amount, use balanceAmount (totalWithVAT - deposit) 
     // This represents the amount the client needs to pay after deposit
     // If no deposit, balanceAmount equals totalWithVAT
     const invoiceFinalAmount = balanceAmount > 0 ? balanceAmount : totalWithVAT;
-
-    // Get financial config from quoteData to check if deposit is enabled
-    const financialConfig = quoteData.quote_financial_configs?.[0] || {};
-    const depositEnabled = depositAmount > 0 || financialConfig?.advance_config?.enabled === true;
-
-    // Calculate deposit net amount and VAT proportionally
-    // If deposit is a percentage of total, calculate proportional VAT
-    const depositNetAmount = depositAmount > 0 && totalWithVAT > 0 
-      ? (depositAmount / totalWithVAT) * netAmount 
-      : depositAmount;
-    const depositTaxAmount = depositAmount > 0 && totalWithVAT > 0
-      ? (depositAmount / totalWithVAT) * taxAmount
-      : 0;
-
-    // Calculate final invoice amounts (balance)
-    const finalNetAmount = netAmount - depositNetAmount;
-    const finalTaxAmount = taxAmount - depositTaxAmount;
 
     const invoicesToCreate = [];
     let createdInvoices = []; // Declare here to be accessible in both branches
@@ -1833,7 +1834,7 @@ export async function convertQuoteToInvoice(quote, userId) {
         net_amount: depositNetAmount,
         tax_amount: depositTaxAmount,
         discount_amount: 0, // Discount already applied to total
-        final_amount: depositAmount, // Deposit amount (TTC)
+        final_amount: depositTotalWithVAT, // Deposit amount INCLUDING VAT
         issue_date: new Date().toISOString().split('T')[0], // Issue date can be different (deposit issued when quote accepted)
         due_date: invoiceDueDate, // Same due date for both deposit and final (from quote)
         payment_method: 'À définir',

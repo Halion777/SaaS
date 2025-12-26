@@ -362,9 +362,14 @@ const QuotesManagement = () => {
             const depositAmount = parseFloat(quote.deposit_amount || 0);
             const balanceAmount = parseFloat(quote.balance_amount || 0);
             
-            // Calculate total with VAT: if deposit enabled, total = balance + deposit, otherwise total = total_before_vat + vat - discount
+            // Calculate total with VAT: if deposit enabled, balance (incl VAT) + deposit with VAT
+            // depositAmount is EXCL VAT, balanceAmount is INCL VAT
+            // Need to calculate deposit with VAT first
+            const vatConfig = quote.quote_financial_configs?.[0]?.vat_config || {};
+            const vatRate = parseFloat(vatConfig.rate || 21) / 100;
+            const depositWithVAT = depositAmount > 0 ? depositAmount * (1 + vatRate) : 0;
             const totalWithVAT = balanceAmount > 0 && depositAmount > 0 
-              ? balanceAmount + depositAmount 
+              ? balanceAmount + depositWithVAT 
               : totalBeforeVAT + vatAmount - discountAmount;
             
             return {

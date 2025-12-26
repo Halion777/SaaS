@@ -231,6 +231,13 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose, allInvoices = [] }) => {
                   const balanceAmount = invoice.peppol_metadata?.balance_amount || (quote?.balance_amount ? parseFloat(quote.balance_amount) : 0);
                   const depositEnabled = depositAmount > 0;
                   
+                  // depositAmount is stored EXCL VAT, calculate deposit WITH VAT
+                  const invoiceNet = parseFloat(invoice.netAmount || 0);
+                  const invoiceVAT = parseFloat(invoice.taxAmount || 0);
+                  const vatRate = invoiceNet > 0 ? invoiceVAT / invoiceNet : 0.21;
+                  const depositWithVAT = depositAmount > 0 ? depositAmount * (1 + vatRate) : 0;
+                  const depositVATAmount = depositWithVAT - depositAmount;
+                  
                   // Check if deposit invoice is paid for the same quote (for final invoices)
                   let isDepositPaid = false;
                   if (invoiceType === 'final' && invoice.quoteId) {
@@ -248,30 +255,23 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose, allInvoices = [] }) => {
                   
                   // For deposit invoices, show full project amounts
                   if (invoiceType === 'deposit' && depositEnabled && quote) {
-                    // Calculate total with VAT from quote (deposit + balance)
+                    // Calculate total with VAT from quote (depositWithVAT + balance)
                     if (quote.deposit_amount && quote.balance_amount) {
-                      const quoteDeposit = parseFloat(quote.deposit_amount || 0);
                       const quoteBalance = parseFloat(quote.balance_amount || 0);
-                      totalWithVAT = quoteDeposit + quoteBalance; // Full project total with VAT
-                      
-                      // Show FULL project subtotal and VAT
-                      const invoiceNet = parseFloat(invoice.netAmount || 0);
-                      const invoiceVAT = parseFloat(invoice.taxAmount || 0);
-                      const vatRate = invoiceNet > 0 ? invoiceVAT / invoiceNet : 0.21;
+                      totalWithVAT = depositWithVAT + quoteBalance; // Full project total with VAT
                       
                       // Calculate full project amounts
                       subtotal = totalWithVAT / (1 + vatRate); // Full project subtotal (excl VAT)
                       taxAmount = totalWithVAT - subtotal; // Full project VAT
                       
-                      // For deposit invoice, the payable amount is just the deposit
-                      total = quoteDeposit;
+                      // For deposit invoice, the payable amount is the deposit WITH VAT
+                      total = depositWithVAT;
                     }
                   } else if (invoiceType === 'final' && depositEnabled) {
                     // For final invoices, calculate full project amounts from quote
                     if (quote && quote.deposit_amount && quote.balance_amount) {
-                      const quoteDeposit = parseFloat(quote.deposit_amount || 0);
                       const quoteBalance = parseFloat(quote.balance_amount || 0);
-                      totalWithVAT = quoteDeposit + quoteBalance; // Full project total with VAT
+                      totalWithVAT = depositWithVAT + quoteBalance; // Full project total with VAT
                       
                       // Calculate full project subtotal and VAT from totalWithVAT
                       // Get VAT rate from invoice or use 21% default
@@ -354,7 +354,19 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose, allInvoices = [] }) => {
                                   <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-blue-700">
                                     {i18n.language === 'fr' ? 'Paiement avant travaux:' : i18n.language === 'nl' ? 'Betaling voor werk:' : 'Payment before work:'}
                                   </td>
-                                  <td className="px-4 py-3 text-sm font-bold text-blue-700 text-right">{formatCurrency(depositAmount)}</td>
+                                  <td className="px-4 py-3 text-sm font-bold text-blue-700 text-right">{formatCurrency(depositWithVAT)}</td>
+                                </tr>
+                                <tr className="bg-blue-50/50">
+                                  <td colSpan="4" className="px-4 py-2 text-xs text-blue-600 pl-8">
+                                    {i18n.language === 'fr' ? 'HT:' : i18n.language === 'nl' ? 'Excl. BTW:' : 'Excl. VAT:'}
+                                  </td>
+                                  <td className="px-4 py-2 text-xs text-blue-600 text-right">{formatCurrency(depositAmount)}</td>
+                                </tr>
+                                <tr className="bg-blue-50/50">
+                                  <td colSpan="4" className="px-4 py-2 text-xs text-blue-600 pl-8">
+                                    {i18n.language === 'fr' ? 'TVA:' : i18n.language === 'nl' ? 'BTW:' : 'VAT:'}
+                                  </td>
+                                  <td className="px-4 py-2 text-xs text-blue-600 text-right">{formatCurrency(depositVATAmount)}</td>
                                 </tr>
                                 {balanceAmount > 0 && (
                                   <tr className="bg-muted/20">
@@ -377,15 +389,27 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose, allInvoices = [] }) => {
                                     {i18n.language === 'fr' ? 'Restant:' : i18n.language === 'nl' ? 'Resterend:' : 'Remaining:'}
                                   </td>
                                   <td className="px-4 py-3 text-base font-bold text-blue-700 text-right">
-                                    {formatCurrency(totalWithVAT - depositAmount)}
+                                    {formatCurrency(totalWithVAT - depositWithVAT)}
                                   </td>
+                                </tr>
+                                <tr className="bg-blue-50/50">
+                                  <td colSpan="4" className="px-4 py-2 text-xs text-blue-600 pl-8">
+                                    {i18n.language === 'fr' ? 'HT:' : i18n.language === 'nl' ? 'Excl. BTW:' : 'Excl. VAT:'}
+                                  </td>
+                                  <td className="px-4 py-2 text-xs text-blue-600 text-right">{formatCurrency((totalWithVAT - depositWithVAT) / (1 + vatRate))}</td>
+                                </tr>
+                                <tr className="bg-blue-50/50">
+                                  <td colSpan="4" className="px-4 py-2 text-xs text-blue-600 pl-8">
+                                    {i18n.language === 'fr' ? 'TVA:' : i18n.language === 'nl' ? 'BTW:' : 'VAT:'}
+                                  </td>
+                                  <td className="px-4 py-2 text-xs text-blue-600 text-right">{formatCurrency((totalWithVAT - depositWithVAT) - ((totalWithVAT - depositWithVAT) / (1 + vatRate)))}</td>
                                 </tr>
                                 <tr className={isDepositPaid ? "bg-green-50" : "bg-yellow-50"}>
                                   <td colSpan="4" className={`px-4 py-3 text-sm font-semibold ${isDepositPaid ? 'text-green-700' : 'text-yellow-700'}`}>
                                     {i18n.language === 'fr' ? 'Payé:' : i18n.language === 'nl' ? 'Betaald:' : 'Paid:'}
                                   </td>
                                   <td className={`px-4 py-3 text-sm font-semibold ${isDepositPaid ? 'text-green-700' : 'text-yellow-700'} text-right`}>
-                                    {formatCurrency(depositAmount)}
+                                    {formatCurrency(depositWithVAT)}
                                   </td>
                                 </tr>
                               </>

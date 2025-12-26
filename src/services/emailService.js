@@ -51,15 +51,26 @@ export class EmailService {
     // Calculate netAmount (after discount, before VAT)
     const netAmount = totalBeforeVAT - discountAmount;
     
-    // Calculate totalWithVAT from stored values
-    const totalWithVAT = balanceAmount > 0 && depositAmount > 0 
-      ? balanceAmount + depositAmount 
-      : totalBeforeVAT + vatAmount - discountAmount;
-    
-    // Get financial config for flags
+    // Get financial config for flags and VAT rate
     const financialConfig = quote.quote_financial_configs?.[0] || {};
     const vatConfig = financialConfig?.vatConfig || financialConfig?.vat_config || {};
     const advanceConfig = financialConfig?.advanceConfig || financialConfig?.advance_config || {};
+    
+    // Calculate VAT rate - try from config first, then calculate from actual amounts as fallback
+    let vatRate = parseFloat(vatConfig.rate || 0) / 100;
+    if (vatRate === 0 && totalBeforeVAT > 0 && vatAmount > 0) {
+      // Fallback: calculate VAT rate from actual amounts
+      vatRate = vatAmount / totalBeforeVAT;
+    }
+    
+    // depositAmount is stored EXCL VAT, calculate deposit WITH VAT
+    const depositWithVAT = depositAmount > 0 ? depositAmount * (1 + vatRate) : 0;
+    
+    // Calculate totalWithVAT from stored values
+    // balanceAmount is INCL VAT, depositWithVAT is INCL VAT
+    const totalWithVAT = balanceAmount > 0 && depositAmount > 0 
+      ? balanceAmount + depositWithVAT 
+      : totalBeforeVAT + vatAmount - discountAmount;
     
     return {
       totalBeforeVAT,
@@ -67,7 +78,8 @@ export class EmailService {
       vatAmount,
       totalWithVAT,
       discountAmount,
-      depositAmount,
+      depositAmount,        // Keep for backward compatibility (excl VAT)
+      depositWithVAT,       // New: deposit INCLUDING VAT (for display)
       balanceAmount,
       vatEnabled: vatConfig.display !== false && vatConfig.display !== undefined,
       vatRate: parseFloat(vatConfig.rate || 0),
@@ -471,17 +483,13 @@ export class EmailService {
       // Calculate financial breakdown for email variables
       const financialBreakdown = this.calculateFinancialBreakdown(quote);
       
-      // Use balanceAmount (total with VAT minus deposit) for quote_amount to be consistent with other emails
-      // This shows the amount the client needs to pay after deposit
-      // Always prioritize balanceAmount - if it's 0 or undefined, recalculate to ensure accuracy
+      // Use totalWithVAT for quote_amount to show the full quote value
+      // When deposit is enabled, the breakdown will show deposit and balance separately
       let displayAmount;
-      if (financialBreakdown.balanceAmount !== undefined && financialBreakdown.balanceAmount !== null) {
-        displayAmount = this.formatAmount(financialBreakdown.balanceAmount);
-      } else if (financialBreakdown.totalWithVAT !== undefined && financialBreakdown.totalWithVAT !== null) {
-        // If balanceAmount is not available, use totalWithVAT (deposit might not be enabled)
+      if (financialBreakdown.totalWithVAT !== undefined && financialBreakdown.totalWithVAT !== null && financialBreakdown.totalWithVAT > 0) {
         displayAmount = this.formatAmount(financialBreakdown.totalWithVAT);
       } else {
-        // Last resort: use stored final_amount (which should now be balanceAmount after our fix)
+        // Fallback: use stored final_amount or total_amount
         displayAmount = this.formatAmount(parseFloat(quote.final_amount || quote.total_amount || 0));
       }
       
@@ -503,7 +511,7 @@ export class EmailService {
         vat_amount: this.formatAmount(financialBreakdown.vatAmount),
         total_with_vat: this.formatAmount(financialBreakdown.totalWithVAT),
         deposit_enabled: financialBreakdown.depositEnabled ? 'true' : 'false',
-        deposit_amount: this.formatAmount(financialBreakdown.depositAmount),
+        deposit_amount: this.formatAmount(financialBreakdown.depositWithVAT),
         balance_amount: this.formatAmount(financialBreakdown.balanceAmount)
       };
       
@@ -690,7 +698,7 @@ export class EmailService {
         client_name: client.name || 'Madame, Monsieur',
         quote_number: quote.quote_number,
         quote_title: quote.title || quote.project_description || 'Votre projet',
-        quote_amount: this.formatAmount(financialBreakdown.balanceAmount),
+        quote_amount: this.formatAmount(financialBreakdown.totalWithVAT),
         quote_link: shareToken ? `${BASE_URL}/quote-share/${shareToken}` : '#',
         days_since_sent: daysSinceSent || 'quelques',
         company_name: companyProfile?.company_name || companyProfile?.name || 'Notre entreprise',
@@ -702,7 +710,7 @@ export class EmailService {
         vat_amount: this.formatAmount(financialBreakdown.vatAmount),
         total_with_vat: this.formatAmount(financialBreakdown.totalWithVAT),
         deposit_enabled: financialBreakdown.depositEnabled ? 'true' : 'false',
-        deposit_amount: this.formatAmount(financialBreakdown.depositAmount),
+        deposit_amount: this.formatAmount(financialBreakdown.depositWithVAT),
         balance_amount: this.formatAmount(financialBreakdown.balanceAmount)
       };
       
@@ -765,7 +773,7 @@ export class EmailService {
       const variables = {
         client_name: client.name || 'Madame, Monsieur',
         quote_number: quote.quote_number,
-        quote_amount: this.formatAmount(financialBreakdown.balanceAmount),
+        quote_amount: this.formatAmount(financialBreakdown.totalWithVAT),
         quote_link: shareToken ? `${BASE_URL}/quote-share/${shareToken}` : '#',
         company_name: companyProfile?.company_name || companyProfile?.name || 'Notre entreprise',
         // Financial breakdown variables
@@ -776,7 +784,7 @@ export class EmailService {
         vat_amount: this.formatAmount(financialBreakdown.vatAmount),
         total_with_vat: this.formatAmount(financialBreakdown.totalWithVAT),
         deposit_enabled: financialBreakdown.depositEnabled ? 'true' : 'false',
-        deposit_amount: this.formatAmount(financialBreakdown.depositAmount),
+        deposit_amount: this.formatAmount(financialBreakdown.depositWithVAT),
         balance_amount: this.formatAmount(financialBreakdown.balanceAmount)
       };
       
@@ -825,7 +833,7 @@ export class EmailService {
         quote_number: quote.quote_number,
         company_name: companyProfile?.company_name || companyProfile?.name || 'Notre entreprise',
         // Financial breakdown variables (optional for rejected emails but included for consistency)
-        quote_amount: this.formatAmount(financialBreakdown.balanceAmount),
+        quote_amount: this.formatAmount(financialBreakdown.totalWithVAT),
         total_before_vat: this.formatAmount(financialBreakdown.totalBeforeVAT),
         vat_enabled: financialBreakdown.vatEnabled ? 'true' : 'false',
         vat_rate: financialBreakdown.vatRate.toString(),
@@ -833,7 +841,7 @@ export class EmailService {
         vat_amount: this.formatAmount(financialBreakdown.vatAmount),
         total_with_vat: this.formatAmount(financialBreakdown.totalWithVAT),
         deposit_enabled: financialBreakdown.depositEnabled ? 'true' : 'false',
-        deposit_amount: this.formatAmount(financialBreakdown.depositAmount),
+        deposit_amount: this.formatAmount(financialBreakdown.depositWithVAT),
         balance_amount: this.formatAmount(financialBreakdown.balanceAmount)
       };
       
@@ -988,7 +996,7 @@ export class EmailService {
         client_name: client.name || 'Madame, Monsieur',
         quote_number: quote.quote_number,
         quote_title: quote.title || quote.description || 'Votre projet',
-        quote_amount: this.formatAmount(financialBreakdown.balanceAmount),
+        quote_amount: this.formatAmount(financialBreakdown.totalWithVAT),
         quote_link: shareToken ? `${BASE_URL}/quote-share/${shareToken}` : '#',
         valid_until: quote.valid_until ? new Date(quote.valid_until).toLocaleDateString('fr-FR') : '30 jours',
         company_name: companyProfile?.company_name || companyProfile?.name || 'Notre entreprise',
@@ -1002,7 +1010,7 @@ export class EmailService {
         vat_amount: this.formatAmount(financialBreakdown.vatAmount),
         total_with_vat: this.formatAmount(financialBreakdown.totalWithVAT),
         deposit_enabled: financialBreakdown.depositEnabled ? 'true' : 'false',
-        deposit_amount: this.formatAmount(financialBreakdown.depositAmount),
+        deposit_amount: this.formatAmount(financialBreakdown.depositWithVAT),
         balance_amount: this.formatAmount(financialBreakdown.balanceAmount)
       };
       

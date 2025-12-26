@@ -303,11 +303,14 @@ const PublicQuoteShareViewer = () => {
   const depositAmount = parseFloat(quote.deposit_amount || 0);
   const balanceAmount = parseFloat(quote.balance_amount || 0);
   
+  // depositAmount is stored EXCL VAT, calculate deposit WITH VAT
+  const vatRate = totalBeforeVAT > 0 ? vatAmount / totalBeforeVAT : 0;
+  const depositWithVAT = depositAmount > 0 ? depositAmount * (1 + vatRate) : 0;
+  
   // Calculate totalWithVAT from stored values
-  // If balance_amount exists, totalWithVAT = balanceAmount + depositAmount
-  // Otherwise, calculate from total_amount + tax_amount
+  // balanceAmount is INCL VAT, depositWithVAT is INCL VAT
   const totalWithVAT = balanceAmount > 0 && depositAmount > 0 
-    ? balanceAmount + depositAmount 
+    ? balanceAmount + depositWithVAT 
     : totalBeforeVAT + vatAmount - discountAmount;
 
   // Helper function to format VAT number with country prefix
@@ -735,8 +738,8 @@ const PublicQuoteShareViewer = () => {
                 {(depositAmount > 0 || (financialConfig.advanceConfig?.enabled && financialConfig.advanceConfig.amount > 0)) ? (
                   <>
                   <div className="flex justify-between text-gray-600 text-xs sm:text-sm">
-                    <span>{t('quoteShare.financial.paymentBeforeWork', 'Payment Before Work')}:</span>
-                  <span className="font-medium">{currency(depositAmount)}</span>
+                      <span>{t('quoteShare.financial.paymentBeforeWork', 'Payment Before Work')}:</span>
+                  <span className="font-medium">{currency(depositWithVAT)}</span>
                 </div>
                   <div className="flex justify-between text-gray-600 text-xs sm:text-sm">
                       <span>{t('quoteShare.financial.paymentAfterWork', 'Payment After Work')}:</span>
