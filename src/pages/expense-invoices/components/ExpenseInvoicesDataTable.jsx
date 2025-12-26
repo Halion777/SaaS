@@ -410,7 +410,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
         onSort={handleSort}
         showIcon={showIcon}
       />
-    );
+  );
   };
 
   const renderCardView = () => {

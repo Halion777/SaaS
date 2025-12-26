@@ -347,7 +347,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
         onSort={handleSort}
         showIcon={showIcon}
       />
-    );
+  );
   };
 
   const renderGroupedCardView = () => {

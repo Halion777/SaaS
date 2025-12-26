@@ -905,6 +905,8 @@
       "vatNumberPlaceholder": "Numéro de TVA de l'entreprise",
       "country": "Pays",
       "countryPlaceholder": "Sélectionnez votre pays",
+      "done": "Terminé",
+      "professionsSelected": "professions sélectionnées",
       "aiBoost": {
         "title": "Boostez vos signatures de 40%",
         "description": "Notre IA optimise automatiquement vos devis pour maximiser vos chances de signature."

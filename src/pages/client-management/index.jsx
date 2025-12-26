@@ -804,7 +804,7 @@ const ClientManagement = () => {
               <>
                 {viewMode === 'table' && (
                   <>
-                    <div className="overflow-x-auto">
+                  <div className="overflow-x-auto">
                       <table className="w-full min-w-[800px]">
                     <thead className="bg-muted/50">
                       <tr>
@@ -938,7 +938,7 @@ const ClientManagement = () => {
                         </tr>
                       ))}
                     </tbody>
-                      </table>
+                  </table>
                     </div>
                     {filteredClients.length > itemsPerPage && (
                       <div className="mt-4">
@@ -949,7 +949,7 @@ const ClientManagement = () => {
                           itemsPerPage={itemsPerPage}
                           onPageChange={setCurrentPage}
                         />
-                      </div>
+                  </div>
                     )}
                   </>
                 )}

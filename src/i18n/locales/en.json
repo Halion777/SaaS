@@ -904,6 +904,8 @@
       "vatNumberPlaceholder": "Company VAT number",
       "country": "Country",
       "countryPlaceholder": "Select your country",
+      "done": "Done",
+      "professionsSelected": "professions selected",
       "aiBoost": {
         "title": "Boost your signatures by 40%",
         "description": "Our AI automatically optimizes your quotes to maximize your chances of signing."

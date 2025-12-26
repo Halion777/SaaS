@@ -25,6 +25,7 @@ const StepOne = ({ formData, updateFormData, errors, onIncompleteRegistrationDet
   const [isVerifyingOTP, setIsVerifyingOTP] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [emailFormatError, setEmailFormatError] = useState('');
+  const [professionDropdownOpen, setProfessionDropdownOpen] = useState(false);
 
   // Email validation function - checks for proper email format
   const isValidEmail = (email) => {
@@ -348,6 +349,22 @@ const StepOne = ({ formData, updateFormData, errors, onIncompleteRegistrationDet
     setPhoneCountryCode(code);
   }, [formData.country]);
 
+  // Close profession dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (professionDropdownOpen && !event.target.closest('.profession-dropdown-container')) {
+        setProfessionDropdownOpen(false);
+      }
+    };
+
+    if (professionDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [professionDropdownOpen]);
+
   // Get the current unique value for the select
   const getCurrentSelectValue = () => {
     if (!phoneCountryCode) return '';
@@ -503,16 +520,128 @@ const StepOne = ({ formData, updateFormData, errors, onIncompleteRegistrationDet
         />
         </div>
         
-        <Select
-          label={t('registerForm.step1.profession')}
-          placeholder={t('registerForm.step1.professionPlaceholder')}
-          options={professionOptions}
-          value={formData.profession || []}
-          onChange={(e) => updateFormData('profession', e.target.value)}
-          error={errors.profession}
-          multiple
-          required
-        />
+        {/* Profession Selection with Custom Dropdown */}
+        <div className="profession-dropdown-container">
+          <label className="block text-sm font-medium text-foreground mb-2">
+            {t('registerForm.step1.profession')} <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setProfessionDropdownOpen(!professionDropdownOpen)}
+              className={`w-full h-10 pl-4 pr-4 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-all text-left flex items-center justify-between ${
+                errors.profession ? 'border-destructive' : 'border-border'
+              }`}
+            >
+              <span className={`flex-1 truncate ${(formData.profession || []).length > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
+                {(formData.profession || []).length > 0 
+                  ? (
+                    <>
+                      <span className="hidden sm:inline">
+                        {(formData.profession || []).map(prof => professionOptions.find(p => p.value === prof)?.label).filter(Boolean).join(', ')}
+                      </span>
+                      <span className="sm:hidden">
+                        {(formData.profession || []).length === 1 
+                          ? professionOptions.find(p => p.value === (formData.profession || [])[0])?.label
+                          : `${(formData.profession || []).length} ${t('registerForm.step1.professionsSelected', 'professions selected')}`
+                        }
+                      </span>
+                    </>
+                  )
+                  : t('registerForm.step1.professionPlaceholder')
+                }
+              </span>
+              <div className="text-muted-foreground flex-shrink-0 ml-2">
+                <Icon name="ChevronDown" className={`w-4 h-4 transition-transform ${professionDropdownOpen ? 'rotate-180' : ''}`} />
+              </div>
+            </button>
+            
+            {/* Dropdown Options */}
+            {professionDropdownOpen && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-popover text-popover-foreground border border-border rounded-md shadow-md z-10 flex flex-col max-h-60">
+                <div className="overflow-y-auto flex-1">
+                  {professionOptions.map(profession => (
+                    <button
+                      key={profession.value}
+                      type="button"
+                      onClick={() => {
+                        const currentProfessions = formData.profession || [];
+                        const newProfessions = currentProfessions.includes(profession.value)
+                          ? currentProfessions.filter(p => p !== profession.value)
+                          : [...currentProfessions, profession.value];
+                        updateFormData('profession', newProfessions);
+                      }}
+                      className={`w-full px-3 py-2 text-left text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground flex items-center rounded-sm ${
+                        (formData.profession || []).includes(profession.value) ? 'bg-accent text-accent-foreground' : 'text-foreground'
+                      }`}
+                    >
+                      <div className={`w-4 h-4 rounded mr-3 flex items-center justify-center ${
+                        (formData.profession || []).includes(profession.value) ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                      }`}>
+                        {(formData.profession || []).includes(profession.value) && (
+                          <Icon name="Check" className="w-3 h-3" />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 flex-1">
+                        {profession.icon && (
+                          <div className="flex-shrink-0">
+                            {profession.icon}
+                          </div>
+                        )}
+                        <span className="flex-1">{profession.label}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                
+                {/* Done Button */}
+                <div className="border-t border-border p-2 bg-popover sticky bottom-0">
+                  <button
+                    type="button"
+                    onClick={() => setProfessionDropdownOpen(false)}
+                    className="w-full px-4 py-2 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  >
+                    {t('registerForm.step1.done')}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Selected Professions Display */}
+          {(formData.profession || []).length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {(formData.profession || []).map(professionValue => {
+                const professionInfo = professionOptions.find(p => p.value === professionValue);
+                return (
+                  <span
+                    key={professionValue}
+                    className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary text-sm rounded-full border border-primary/20"
+                  >
+                    <Icon name="CheckCircle" size={14} className="text-primary" />
+                    {professionInfo?.label || professionValue}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newProfessions = (formData.profession || []).filter(p => p !== professionValue);
+                        updateFormData('profession', newProfessions);
+                      }}
+                      className="ml-1 hover:bg-primary/20 rounded-full p-0.5 transition-colors"
+                    >
+                      <Icon name="X" size={12} className="text-primary" />
+                    </button>
+                  </span>
+                );
+              })}
+            </div>
+          )}
+          
+          {errors.profession && (
+            <p className="text-sm text-destructive mt-1">
+              {errors.profession}
+            </p>
+          )}
+        </div>
 
         <div className="space-y-2">
           <div className="space-y-2">

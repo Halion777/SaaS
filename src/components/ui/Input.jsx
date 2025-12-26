@@ -240,26 +240,26 @@ const Input = React.forwardRef(({
             )}
 
             <div className="relative">
-                <input
+            <input
                     type={type === "password" ? (showPassword ? "text" : "password") : type}
-                    value={internalValue}
-                    onChange={handleChange}
-                    onKeyDown={handleKeyDown}
-                    onClick={type === "date" || type === "datetime-local" || type === "time" || type === "month" || type === "week" ? handleDateClick : undefined}
-                    className={cn(
-                        baseInputClasses,
-                        finalError && "border-destructive focus-visible:ring-destructive",
-                        (type === "date" || type === "datetime-local" || type === "time" || type === "month" || type === "week") && "cursor-pointer",
+                value={internalValue}
+                onChange={handleChange}
+                onKeyDown={handleKeyDown}
+                onClick={type === "date" || type === "datetime-local" || type === "time" || type === "month" || type === "week" ? handleDateClick : undefined}
+                className={cn(
+                    baseInputClasses,
+                    finalError && "border-destructive focus-visible:ring-destructive",
+                    (type === "date" || type === "datetime-local" || type === "time" || type === "month" || type === "week") && "cursor-pointer",
                         type === "password" && "pr-10",
-                        className
-                    )}
-                    ref={inputRef}
-                    id={inputId}
-                    min={type === "number" ? (min !== undefined ? min : 0) : undefined}
-                    max={type === "number" ? max : undefined}
-                    maxLength={getDefaultMaxLength()}
-                    {...props}
-                />
+                    className
+                )}
+                ref={inputRef}
+                id={inputId}
+                min={type === "number" ? (min !== undefined ? min : 0) : undefined}
+                max={type === "number" ? max : undefined}
+                maxLength={getDefaultMaxLength()}
+                {...props}
+            />
                 {type === "password" && (
                     <button
                         type="button"

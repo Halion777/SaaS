@@ -904,6 +904,8 @@
       "vatNumberPlaceholder": "BTW-nummer van het bedrijf",
       "country": "Land",
       "countryPlaceholder": "Selecteer je land",
+      "done": "Klaar",
+      "professionsSelected": "beroepen geselecteerd",
       "aiBoost": {
         "title": "Boost je handtekeningen met 40%",
         "description": "Onze AI optimaliseert automatisch je offertes om je kansen op ondertekening te maximaliseren."

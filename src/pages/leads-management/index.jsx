@@ -423,11 +423,11 @@ const LeadsManagementPage = () => {
       
       {/* Filter Toolbar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
-        <LeadsFilterToolbar
-          filters={filters}
-          onFiltersChange={handleFiltersChange}
-          filteredCount={filteredLeads.length}
-        />
+      <LeadsFilterToolbar
+        filters={filters}
+        onFiltersChange={handleFiltersChange}
+        filteredCount={filteredLeads.length}
+      />
         <div className="flex items-center gap-2">
           <label className="text-sm text-muted-foreground">{t('common.sort', 'Sort by')}:</label>
           <select
@@ -464,7 +464,7 @@ const LeadsManagementPage = () => {
         </div>
       ) : (
         <>
-          <div className="space-y-6">
+        <div className="space-y-6">
             {paginatedLeads.map((lead) => (
             <div key={lead.lead_id} className="relative bg-gradient-to-br from-card to-card/80 border border-border rounded-xl p-4 sm:p-6 overflow-hidden">
               {/* Subtle background pattern */}
@@ -671,7 +671,7 @@ const LeadsManagementPage = () => {
                 itemsPerPage={itemsPerPage}
                 onPageChange={setCurrentPage}
               />
-            </div>
+        </div>
           )}
         </>
       )}
