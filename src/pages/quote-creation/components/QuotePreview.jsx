@@ -625,6 +625,7 @@ const QuotePreview = ({
                 }}
                 materialPriceDisplay={financialConfig.materialPriceDisplay}
                 onMaterialPriceDisplayChange={(value) => handleFinancialConfigChange('materialPriceDisplay', value)}
+                maxDepositAmount={totalBeforeVAT} // Pass total before VAT to limit deposit amount
               />
             )}
           </div>

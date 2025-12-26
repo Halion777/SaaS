@@ -1970,32 +1970,45 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
               
               {/* Dropdown Options */}
               {categoryDropdownOpen && (
-                <div className="category-dropdown absolute top-full left-0 right-0 mt-1 bg-popover text-popover-foreground border border-border rounded-md shadow-md z-10 max-h-60 overflow-y-auto">
-                  {categoryOptions.map(category => (
+                <div className="category-dropdown absolute top-full left-0 right-0 mt-1 bg-popover text-popover-foreground border border-border rounded-md shadow-md z-10 flex flex-col max-h-60">
+                  <div className="overflow-y-auto flex-1">
+                    {categoryOptions.map(category => (
+                      <button
+                        key={category.value}
+                        type="button"
+                        onClick={() => {
+                          const currentCategories = projectInfo.categories || [];
+                          const newCategories = currentCategories.includes(category.value)
+                            ? currentCategories.filter(c => c !== category.value)
+                            : [...currentCategories, category.value];
+                          handleProjectChange('categories', newCategories);
+                        }}
+                        className={`w-full px-3 py-2 text-left text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground flex items-center rounded-sm ${
+                          projectInfo.categories?.includes(category.value) ? 'bg-accent text-accent-foreground' : 'text-foreground'
+                        }`}
+                      >
+                        <div className={`w-4 h-4 rounded mr-3 flex items-center justify-center ${
+                          projectInfo.categories?.includes(category.value) ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                        }`}>
+                          {projectInfo.categories?.includes(category.value) && (
+                            <Icon name="Check" className="w-3 h-3" />
+                          )}
+                        </div>
+                        <span className="flex-1">{category.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {/* Done Button */}
+                  <div className="border-t border-border p-2 bg-popover sticky bottom-0">
                     <button
-                      key={category.value}
                       type="button"
-                      onClick={() => {
-                        const currentCategories = projectInfo.categories || [];
-                        const newCategories = currentCategories.includes(category.value)
-                          ? currentCategories.filter(c => c !== category.value)
-                          : [...currentCategories, category.value];
-                        handleProjectChange('categories', newCategories);
-                      }}
-                      className={`w-full px-3 py-2 text-left text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground flex items-center rounded-sm ${
-                        projectInfo.categories?.includes(category.value) ? 'bg-accent text-accent-foreground' : 'text-foreground'
-                      }`}
+                      onClick={() => setCategoryDropdownOpen(false)}
+                      className="w-full px-4 py-2 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                     >
-                      <div className={`w-4 h-4 rounded mr-3 flex items-center justify-center ${
-                        projectInfo.categories?.includes(category.value) ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                      }`}>
-                        {projectInfo.categories?.includes(category.value) && (
-                          <Icon name="Check" className="w-3 h-3" />
-                        )}
-                      </div>
-                      <span className="flex-1">{category.label}</span>
+                      {t('quoteCreation.projectInfo.done', 'Done')}
                     </button>
-                  ))}
+                  </div>
                 </div>
               )}
             </div>

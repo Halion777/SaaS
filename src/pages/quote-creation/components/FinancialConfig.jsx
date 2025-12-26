@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Icon from '../../../components/AppIcon';
 import { useTranslation } from 'react-i18next';
+import Input from '../../../components/ui/Input';
 
 const FinancialConfig = ({ 
   vatConfig, 
@@ -12,9 +13,11 @@ const FinancialConfig = ({
   defaultConditions,
   onDefaultConditionsChange,
   materialPriceDisplay,
-  onMaterialPriceDisplayChange
+  onMaterialPriceDisplayChange,
+  maxDepositAmount = null // Total amount (EXCL VAT) to limit deposit
 }) => {
   const { t } = useTranslation();
+  const [depositError, setDepositError] = useState('');
   const getDefaultText = (language) => {
     switch(language) {
       case 'FR':
@@ -51,6 +54,13 @@ const FinancialConfig = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Clear deposit error when deposit is disabled or when maxDepositAmount changes
+  useEffect(() => {
+    if (!advanceConfig.enabled) {
+      setDepositError('');
+    }
+  }, [advanceConfig.enabled, maxDepositAmount]);
 
   return (
     <div className="space-y-4">
@@ -126,22 +136,54 @@ const FinancialConfig = ({
         
         {advanceConfig.enabled && (
           <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
-            <label className="block text-xs font-medium text-gray-700 mb-2">
-              {t('quoteCreation.financialConfig.depositAmount', "Montant de l'acompte")} (€)
-            </label>
-            <div className="relative">
-              <input 
-                type="number"
-                value={advanceConfig.amount}
-                onChange={(e) => onAdvanceConfigChange('amount', parseFloat(e.target.value))}
-                min="0"
-                className="w-full p-2 pl-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm"
-                placeholder="0.00"
-              />
-              <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
-                <span className="text-gray-500 text-xs">€</span>
-              </div>
-            </div>
+            <Input
+              label={t('quoteCreation.financialConfig.depositAmount', "Montant de l'acompte") + " (€)"}
+              type="number"
+              value={advanceConfig.amount || ''}
+              onChange={(e) => {
+                const inputValue = e.target.value;
+                
+                // Clear error on change
+                setDepositError('');
+                
+                // Handle empty input
+                if (inputValue === '' || inputValue === null || inputValue === undefined) {
+                  onAdvanceConfigChange('amount', '');
+                  return;
+                }
+                
+                let numValue = parseFloat(inputValue);
+                
+                // Handle invalid input
+                if (isNaN(numValue)) {
+                  onAdvanceConfigChange('amount', '');
+                  return;
+                }
+                
+                // Check for negative values
+                if (numValue < 0) {
+                  setDepositError(t('quoteCreation.financialConfig.depositAmountNegative', 'Le montant ne peut pas être négatif'));
+                  numValue = 0; // Auto-correct to 0
+                }
+                
+                // Check for values exceeding total amount
+                if (maxDepositAmount !== null && maxDepositAmount > 0 && numValue > maxDepositAmount) {
+                  setDepositError(t('quoteCreation.financialConfig.depositAmountExceeds', 'Le montant ne peut pas dépasser le total du devis ({{amount}} €)', { amount: maxDepositAmount.toFixed(2) }));
+                  numValue = maxDepositAmount; // Auto-correct to max
+                }
+                
+                onAdvanceConfigChange('amount', numValue);
+              }}
+              min={0}
+              max={maxDepositAmount !== null && maxDepositAmount > 0 ? maxDepositAmount : undefined}
+              placeholder="0.00"
+              description={
+                maxDepositAmount !== null && maxDepositAmount > 0
+                  ? t('quoteCreation.financialConfig.depositAmountMax', 'Maximum: {{amount}} €', { amount: maxDepositAmount.toFixed(2) })
+                  : undefined
+              }
+              error={depositError}
+            />
           </div>
         )}
       </div>

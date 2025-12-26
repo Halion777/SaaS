@@ -36,6 +36,7 @@ const Select = React.forwardRef(({
     const selectRef = useRef(null);
     const dropdownRef = useRef(null);
     const searchInputRef = useRef(null);
+    const isTogglingRef = useRef(false); // Track if we're toggling to prevent click outside interference
     const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
     const [openUpward, setOpenUpward] = useState(false);
 
@@ -45,26 +46,34 @@ const Select = React.forwardRef(({
     // Close dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
+            // Don't close if we're currently toggling (user clicked the trigger button)
+            if (isTogglingRef.current) {
+                return;
+            }
+            
             // Check if click is outside both the select trigger and the dropdown (portal)
             const isClickInSelect = selectRef.current && selectRef.current.contains(event.target);
             const isClickInDropdown = dropdownRef.current && dropdownRef.current.contains(event.target);
             
+            // Only close if clicking completely outside
             if (!isClickInSelect && !isClickInDropdown) {
                 setIsOpen(false);
                 setKeyboardFilter("");
+                setSearchQuery("");
                 onOpenChange?.(false);
             }
         };
 
         if (isOpen) {
-            // Use a small delay to ensure the dropdown is rendered before checking clicks
+            // Use a small delay to ensure the dropdown is rendered
             const timeoutId = setTimeout(() => {
-                document.addEventListener('mousedown', handleClickOutside);
+                // Use 'click' with capture phase to catch clicks early
+                document.addEventListener('click', handleClickOutside, true);
             }, 0);
             
             return () => {
                 clearTimeout(timeoutId);
-                document.removeEventListener('mousedown', handleClickOutside);
+                document.removeEventListener('click', handleClickOutside, true);
             };
         }
     }, [isOpen, onOpenChange]);
@@ -203,13 +212,28 @@ const Select = React.forwardRef(({
         );
     };
 
-    const handleToggle = () => {
+    const handleToggle = (e) => {
         if (!disabled) {
+            // Mark that we're toggling to prevent click outside handler from interfering
+            isTogglingRef.current = true;
+            
+            // Stop propagation and prevent default to ensure toggle works correctly
+            if (e) {
+                e.stopPropagation();
+                e.preventDefault();
+            }
+            
             const newIsOpen = !isOpen;
             setIsOpen(newIsOpen);
             setKeyboardFilter(""); // Reset filter when toggling
             setSearchQuery(""); // Reset search query when toggling
             onOpenChange?.(newIsOpen);
+            
+            // Reset toggle flag after a longer delay to ensure click outside handler doesn't interfere
+            setTimeout(() => {
+                isTogglingRef.current = false;
+            }, 200);
+            
             // Focus search input when opening if searchable
             if (newIsOpen && searchable && searchInputRef.current) {
                 setTimeout(() => {
