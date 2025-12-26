@@ -334,15 +334,19 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose, allInvoices = [] }) => {
                             })}
                           </tbody>
                           <tfoot>
-                            <tr className="bg-muted/30">
-                              <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-foreground border-t border-border">{t('invoicesManagement.modal.invoiceLinesTable.subtotalExclVat', 'Subtotal Excl. VAT')}</td>
-                              <td className="px-4 py-3 text-sm font-semibold text-foreground border-t border-border text-right">{formatCurrency(subtotal)}</td>
-                            </tr>
-                            {taxAmount > 0 && (
-                              <tr className="bg-muted/30">
-                                <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-foreground">{t('invoicesManagement.modal.invoiceLinesTable.vat', 'VAT')}</td>
-                                <td className="px-4 py-3 text-sm font-semibold text-foreground text-right">{formatCurrency(taxAmount)}</td>
-                              </tr>
+                            {!depositEnabled && (
+                              <>
+                                <tr className="bg-muted/30">
+                                  <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-foreground border-t border-border">{t('invoicesManagement.modal.invoiceLinesTable.subtotalExclVat', 'Subtotal Excl. VAT')}</td>
+                                  <td className="px-4 py-3 text-sm font-semibold text-foreground border-t border-border text-right">{formatCurrency(subtotal)}</td>
+                                </tr>
+                                {taxAmount > 0 && (
+                                  <tr className="bg-muted/30">
+                                    <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-foreground">{t('invoicesManagement.modal.invoiceLinesTable.vat', 'VAT')}</td>
+                                    <td className="px-4 py-3 text-sm font-semibold text-foreground text-right">{formatCurrency(taxAmount)}</td>
+                                  </tr>
+                                )}
+                              </>
                             )}
                             {invoiceType === 'deposit' && depositEnabled && (
                               <>
@@ -411,6 +415,18 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose, allInvoices = [] }) => {
                                   <td className={`px-4 py-3 text-sm font-semibold ${isDepositPaid ? 'text-green-700' : 'text-yellow-700'} text-right`}>
                                     {formatCurrency(depositWithVAT)}
                                   </td>
+                                </tr>
+                                <tr className={isDepositPaid ? "bg-green-50/50" : "bg-yellow-50/50"}>
+                                  <td colSpan="4" className={`px-4 py-2 text-xs ${isDepositPaid ? 'text-green-600' : 'text-yellow-600'} pl-8`}>
+                                    {i18n.language === 'fr' ? 'HT:' : i18n.language === 'nl' ? 'Excl. BTW:' : 'Excl. VAT:'}
+                                  </td>
+                                  <td className={`px-4 py-2 text-xs ${isDepositPaid ? 'text-green-600' : 'text-yellow-600'} text-right`}>{formatCurrency(depositAmount)}</td>
+                                </tr>
+                                <tr className={isDepositPaid ? "bg-green-50/50" : "bg-yellow-50/50"}>
+                                  <td colSpan="4" className={`px-4 py-2 text-xs ${isDepositPaid ? 'text-green-600' : 'text-yellow-600'} pl-8`}>
+                                    {i18n.language === 'fr' ? 'TVA:' : i18n.language === 'nl' ? 'BTW:' : 'VAT:'}
+                                  </td>
+                                  <td className={`px-4 py-2 text-xs ${isDepositPaid ? 'text-green-600' : 'text-yellow-600'} text-right`}>{formatCurrency(depositVATAmount)}</td>
                                 </tr>
                               </>
                             )}
