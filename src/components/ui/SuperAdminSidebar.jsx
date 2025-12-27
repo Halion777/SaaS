@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../services/supabaseClient';
+import { resetPassword } from '../../services/authService';
 import Icon from '../AppIcon';
 import NavigationItem from './NavigationItem';
 import { useScrollPosition } from '../../utils/useScrollPosition';
@@ -20,6 +21,10 @@ const SuperAdminSidebar = () => {
     customization: false,
     integrations: false
   });
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+  const [isSendingPasswordReset, setIsSendingPasswordReset] = useState(false);
+  const profileDropdownRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -54,6 +59,33 @@ const SuperAdminSidebar = () => {
       setIsCollapsed(JSON.parse(savedCollapsed));
     }
   }, [isTablet]);
+
+  // Get current user email
+  useEffect(() => {
+    const getUserEmail = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) {
+        setUserEmail(user.email);
+      }
+    };
+    getUserEmail();
+  }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
+        setIsProfileDropdownOpen(false);
+      }
+    };
+
+    if (isProfileDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [isProfileDropdownOpen]);
 
   // Auto-expand the correct section based on current route
   useEffect(() => {
@@ -126,12 +158,50 @@ const SuperAdminSidebar = () => {
       // Sign out from Supabase
       await supabase.auth.signOut();
       
+      // Close dropdown
+      setIsProfileDropdownOpen(false);
+      
       // Navigate to main login
       navigate('/login');
     } catch (error) {
       console.error('Superadmin logout error:', error);
       // Fallback: redirect to main login page
       navigate('/login');
+    }
+  };
+
+  const handleResetPassword = async () => {
+    // Prevent multiple simultaneous calls
+    if (isSendingPasswordReset) {
+      return;
+    }
+
+    if (!userEmail) {
+      alert('No email address found');
+      return;
+    }
+
+    setIsSendingPasswordReset(true);
+    
+    try {
+      const { error } = await resetPassword(userEmail);
+      
+      if (error) {
+        // Handle rate limit error specifically
+        if (error.code === 'over_email_send_rate_limit' || error.message?.includes('rate limit')) {
+          alert('Email rate limit exceeded\n\nPlease wait 1 hour before requesting another password reset email. You are Using free plan which has a rate limit of 2 email per hour.');
+        } else {
+          alert(`Failed to send password reset email:\n${error.message || 'An error occurred'}`);
+        }
+      } else {
+        alert('Password reset email sent!\n\nPlease check your inbox and click the link to reset your password.');
+        setIsProfileDropdownOpen(false);
+      }
+    } catch (error) {
+      console.error('Error sending password reset email:', error);
+      alert('An unexpected error occurred. Please try again later.');
+    } finally {
+      setIsSendingPasswordReset(false);
     }
   };
 
@@ -258,38 +328,95 @@ const SuperAdminSidebar = () => {
 
   if (isMobile) {
     return (
-      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-100">
-        <div ref={mobileNavRef} className="flex overflow-x-auto scrollbar-hide h-16 px-4">
-          <div className="flex items-center space-x-2 min-w-full">
-            {flatNavigationItems.map((item) => (
-              <NavigationItem
-                key={item.id}
-                {...item}
-                isActive={location.pathname === item.path}
-                isCollapsed={true}
-                isMobile={true}
-              />
-            ))}
-            {/* Logout button for mobile */}
-            <button
-              onClick={handleLogout}
-              className="relative flex flex-col items-center justify-center transition-all duration-150 ease-in-out flex-shrink-0 p-2 rounded-lg min-w-[60px] text-foreground hover:bg-muted hover:text-foreground"
-              title={t('nav.logout', 'Logout')}
-            >
-              <div className="relative flex items-center justify-center">
-                <Icon 
-                  name="LogOut" 
-                  size={20} 
-                  color="currentColor"
+      <>
+        <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-100">
+          <div ref={mobileNavRef} className="flex overflow-x-auto scrollbar-hide h-16 px-4">
+            <div className="flex items-center space-x-2 min-w-full">
+              {flatNavigationItems.map((item) => (
+                <NavigationItem
+                  key={item.id}
+                  {...item}
+                  isActive={location.pathname === item.path}
+                  isCollapsed={true}
+                  isMobile={true}
                 />
+              ))}
+              {/* Profile button for mobile */}
+              <div className="relative flex-shrink-0" ref={profileDropdownRef}>
+                <button
+                  onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                  className="relative flex flex-col items-center justify-center transition-all duration-150 ease-in-out flex-shrink-0 p-2 rounded-lg min-w-[60px] text-foreground hover:bg-muted hover:text-foreground"
+                  title="Profile"
+                >
+                  <div className="relative flex items-center justify-center">
+                    <div className="flex items-center justify-center w-8 h-8 bg-red-600 rounded-full">
+                      <Icon name="User" size={16} className="text-white" />
+                    </div>
+                  </div>
+                  <span className="text-xs font-medium mt-1 truncate">
+                    Profile
+                  </span>
+                </button>
+
+                {/* Profile Dropdown for Mobile */}
+                {isProfileDropdownOpen && (
+                  <>
+                    {/* Backdrop */}
+                    <div
+                      className="fixed inset-0 z-[9998]"
+                      onClick={() => setIsProfileDropdownOpen(false)}
+                    />
+
+                    {/* Dropdown Menu - positioned above bottom nav */}
+                    <div 
+                      className="fixed bg-popover border border-border rounded-lg shadow-professional-lg z-[9999] left-4 right-4 w-auto"
+                      style={{ 
+                        bottom: '80px'
+                      }}
+                    >
+                      <div className="py-2">
+                        {/* Email Display */}
+                        {userEmail && (
+                          <div className="px-4 py-2 border-b border-border">
+                            <div className="text-xs font-medium text-muted-foreground mb-1">
+                              Email
+                            </div>
+                            <div className="text-sm text-popover-foreground truncate flex items-center space-x-2">
+                              <Icon name="Mail" size={14} color="currentColor" />
+                              <span className="truncate">{userEmail}</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Reset Password */}
+                        <button
+                          onClick={handleResetPassword}
+                          disabled={isSendingPasswordReset}
+                          className="w-full px-4 py-2 text-left text-sm text-popover-foreground hover:bg-muted transition-colors duration-150 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <Icon name="Key" size={16} color="currentColor" />
+                          <span>
+                            {isSendingPasswordReset ? 'Sending...' : 'Reset Password'}
+                          </span>
+                        </button>
+
+                        {/* Logout */}
+                        <button
+                          onClick={handleLogout}
+                          className="w-full px-4 py-2 text-left text-sm text-destructive hover:bg-muted transition-colors duration-150 flex items-center space-x-2"
+                        >
+                          <Icon name="LogOut" size={16} color="currentColor" />
+                          <span>Logout</span>
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
-              <span className="text-xs font-medium mt-1 truncate">
-                {t('nav.logout', 'Logout')}
-              </span>
-            </button>
+            </div>
           </div>
-        </div>
-      </nav>
+        </nav>
+      </>
     );
   }
 
@@ -411,43 +538,104 @@ const SuperAdminSidebar = () => {
         </nav>
 
         {/* User Profile */}
-        <div className="mt-auto">
+        <div className="mt-auto" ref={profileDropdownRef}>
           <div className="p-4 border-t border-border">
             {isCollapsed ? (
-              // Collapsed state - show only logout icon
+              // Collapsed state - show profile icon button
               <div className="flex justify-center">
                 <button
-                  onClick={handleLogout}
-                  className="p-2 rounded-md hover:bg-muted transition-colors duration-150"
-                  title="Logout"
+                  onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                  className="p-2 rounded-md hover:bg-muted transition-colors duration-150 relative"
+                  title="Profile"
                 >
-                  <Icon name="LogOut" size={20} color="var(--color-muted-foreground)" />
+                  <div className="flex items-center justify-center w-8 h-8 bg-red-600 rounded-full">
+                    <Icon name="User" size={16} className="text-white" />
+                  </div>
                 </button>
               </div>
             ) : (
-              // Expanded state - show full profile
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center justify-center w-8 h-8 bg-red-600 rounded-full">
+              // Expanded state - show profile button
+              <button
+                onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                className="w-full flex items-center space-x-3 p-2 rounded-md hover:bg-muted transition-colors duration-150"
+              >
+                <div className="flex items-center justify-center w-8 h-8 bg-red-600 rounded-full flex-shrink-0">
                   <Icon name="User" size={16} className="text-white" />
                 </div>
                 {!isTablet && (
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 text-left">
                     <p className="text-sm font-medium text-foreground truncate">
                       Super Admin
                     </p>
-                    <p className="text-xs text-muted-foreground">Administrator</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {userEmail || 'Administrator'}
+                    </p>
                   </div>
                 )}
-                {!isMobile && !isTablet && (
-                  <button
-                    onClick={handleLogout}
-                    className="p-1.5 rounded-md hover:bg-muted transition-colors duration-150"
-                    title="Logout"
-                  >
-                    <Icon name="LogOut" size={16} color="var(--color-muted-foreground)" />
-                  </button>
-                )}
-              </div>
+                <Icon 
+                  name="ChevronUp" 
+                  size={16} 
+                  color="var(--color-muted-foreground)"
+                  className={`transition-transform duration-150 flex-shrink-0 ${isProfileDropdownOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+            )}
+
+            {/* Profile Dropdown */}
+            {isProfileDropdownOpen && (
+              <>
+                {/* Backdrop */}
+                <div
+                  className="fixed inset-0 z-[9998]"
+                  onClick={() => setIsProfileDropdownOpen(false)}
+                />
+
+                {/* Dropdown Menu */}
+                <div className={`
+                  fixed bg-popover border border-border rounded-lg shadow-professional-lg z-[9999]
+                  ${isCollapsed ? 'left-16 w-48' : 'left-4 w-64'}
+                `}
+                style={{ 
+                  bottom: '80px'
+                }}
+                >
+                  <div className="py-2">
+                    {/* Email Display */}
+                    {userEmail && (
+                      <div className="px-4 py-2 border-b border-border">
+                        <div className="text-xs font-medium text-muted-foreground mb-1">
+                          Email
+                        </div>
+                        <div className="text-sm text-popover-foreground truncate flex items-center space-x-2">
+                          <Icon name="Mail" size={14} color="currentColor" />
+                          <span className="truncate">{userEmail}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Reset Password */}
+                    <button
+                      onClick={handleResetPassword}
+                      disabled={isSendingPasswordReset}
+                      className="w-full px-4 py-2 text-left text-sm text-popover-foreground hover:bg-muted transition-colors duration-150 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Icon name="Key" size={16} color="currentColor" />
+                      <span>
+                        {isSendingPasswordReset ? 'Sending...' : 'Reset Password'}
+                      </span>
+                    </button>
+
+                    {/* Logout */}
+                    <button
+                      onClick={handleLogout}
+                      className="w-full px-4 py-2 text-left text-sm text-destructive hover:bg-muted transition-colors duration-150 flex items-center space-x-2"
+                    >
+                      <Icon name="LogOut" size={16} color="currentColor" />
+                      <span>Logout</span>
+                    </button>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         </div>

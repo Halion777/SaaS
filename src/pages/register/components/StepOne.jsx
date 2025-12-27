@@ -661,8 +661,8 @@ const StepOne = ({ formData, updateFormData, errors, onIncompleteRegistrationDet
                     setVerificationSuccess(false);
                     updateFormData('emailVerified', false);
                     
-                    // Validate email format in real-time
-                    if (emailValue && !isValidEmail(emailValue)) {
+                    // Validate email format in real-time - only if @ symbol is present
+                    if (emailValue && emailValue.includes('@') && !isValidEmail(emailValue)) {
                       setEmailFormatError(t('registerForm.step1.invalidEmail') || 'Please enter a valid email address (e.g., name@example.com)');
                     } else {
                       setEmailFormatError('');

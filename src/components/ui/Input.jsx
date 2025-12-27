@@ -98,10 +98,10 @@ const Input = React.forwardRef(({
             }
         }
 
-        // Email input validation
+        // Email input validation - only validate if @ symbol is present
         if (type === "email") {
-            // Real-time email validation
-            if (newValue && newValue.trim() !== '') {
+            // Only validate if user has typed @ symbol
+            if (newValue && newValue.trim() !== '' && newValue.includes('@')) {
                 if (!isValidEmail(newValue)) {
                     setEmailError('Please enter a valid email address (e.g., name@example.com)');
                 } else {

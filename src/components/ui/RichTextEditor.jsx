@@ -333,6 +333,38 @@ const RichTextEditor = ({ value, onChange, placeholder = 'Enter content...', cla
         contentEditable
         onInput={handleContentChange}
         onPaste={handlePaste}
+        onKeyDown={(e) => {
+          // Ensure Enter key creates proper paragraph tags
+          if (e.key === 'Enter' && !e.shiftKey) {
+            // Let the default behavior happen, then ensure it's a paragraph
+            setTimeout(() => {
+              const selection = window.getSelection();
+              if (selection.rangeCount) {
+                let node = selection.anchorNode;
+                while (node && node !== editorRef.current) {
+                  if (node.nodeType === Node.ELEMENT_NODE) {
+                    const tagName = node.tagName?.toLowerCase();
+                    // If Enter created a div or br, convert to paragraph
+                    if (tagName === 'div' && node.parentNode === editorRef.current) {
+                      const p = document.createElement('p');
+                      p.innerHTML = node.innerHTML || '<br>';
+                      node.parentNode.replaceChild(p, node);
+                      // Move cursor to new paragraph
+                      const range = document.createRange();
+                      range.selectNodeContents(p);
+                      range.collapse(false);
+                      selection.removeAllRanges();
+                      selection.addRange(range);
+                      break;
+                    }
+                  }
+                  node = node.parentNode;
+                }
+              }
+              handleContentChange();
+            }, 0);
+          }
+        }}
         className="min-h-[300px] p-4 text-foreground focus:outline-none prose prose-sm max-w-none"
         style={{
           wordBreak: 'break-word',
@@ -370,8 +402,23 @@ const RichTextEditor = ({ value, onChange, placeholder = 'Enter content...', cla
           display: block;
         }
         [contenteditable] p {
-          margin: 1em 0;
+          margin-top: 1em !important;
+          margin-bottom: 1em !important;
           display: block;
+        }
+        [contenteditable] p:first-child {
+          margin-top: 0 !important;
+        }
+        [contenteditable] p:last-child {
+          margin-bottom: 0 !important;
+        }
+        [contenteditable] h1 + p,
+        [contenteditable] h2 + p,
+        [contenteditable] h3 + p,
+        [contenteditable] h4 + p,
+        [contenteditable] h5 + p,
+        [contenteditable] h6 + p {
+          margin-top: 0.5em !important;
         }
       `}</style>
     </div>

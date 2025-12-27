@@ -289,8 +289,12 @@ const BlogsManagement = () => {
         console.error('Error getting current user:', userError);
       }
 
+      // Extract only the fields that exist in the database schema
+      // Exclude computed fields like author_info
+      const { author_info, ...blogDataWithoutComputed } = editingBlog;
+      
       const blogData = {
-        ...editingBlog,
+        ...blogDataWithoutComputed,
         updated_at: new Date().toISOString()
       };
 
@@ -611,6 +615,7 @@ const BlogsManagement = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => handlePreviewBlog(blog)}
+                            title="Preview"
                           >
                             <Icon name="Eye" size={14} />
                           </Button>
@@ -625,8 +630,9 @@ const BlogsManagement = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => handleToggleStatus(blog)}
+                            title={blog.status === 'published' ? 'Hide Blog' : 'Publish Blog'}
                           >
-                            <Icon name={blog.status === 'published' ? 'EyeOff' : 'Eye'} size={14} />
+                            <Icon name={blog.status === 'published' ? 'Lock' : 'Unlock'} size={14} />
                           </Button>
                           <Button
                             variant="outline"
@@ -727,7 +733,7 @@ const BlogsManagement = () => {
                           className="h-8 px-2"
                           title={blog.status === 'published' ? 'Unpublish' : 'Publish'}
                         >
-                          <Icon name={blog.status === 'published' ? 'EyeOff' : 'Eye'} size={14} />
+                          <Icon name={blog.status === 'published' ? 'Lock' : 'Unlock'} size={14} />
                         </Button>
                         <Button
                           variant="ghost"
@@ -839,7 +845,30 @@ const BlogsManagement = () => {
                   <div 
                     className="prose prose-lg max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-li:text-foreground"
                     dangerouslySetInnerHTML={{ __html: selectedBlog.content }}
+                    style={{
+                      // Ensure paragraph spacing is preserved
+                    }}
                   />
+                  <style>{`
+                    .prose p {
+                      margin-top: 1em !important;
+                      margin-bottom: 1em !important;
+                    }
+                    .prose p:first-child {
+                      margin-top: 0 !important;
+                    }
+                    .prose p:last-child {
+                      margin-bottom: 0 !important;
+                    }
+                    .prose h1 + p,
+                    .prose h2 + p,
+                    .prose h3 + p,
+                    .prose h4 + p,
+                    .prose h5 + p,
+                    .prose h6 + p {
+                      margin-top: 0.5em !important;
+                    }
+                  `}</style>
                 </div>
 
                 {/* SEO Information */}

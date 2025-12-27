@@ -221,6 +221,26 @@ const BlogDetailPage = () => {
                 className="prose prose-lg max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-a:text-[#0036ab] prose-a:no-underline hover:prose-a:underline prose-strong:text-gray-900 prose-ul:text-gray-700 prose-ol:text-gray-700 prose-li:text-gray-700"
                 dangerouslySetInnerHTML={{ __html: blog.content }}
               />
+              <style>{`
+                .prose p {
+                  margin-top: 1em !important;
+                  margin-bottom: 1em !important;
+                }
+                .prose p:first-child {
+                  margin-top: 0 !important;
+                }
+                .prose p:last-child {
+                  margin-bottom: 0 !important;
+                }
+                .prose h1 + p,
+                .prose h2 + p,
+                .prose h3 + p,
+                .prose h4 + p,
+                .prose h5 + p,
+                .prose h6 + p {
+                  margin-top: 0.5em !important;
+                }
+              `}</style>
             </div>
           </div>
         </section>
