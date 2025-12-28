@@ -28,13 +28,28 @@ const RecentQuotes = ({ quotes = [], loading = false }) => {
     });
   };
 
-  const getStatusConfig = (status) => {
+  const getStatusConfig = (quote) => {
+    const status = quote?.status;
+    const trackingData = quote?.trackingData;
+    
     const statusMap = {
       'accepted': {
         label: t('dashboard.recentQuotes.statuses.signed.label') || 'Signé',
         color: t('dashboard.recentQuotes.statuses.signed.color') || 'text-success',
         bg: t('dashboard.recentQuotes.statuses.signed.bg') || 'bg-success/10',
         icon: 'CheckCircle'
+      },
+      'converted_to_invoice': {
+        label: t('dashboard.recentQuotes.statuses.signed.label') || 'Signé',
+        color: t('dashboard.recentQuotes.statuses.signed.color') || 'text-success',
+        bg: t('dashboard.recentQuotes.statuses.signed.bg') || 'bg-success/10',
+        icon: 'CheckCircle'
+      },
+      'viewed': {
+        label: t('dashboard.recentQuotes.statuses.viewed.label') || 'Vu',
+        color: t('dashboard.recentQuotes.statuses.viewed.color') || 'text-info',
+        bg: t('dashboard.recentQuotes.statuses.viewed.bg') || 'bg-info/10',
+        icon: 'Eye'
       },
       'sent': {
         label: t('dashboard.recentQuotes.statuses.sent.label') || 'Envoyé',
@@ -62,26 +77,19 @@ const RecentQuotes = ({ quotes = [], loading = false }) => {
       }
     };
     
-    // Map status to config
-    const config = statusMap[status] || statusMap['draft'];
-    
-    // Check if quote was viewed (has tracking data)
-    if (status === 'sent' && quotes.find(q => q.id === quotes.find(q => q.status === 'sent')?.id)?.trackingData?.viewed_at) {
-      return {
-        label: t('dashboard.recentQuotes.statuses.viewed.label') || 'Vu',
-        color: t('dashboard.recentQuotes.statuses.viewed.color') || 'text-info',
-        bg: t('dashboard.recentQuotes.statuses.viewed.bg') || 'bg-info/10',
-        icon: 'Eye'
-      };
+    // Check if quote was viewed (has tracking data) - override 'sent' status
+    if (status === 'sent' && trackingData?.viewed_at) {
+      return statusMap['viewed'];
     }
     
-    return config;
+    // Map status to config, default to draft if status not found
+    return statusMap[status] || statusMap['draft'];
   };
 
   if (loading) {
     return (
       <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-professional">
-        <TableLoader message="Chargement des devis..." />
+        <TableLoader message={t('dashboard.recentQuotes.loading')} />
       </div>
     );
   }
@@ -110,7 +118,7 @@ const RecentQuotes = ({ quotes = [], loading = false }) => {
       </div>
       <div className="space-y-3 sm:space-y-4">
         {quotes.slice(0, 5).map((quote) => {
-          const statusConfig = getStatusConfig(quote.status);
+          const statusConfig = getStatusConfig(quote);
           const clientName = quote.client?.name || quote.clientName || 'Client';
           const serviceName = quote.title || quote.description || 'Service';
           const amount = quote.total_amount || quote.final_amount || 0;

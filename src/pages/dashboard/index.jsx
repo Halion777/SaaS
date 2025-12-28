@@ -395,7 +395,8 @@ const Dashboard = () => {
             overdueInvoices,
             overdueGrowth
           },
-          quotes: quotes.slice(0, 10), // Recent 10 quotes
+          quotes: quotes, // All quotes for chart calculations
+          recentQuotes: quotes.slice(0, 10), // Recent 10 quotes for RecentQuotes widget
           clients: clients.sort((a, b) => (b.totalRevenue || 0) - (a.totalRevenue || 0)).slice(0, 4), // Top 4 clients by revenue
           invoices: invoices, // Full invoices array for RecentActivity widget
           invoiceStats: invoiceStats, // Invoice statistics
@@ -645,7 +646,7 @@ const Dashboard = () => {
               {/* Recent Quotes */}
               {widgetSettings.recentQuotes && (
                 <div className="dashboard-recent-quotes">
-                  <RecentQuotes quotes={dashboardData.quotes} loading={dashboardData.loading} />
+                  <RecentQuotes quotes={dashboardData.recentQuotes || dashboardData.quotes.slice(0, 10)} loading={dashboardData.loading} />
                 </div>
               )}
               
@@ -653,6 +654,17 @@ const Dashboard = () => {
               {widgetSettings.quickActions && (
                 <div className="dashboard-quick-actions">
                   <QuickActions />
+                </div>
+              )}
+
+              {/* Recent Activity */}
+              {widgetSettings.recentActivity && (
+                <div className="dashboard-recent-activity">
+                  <RecentActivity 
+                    quotes={dashboardData.quotes} 
+                    invoices={dashboardData.invoices || []} 
+                    loading={dashboardData.loading} 
+                  />
                 </div>
               )}
             </div>
@@ -677,17 +689,6 @@ const Dashboard = () => {
               {widgetSettings.upcomingEvents && (
                 <div className="dashboard-upcoming-events">
                   <UpcomingEvents loading={dashboardData.loading} />
-                </div>
-              )}
-
-              {/* Recent Activity */}
-              {widgetSettings.recentActivity && (
-                <div className="dashboard-recent-activity">
-                  <RecentActivity 
-                    quotes={dashboardData.quotes} 
-                    invoices={dashboardData.invoices || []} 
-                    loading={dashboardData.loading} 
-                  />
                 </div>
               )}
             </div>

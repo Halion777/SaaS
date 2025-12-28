@@ -2585,6 +2585,7 @@
     },
     "topClients": {
       "title": "Meilleurs Clients",
+      "loading": "Chargement des clients...",
       "sortedBy": "Triés par Chiffre d'Affaires",
       "quotes": "Devis",
       "totalRevenue": "Chiffre d'Affaires Total : {{amount}}",
@@ -2700,6 +2701,7 @@
     "peppolWidget": {
       "title": "Réseau Peppol",
       "subtitle": "Échange électronique de factures",
+      "loading": "Chargement des données Peppol...",
       "connectionStatus": {
         "connected": "Connecté",
         "disconnected": "Déconnecté",
@@ -2759,6 +2761,7 @@
     "recentActivity": {
       "title": "Activité récente",
       "subtitle": "Suivez votre activité récente et importantes actions",
+      "loading": "Chargement de l'activité récente...",
       "quoteCreated": "Devis créé : {{number}}",
       "invoiceCreated": "Facture créée : {{number}}",
       "noActivity": "Aucune activité récente",
@@ -2773,6 +2776,7 @@
     },
     "taskList": {
       "title": "Tâches du jour",
+      "loading": "Chargement des tâches...",
       "tasksCount": "{{count}} tâches",
       "viewAllTasks": "Voir toutes les tâches",
       "noTasks": "Aucune tâche en attente",
@@ -2796,7 +2800,8 @@
         "client": "Client",
         "supplier": "Fournisseur",
         "daysOverdue": "{{count}} jour{{count, plural, one {} other {s}}} de retard",
-        "daysNoResponse": "{{count}} jour{{count, plural, one {} other {s}}} sans réponse"
+        "daysNoResponse_one": "{{count}} jour sans réponse",
+        "daysNoResponse_other": "{{count}} jours sans réponse"
       },
       "tasks": [
         {
@@ -2845,6 +2850,7 @@
     },
     "recentQuotes": {
       "title": "Devis récents",
+      "loading": "Chargement des devis...",
       "viewAllQuotes": "Voir tous les devis",
       "noQuotes": "Aucun devis trouvé",
       "statuses": {

@@ -2561,6 +2561,7 @@
     },
     "topClients": {
       "title": "Top Klanten",
+      "loading": "Klanten laden...",
       "sortedBy": "Op Omzet",
       "quotes": "Offertes",
       "totalRevenue": "Totale Omzet: {{amount}}",
@@ -2676,6 +2677,7 @@
     "peppolWidget": {
       "title": "Peppol Netwerk",
       "subtitle": "Elektronische factuuruitwisseling",
+      "loading": "Peppol gegevens laden...",
       "connectionStatus": {
         "connected": "Verbonden",
         "disconnected": "Niet verbonden",
@@ -2735,6 +2737,7 @@
     "recentActivity": {
       "title": "Recente Activiteit",
       "subtitle": "Volg uw recente activiteit en belangrijke acties",
+      "loading": "Recente activiteit laden...",
       "quoteCreated": "Offerte aangemaakt: {{number}}",
       "invoiceCreated": "Factuur aangemaakt: {{number}}",
       "noActivity": "Geen recente activiteit",
@@ -2749,6 +2752,7 @@
     },
     "taskList": {
       "title": "Taken van Vandaag",
+      "loading": "Taken laden...",
       "tasksCount": "{{count}} taken",
       "viewAllTasks": "Bekijk Alle Taken",
       "noTasks": "Geen openstaande taken",
@@ -2772,7 +2776,8 @@
         "client": "Klant",
         "supplier": "Leverancier",
         "daysOverdue": "{{count}} dag{{count, plural, one {} other {s}}} in achterstand",
-        "daysNoResponse": "{{count}} dag{{count, plural, one {} other {s}}} zonder reactie"
+        "daysNoResponse_one": "{{count}} dag zonder reactie",
+        "daysNoResponse_other": "{{count}} dagen zonder reactie"
       },
       "tasks": [
         {
@@ -2821,6 +2826,7 @@
     },
     "recentQuotes": {
       "title": "Recente Offertes",
+      "loading": "Offertes laden...",
       "viewAllQuotes": "Bekijk Alle Offertes",
       "noQuotes": "Geen offertes gevonden",
       "statuses": {

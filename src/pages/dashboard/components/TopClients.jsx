@@ -52,7 +52,7 @@ const TopClients = ({ clients = [], loading = false }) => {
   if (loading) {
     return (
       <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-professional">
-        <TableLoader message="Chargement des clients..." />
+        <TableLoader message={t('dashboard.topClients.loading')} />
       </div>
     );
   }

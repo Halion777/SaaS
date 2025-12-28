@@ -331,7 +331,7 @@ const TaskList = () => {
   if (loading) {
     return (
       <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-professional">
-        <TableLoader message="Chargement des tâches..." />
+        <TableLoader message={t('dashboard.taskList.loading')} />
       </div>
     );
   }

@@ -2386,6 +2386,7 @@
     "recentActivity": {
       "title": "Recent Activity",
       "subtitle": "Track your recent activity and important actions",
+      "loading": "Loading recent activity...",
       "quoteCreated": "Quote created: {{number}}",
       "invoiceCreated": "Invoice created: {{number}}",
       "noActivity": "No recent activity",
@@ -2527,6 +2528,7 @@
     },
     "topClients": {
       "title": "Top Clients",
+      "loading": "Loading clients...",
       "sortedBy": "Sorted by Revenue",
       "quotes": "Quotes",
       "totalRevenue": "Total Revenue: {{amount}}",
@@ -2642,6 +2644,7 @@
     "peppolWidget": {
       "title": "Peppol Network",
       "subtitle": "Electronic invoice exchange",
+      "loading": "Loading Peppol data...",
       "connectionStatus": {
         "connected": "Connected",
         "disconnected": "Disconnected",
@@ -2700,6 +2703,7 @@
     },
     "taskList": {
       "title": "Today's Tasks",
+      "loading": "Loading tasks...",
       "tasksCount": "{{count}} tasks",
       "viewAllTasks": "View All Tasks",
       "noTasks": "No pending tasks",
@@ -2723,7 +2727,8 @@
         "client": "Client",
         "supplier": "Supplier",
         "daysOverdue": "{{count}} day{{count, plural, one {} other {s}}} overdue",
-        "daysNoResponse": "{{count}} day{{count, plural, one {} other {s}}} without response"
+        "daysNoResponse_one": "{{count}} day without response",
+        "daysNoResponse_other": "{{count}} days without response"
       },
       "tasks": [
         {
@@ -2772,6 +2777,7 @@
     },
     "recentQuotes": {
       "title": "Recent Quotes",
+      "loading": "Loading quotes...",
       "viewAllQuotes": "View All Quotes",
       "noQuotes": "No quotes found",
       "statuses": {

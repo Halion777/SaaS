@@ -111,15 +111,17 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [], filt
 
       {/* Desktop Filters - Always visible on md+ screens */}
       <div className="hidden md:block p-4 space-y-4 border-t border-border">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Select
-            label={t('quotesManagement.filter.status.label')}
-            options={statusOptions}
-            value={filters.status || ''}
-            onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
-            placeholder={t('quotesManagement.filter.status.all')}
-            maxHeight="none"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[minmax(140px,auto)_1fr_1fr_1.2fr] xl:grid-cols-[minmax(150px,auto)_1fr_1fr_1.4fr] gap-4">
+          <div className="min-w-0 w-full md:w-auto">
+            <Select
+              label={t('quotesManagement.filter.status.label')}
+              options={statusOptions}
+              value={filters.status || ''}
+              onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
+              placeholder={t('quotesManagement.filter.status.all')}
+              maxHeight="none"
+            />
+          </div>
 
           <Select
             label={t('quotesManagement.filter.client.label')}
@@ -148,7 +150,7 @@ const FilterBar = ({ filters, onFiltersChange, onClearFilters, quotes = [], filt
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 min-w-0">
             <label className="text-sm font-medium text-foreground">{t('quotesManagement.filter.period.label')}</label>
             <div className="grid grid-cols-2 gap-2 relative" style={{ zIndex: 10 }}>
               <Input

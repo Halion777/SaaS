@@ -31,34 +31,41 @@ const QuoteChart = ({ quotes = [], loading = false }) => {
     const monthlyData = {};
     const now = new Date();
     
-    // Initialize last 7 months
+    // Initialize last 7 months with unique keys that include year and month
     for (let i = 6; i >= 0; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthKey = date.toLocaleDateString('en-US', { month: 'short' });
-      monthlyData[monthKey] = {
+      // Create unique key with year and month to handle year boundaries
+      const uniqueKey = `${date.getFullYear()}-${date.getMonth()}`;
+      monthlyData[uniqueKey] = {
         month: t(`dashboard.quoteChart.months.${monthKey}`) || monthKey,
+        monthIndex: date.getMonth(),
+        year: date.getFullYear(),
+        sortOrder: i,
         quotes: 0,
         signed: 0
       };
     }
 
-    // Process quotes
+    // Process ALL quotes (not just recent ones)
     quotes.forEach(quote => {
       if (!quote.created_at) return;
       
       const quoteDate = new Date(quote.created_at);
-      const monthKey = quoteDate.toLocaleDateString('en-US', { month: 'short' });
+      const uniqueKey = `${quoteDate.getFullYear()}-${quoteDate.getMonth()}`;
       
-      if (monthlyData[monthKey]) {
-        monthlyData[monthKey].quotes++;
+      // Only count quotes from the last 7 months
+      if (monthlyData[uniqueKey]) {
+        monthlyData[uniqueKey].quotes++;
         // Count both 'accepted' and 'converted_to_invoice' as signed quotes
         if (quote.status === 'accepted' || quote.status === 'converted_to_invoice') {
-          monthlyData[monthKey].signed++;
+          monthlyData[uniqueKey].signed++;
         }
       }
     });
 
-    return Object.values(monthlyData);
+    // Sort by sortOrder to maintain chronological order
+    return Object.values(monthlyData).sort((a, b) => a.sortOrder - b.sortOrder);
   }, [quotes, t, loading]);
 
   return (
