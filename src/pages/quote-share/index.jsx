@@ -9,8 +9,9 @@ import Icon from '../../components/AppIcon';
 import ElectronicSignatureModal from '../quote-creation/components/ElectronicSignatureModal';
 import LanguageDropdown from '../../components/LanguageDropdown';
 import Footer from '../../components/Footer';
+import { formatCurrency } from '../../utils/numberFormat';
 
-const currency = (n) => new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(n || 0)) + '€';
+const currency = (n) => formatCurrency(Number(n || 0));
 
 const PublicQuoteShareViewer = () => {
   const { t } = useTranslation();
