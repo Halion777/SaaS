@@ -645,7 +645,7 @@ const StepOne = ({ formData, updateFormData, errors, onIncompleteRegistrationDet
 
         <div className="space-y-2">
           <div className="space-y-2">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-2">
               <div className="flex-1">
         <Input
           label={t('registerForm.step1.email')}
@@ -685,7 +685,7 @@ const StepOne = ({ formData, updateFormData, errors, onIncompleteRegistrationDet
                     "outline"
                   }
                   size="sm"
-                  className="w-full sm:w-auto sm:flex-shrink-0 h-10 sm:mb-0"
+                  className="w-full sm:w-auto sm:flex-shrink-0 h-10 sm:mt-6"
                 >
                 {isVerifying ? (
                   <>
@@ -828,6 +828,7 @@ const StepOne = ({ formData, updateFormData, errors, onIncompleteRegistrationDet
               value={formData.password}
               onChange={handlePasswordChange}
               error={errors.password}
+              maxLength={128}
               required
             />
             <button
