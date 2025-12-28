@@ -25,6 +25,7 @@ import { supabase } from '../../services/supabaseClient';
 import QuoteTrackingService from '../../services/quoteTrackingService';
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { formatCurrency } from '../../utils/numberFormat';
 
 const FollowUpManagement = () => {
   const { user } = useAuth();
@@ -956,9 +957,9 @@ const FollowUpManagement = () => {
                    </span>
                  </td>
                  <td className="px-4 py-3">
-                   <span className="text-xs sm:text-sm font-medium text-green-600">
-                     +{followUp.potentialRevenue.toLocaleString()}€
-                   </span>
+                  <span className="text-xs sm:text-sm font-medium text-green-600">
+                    +{formatCurrency(followUp.potentialRevenue)}
+                  </span>
                  </td>
                  <td className="px-4 py-3">
                    <span className={`px-2 py-1 rounded-full text-xs font-medium text-center ${getPriorityColor(followUp.priority)}`}>
@@ -1068,7 +1069,7 @@ const FollowUpManagement = () => {
             {/* Revenue and actions */}
             <div className="flex items-center justify-between">
               <div className="text-lg sm:text-xl font-bold text-green-600">
-                +{followUp.potentialRevenue.toLocaleString()}€
+                +{formatCurrency(followUp.potentialRevenue)}
               </div>
               
               <div className="flex gap-2">
@@ -1165,7 +1166,7 @@ const FollowUpManagement = () => {
                 <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">{t('followUpManagement.kpi.potentialRevenue')}</h3>
                 <Icon name="FileText" size={16} className="sm:w-5 sm:h-5 text-muted-foreground" />
               </div>
-              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600 mb-1">{totalRevenue.toLocaleString()}€</div>
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600 mb-1">{formatCurrency(totalRevenue)}</div>
               <p className="text-xs sm:text-sm text-muted-foreground">
                 {t('followUpManagement.kpi.quotes')}
               </p>

@@ -21,6 +21,7 @@ import { loadCompanyInfo } from '../../../services/companyInfoService';
 import { validateVATNumber, getExpectedFormat, VAT_VALIDATION_RULES } from '../../../utils/vatNumberValidation';
 import { getClientCountryOptions } from '../../../utils/countryList';
 import { getStarterLimit } from '../../../config/subscriptionFeatures';
+import { formatCurrency } from '../../../utils/numberFormat';
 
 const PeppolNetworkPage = () => {
   const { t, i18n } = useTranslation();
@@ -1335,7 +1336,7 @@ const PeppolNetworkPage = () => {
               </td>
               <td className="p-4 text-sm text-muted-foreground font-mono">{invoice.peppolId}</td>
               <td className="p-4 font-medium">
-                {invoice.amount.toLocaleString(i18n.language === 'nl' ? 'nl-NL' : i18n.language === 'en' ? 'en-US' : 'fr-FR', { style: 'currency', currency: 'EUR' })}
+                {formatCurrency(invoice.amount)}
               </td>
               <td className="p-4 text-sm text-muted-foreground">
                 {new Date(invoice.date).toLocaleDateString(i18n.language === 'nl' ? 'nl-NL' : i18n.language === 'en' ? 'en-US' : 'fr-FR')}
@@ -1390,7 +1391,7 @@ const PeppolNetworkPage = () => {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-0.5">{t('peppol.invoices.amount')}</p>
-                <p className="text-xs font-medium text-foreground">{invoice.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</p>
+                <p className="text-xs font-medium text-foreground">{formatCurrency(invoice.amount)}</p>
               </div>
             </div>
 
@@ -1473,7 +1474,7 @@ const PeppolNetworkPage = () => {
               </td>
               <td className="p-4 text-sm text-muted-foreground font-mono">{invoice.peppolId}</td>
               <td className="p-4 font-medium">
-                {invoice.amount.toLocaleString(i18n.language === 'nl' ? 'nl-NL' : i18n.language === 'en' ? 'en-US' : 'fr-FR', { style: 'currency', currency: 'EUR' })}
+                {formatCurrency(invoice.amount)}
               </td>
               <td className="p-4 text-sm text-muted-foreground">
                 {new Date(invoice.date).toLocaleDateString(i18n.language === 'nl' ? 'nl-NL' : i18n.language === 'en' ? 'en-US' : 'fr-FR')}
@@ -1528,7 +1529,7 @@ const PeppolNetworkPage = () => {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-0.5">{t('peppol.invoices.amount')}</p>
-                <p className="text-xs font-medium text-foreground">{invoice.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</p>
+                <p className="text-xs font-medium text-foreground">{formatCurrency(invoice.amount)}</p>
               </div>
             </div>
 
@@ -1666,7 +1667,7 @@ const PeppolNetworkPage = () => {
                 <div>
                   <p className="text-xs sm:text-sm text-muted-foreground">{t('peppol.stats.totalSent')}</p>
                   <p className="text-lg sm:text-xl lg:text-2xl font-bold">
-                    {loading ? '...' : peppolStats.totalSentAmount.toLocaleString(i18n.language === 'nl' ? 'nl-NL' : i18n.language === 'en' ? 'en-US' : 'fr-FR', { style: 'currency', currency: 'EUR' })}
+                    {loading ? '...' : formatCurrency(peppolStats.totalSentAmount)}
                   </p>
                 </div>
                 <div className="bg-warning/10 p-2 sm:p-3 rounded-lg">
@@ -1679,7 +1680,7 @@ const PeppolNetworkPage = () => {
                 <div>
                   <p className="text-xs sm:text-sm text-muted-foreground">{t('peppol.stats.totalReceived')}</p>
                   <p className="text-lg sm:text-xl lg:text-2xl font-bold">
-                    {loading ? '...' : peppolStats.totalReceivedAmount.toLocaleString(i18n.language === 'nl' ? 'nl-NL' : i18n.language === 'en' ? 'en-US' : 'fr-FR', { style: 'currency', currency: 'EUR' })}
+                    {loading ? '...' : formatCurrency(peppolStats.totalReceivedAmount)}
                   </p>
                 </div>
                 <div className="bg-info/10 p-2 sm:p-3 rounded-lg">

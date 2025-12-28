@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { formatCurrency } from '../../utils/numberFormat';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import MainSidebar from '../../components/ui/MainSidebar';
@@ -800,7 +801,7 @@ const InvoicesFollowUp = () => {
                 </td>
                 <td className="px-4 py-3">
                   <span className="text-xs sm:text-sm font-medium text-green-600">
-                    +{followUp.potentialRevenue.toLocaleString()}€
+                    +{formatCurrency(followUp.potentialRevenue)}
                   </span>
                 </td>
                 <td className="px-4 py-3">
@@ -914,7 +915,7 @@ const InvoicesFollowUp = () => {
             {/* Revenue and actions */}
             <div className="flex items-center justify-between">
               <div className="text-lg sm:text-xl font-bold text-green-600">
-                +{followUp.potentialRevenue.toLocaleString()}€
+                +{formatCurrency(followUp.potentialRevenue)}
               </div>
               
               <div className="flex gap-2">
@@ -1007,7 +1008,7 @@ const InvoicesFollowUp = () => {
                 <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">{t('followUpManagement.kpi.potentialRevenue')}</h3>
                 <Icon name="Receipt" size={16} className="sm:w-5 sm:h-5 text-muted-foreground" />
               </div>
-              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600 mb-1">{totalRevenue.toLocaleString()}€</div>
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600 mb-1">{formatCurrency(totalRevenue)}</div>
               <p className="text-xs sm:text-sm text-muted-foreground">
                 {t('invoiceFollowUp.kpi.invoices') || 'Factures'}
               </p>

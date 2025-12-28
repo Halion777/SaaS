@@ -2,17 +2,11 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 import TableLoader from '../../../components/ui/TableLoader';
+import { formatCurrency } from '../../../utils/numberFormat';
 
 const TopClients = ({ clients = [], loading = false }) => {
   const { t, i18n } = useTranslation();
 
-  const formatCurrency = (amount) => {
-    // Always use comma as decimal separator (fr-FR format) to match quote creation flow
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount || 0);
-  };
 
   const formatDate = (dateString) => {
     if (!dateString) return '';

@@ -2,17 +2,13 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Icon from '../../../components/AppIcon';
+import { formatCurrency } from '../../../utils/numberFormat';
 
 const RevenueChart = ({ data, isLoading = false }) => {
   const { t, i18n } = useTranslation();
   
-  const formatCurrency = (value) => {
-    const locale = i18n.language === 'nl' ? 'nl-NL' : i18n.language === 'en' ? 'en-US' : 'fr-FR';
-    return new Intl.NumberFormat(locale, {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 0
-    }).format(value);
+  const formatCurrencySafe = (value) => {
+    return formatCurrency(value, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   };
 
   const CustomTooltip = ({ active, payload, label }) => {
@@ -22,7 +18,7 @@ const RevenueChart = ({ data, isLoading = false }) => {
           <p className="font-medium text-foreground mb-2">{label}</p>
           {payload.map((entry, index) => (
             <p key={index} style={{ color: entry.color }} className="text-sm">
-              {entry.name}: {formatCurrency(entry.value)}
+              {entry.name}: {formatCurrencySafe(entry.value)}
             </p>
           ))}
         </div>

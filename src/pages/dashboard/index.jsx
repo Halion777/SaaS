@@ -24,6 +24,7 @@ import { fetchQuotes } from '../../services/quotesService';
 import InvoiceService from '../../services/invoiceService';
 import ExpenseInvoicesService from '../../services/expenseInvoicesService';
 import { fetchClients } from '../../services/clientsService';
+import { formatCurrency } from '../../utils/numberFormat';
 
 const Dashboard = () => {
   const { t, i18n } = useTranslation();
@@ -421,12 +422,7 @@ const Dashboard = () => {
     }
   }, [user?.id]); // Only depend on user.id, not the entire user object
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat(i18n.language || 'fr', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount || 0);
-  };
+  // Import formatCurrency at the top
 
   const metricsData = dashboardData.loading ? [
     {

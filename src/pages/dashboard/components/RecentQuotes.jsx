@@ -4,18 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import TableLoader from '../../../components/ui/TableLoader';
+import { formatCurrency } from '../../../utils/numberFormat';
 
 const RecentQuotes = ({ quotes = [], loading = false }) => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
-  const formatCurrency = (amount) => {
+  const formatCurrencySafe = (amount) => {
     if (loading || amount === '...') return '...';
-    // Always use comma as decimal separator (fr-FR format) to match quote creation flow
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount || 0);
+    return formatCurrency(amount || 0);
   };
 
   const formatDate = (dateString) => {
@@ -142,7 +139,7 @@ const RecentQuotes = ({ quotes = [], loading = false }) => {
                 </div>
                 <p className="text-xs text-muted-foreground truncate">{serviceName}</p>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 mt-1 space-y-0.5 sm:space-y-0">
-                  <span className="text-xs font-medium text-foreground">{formatCurrency(amount)}</span>
+                  <span className="text-xs font-medium text-foreground">{formatCurrencySafe(amount)}</span>
                 </div>
               </div>
               <div className="text-right">

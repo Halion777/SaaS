@@ -1,17 +1,11 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
+import { formatCurrency } from '../../../utils/numberFormat';
 
 const InvoicesSummaryBar = ({ summaryData, isLoading = false }) => {
   const { t, i18n } = useTranslation();
   
-  const formatCurrency = (amount) => {
-    // Always use comma as decimal separator (fr-FR format) to match quote creation flow
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount);
-  };
 
   const formatPercentage = (value) => {
     return `${value.toFixed(1)}%`;

@@ -28,6 +28,7 @@ import {
   getClientsByLocation
 } from '../../services/clientsService';
 import { getStarterLimit } from '../../config/subscriptionFeatures';
+import { formatCurrency } from '../../utils/numberFormat';
 
 const ClientManagement = () => {
   const { t } = useTranslation();
@@ -618,7 +619,7 @@ const ClientManagement = () => {
               <div>
                 <p className="text-xs font-medium text-muted-foreground">{t('clientManagement.stats.totalRevenue')}</p>
                 <p className="text-xl font-bold text-foreground">
-                  {isLoading ? '...' : `${clients.reduce((sum, client) => sum + (client.totalRevenue || 0), 0).toLocaleString()}€`}
+                  {isLoading ? '...' : formatCurrency(clients.reduce((sum, client) => sum + (client.totalRevenue || 0), 0))}
                 </p>
               </div>
               <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -663,7 +664,7 @@ const ClientManagement = () => {
               <div>
                 <p className="text-xs text-muted-foreground">{t('clientManagement.financialOverview.totalRevenue')}</p>
                 <p className="text-xl font-bold text-foreground">
-                  {clients.reduce((sum, client) => sum + (client.totalRevenue || 0), 0).toLocaleString()}€
+                  {formatCurrency(clients.reduce((sum, client) => sum + (client.totalRevenue || 0), 0))}
                 </p>
               </div>
               <div className="w-full bg-muted rounded-full h-2">
@@ -681,7 +682,7 @@ const ClientManagement = () => {
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">{t('clientManagement.financialOverview.target')}</span>
-                <span className="font-medium text-foreground">100,000€</span>
+                <span className="font-medium text-foreground">{formatCurrency(100000)}</span>
               </div>
             </div>
           </div>
@@ -903,7 +904,7 @@ const ClientManagement = () => {
                           </td>
                           <td className="px-4 py-4">
                             <div className="text-sm font-medium text-foreground">
-                              {client.totalRevenue ? `${client.totalRevenue.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€` : '0€'}
+                              {formatCurrency(client.totalRevenue || 0)}
                             </div>
                           </td>
                           <td className="px-4 py-4">

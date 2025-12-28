@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import { useTranslation } from 'react-i18next';
+import { formatCurrency } from '../../../utils/numberFormat';
 
 const TasksTable = ({
   tasks,
@@ -90,10 +91,7 @@ const TasksTable = ({
                 <td className="p-4">
                   {task.amount > 0 ? (
                     <span className="font-medium text-foreground">
-                      {new Intl.NumberFormat(i18n.language || 'fr', {
-                        style: 'currency',
-                        currency: 'EUR'
-                      }).format(task.amount)}
+                      {formatCurrency(task.amount)}
                     </span>
                   ) : (
                     <span className="text-muted-foreground">-</span>
@@ -168,10 +166,7 @@ const TasksTable = ({
           {task.amount > 0 && (
             <div className="pt-3 border-t border-border">
               <span className="font-semibold text-foreground">
-                {new Intl.NumberFormat(i18n.language || 'fr', {
-                  style: 'currency',
-                  currency: 'EUR'
-                }).format(task.amount)}
+                {formatCurrency(task.amount)}
               </span>
             </div>
           )}

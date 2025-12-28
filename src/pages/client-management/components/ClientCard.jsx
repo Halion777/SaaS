@@ -3,16 +3,11 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { formatCurrency } from '../../../utils/numberFormat';
 
 const ClientCard = ({ client, onSelect, onDelete, onStatusToggle, getStatusColor, canEdit = true, canDelete = true }) => {
   const { t, i18n } = useTranslation();
   
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount || 0);
-  };
 
   const getCountryLabel = (countryCode) => {
     if (!countryCode) return '';

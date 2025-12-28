@@ -3,18 +3,15 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import { formatCurrency, formatPercentage } from '../../../utils/numberFormat';
 
 const InvoiceOverviewWidget = ({ invoiceData, expenseInvoiceData, loading = false }) => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
-  const formatCurrency = (amount) => {
+  const formatCurrencySafe = (amount) => {
     if (loading || amount === '...') return '...';
-    // Always use comma as decimal separator (fr-FR format) to match quote creation flow
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount || 0);
+    return formatCurrency(amount || 0);
   };
 
   const formatNumber = (num) => {
@@ -22,9 +19,9 @@ const InvoiceOverviewWidget = ({ invoiceData, expenseInvoiceData, loading = fals
     return num?.toString() || '0';
   };
 
-  const formatPercentage = (num) => {
+  const formatPercentageSafe = (num) => {
     if (loading || num === '...') return '...';
-    return `${num}%`;
+    return formatPercentage(num);
   };
 
   // Use real data or defaults
@@ -107,7 +104,7 @@ const InvoiceOverviewWidget = ({ invoiceData, expenseInvoiceData, loading = fals
             <div className="flex justify-between items-center">
               <span className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.invoiceOverview.sections.clientInvoices.totalRevenue')}</span>
               <span className="text-xs sm:text-sm font-medium text-foreground">
-                {formatCurrency(clientInvoices.totalRevenue)}
+                {formatCurrencySafe(clientInvoices.totalRevenue)}
               </span>
             </div>
             <div className="flex justify-between items-center">
@@ -191,13 +188,13 @@ const InvoiceOverviewWidget = ({ invoiceData, expenseInvoiceData, loading = fals
             <div className="flex justify-between items-center">
               <span className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.invoiceOverview.sections.cashFlow.collectionRate')}</span>
               <span className="text-xs sm:text-sm font-medium text-foreground">
-                {formatPercentage(collectionRate)}
+                {formatPercentageSafe(collectionRate)}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs sm:text-sm text-muted-foreground">{t('dashboard.invoiceOverview.sections.cashFlow.paymentRate')}</span>
               <span className="text-xs sm:text-sm font-medium text-foreground">
-                {formatPercentage(paymentRate)}
+                {formatPercentageSafe(paymentRate)}
               </span>
             </div>
             <div className="flex justify-between items-center">

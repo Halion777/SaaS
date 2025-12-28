@@ -21,6 +21,7 @@ import { InvoiceService } from '../../services/invoiceService';
 import { fetchClients } from '../../services/clientsService';
 import { ExpenseInvoicesService } from '../../services/expenseInvoicesService';
 import { getAnalyticsObjectives } from '../../services/authService';
+import { formatCurrency } from '../../utils/numberFormat';
 
 const AnalyticsDashboard = () => {
   const { t, i18n } = useTranslation();
@@ -210,14 +211,7 @@ const AnalyticsDashboard = () => {
       ? Math.round(((paymentRate - paymentRateLastMonth) / paymentRateLastMonth) * 100)
       : (paymentRate > 0 ? 100 : 0);
 
-    const formatCurrency = (amount) => {
-      // Always use comma as decimal separator (fr-FR format) to match quote creation flow
-      return new Intl.NumberFormat('fr-FR', {
-        style: 'currency',
-        currency: 'EUR',
-        minimumFractionDigits: 0
-      }).format(amount);
-    };
+    // formatCurrency is imported from utils
 
     return [
       {
