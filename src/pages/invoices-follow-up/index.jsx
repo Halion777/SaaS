@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import MainSidebar from '../../components/ui/MainSidebar';
@@ -21,6 +22,7 @@ const InvoicesFollowUp = () => {
   const { user } = useAuth();
   const { currentProfile } = useMultiUser();
   const { t } = useTranslation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
@@ -100,6 +102,18 @@ const InvoicesFollowUp = () => {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('sidebar-toggle', handleSidebarToggle);
     };
+  }, []);
+
+  // Read search parameter from URL on mount
+  useEffect(() => {
+    const searchParam = searchParams.get('search');
+    if (searchParam) {
+      setSearchTerm(searchParam);
+      // Remove the search parameter from URL after reading it
+      searchParams.delete('search');
+      setSearchParams(searchParams, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Set initial view mode

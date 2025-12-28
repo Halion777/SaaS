@@ -24,12 +24,13 @@ import EmailService from '../../services/emailService';
 import { supabase } from '../../services/supabaseClient';
 import QuoteTrackingService from '../../services/quoteTrackingService';
 
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const FollowUpManagement = () => {
   const { user } = useAuth();
   const { currentProfile } = useMultiUser();
   const { t } = useTranslation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
@@ -123,6 +124,18 @@ const FollowUpManagement = () => {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('storage', handleStorage);
     };
+  }, []);
+
+  // Read search parameter from URL on mount
+  useEffect(() => {
+    const searchParam = searchParams.get('search');
+    if (searchParam) {
+      setSearchTerm(searchParam);
+      // Remove the search parameter from URL after reading it
+      searchParams.delete('search');
+      setSearchParams(searchParams, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch real data function (exposed for ErrorDisplay retry)

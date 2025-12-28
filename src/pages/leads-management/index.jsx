@@ -9,6 +9,7 @@ import TableLoader from '../../components/ui/TableLoader';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import Pagination from '../../components/ui/Pagination';
 import LeadsFilterToolbar from './components/LeadsFilterToolbar';
+import Select from '../../components/ui/Select';
 import { useScrollPosition } from '../../utils/useScrollPosition';
 import { LeadManagementService } from '../../services/leadManagementService';
 import { useAuth } from '../../context/AuthContext';
@@ -422,27 +423,33 @@ const LeadsManagementPage = () => {
       <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4">{t('leadsManagement.leadsTab.title')}</h2>
       
       {/* Filter Toolbar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
-      <LeadsFilterToolbar
-        filters={filters}
-        onFiltersChange={handleFiltersChange}
-        filteredCount={filteredLeads.length}
-      />
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-muted-foreground">{t('common.sort', 'Sort by')}:</label>
-          <select
+      <div className="mb-4">
+        <LeadsFilterToolbar
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          filteredCount={filteredLeads.length}
+        />
+      </div>
+      
+      {/* Sort By - Separate row below filter */}
+      <div className="flex items-center justify-end gap-2 mb-4">
+        <label className="text-sm text-muted-foreground whitespace-nowrap">{t('common.sort', 'Sort by')}:</label>
+        <div className="w-48">
+          <Select
+            options={[
+              { value: 'created_at-desc', label: t('leadsManagement.sort.newest', 'Newest first') },
+              { value: 'created_at-asc', label: t('leadsManagement.sort.oldest', 'Oldest first') },
+              { value: 'client_name-asc', label: t('leadsManagement.sort.nameAsc', 'Name (A-Z)') },
+              { value: 'client_name-desc', label: t('leadsManagement.sort.nameDesc', 'Name (Z-A)') }
+            ]}
             value={`${sortConfig.key}-${sortConfig.direction}`}
-            onChange={(e) => {
-              const [key, direction] = e.target.value.split('-');
+            onValueChange={(value) => {
+              const [key, direction] = value.split('-');
               setSortConfig({ key, direction });
             }}
-            className="px-3 py-1.5 text-sm border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-          >
-            <option value="created_at-desc">{t('leadsManagement.sort.newest', 'Newest first')}</option>
-            <option value="created_at-asc">{t('leadsManagement.sort.oldest', 'Oldest first')}</option>
-            <option value="client_name-asc">{t('leadsManagement.sort.nameAsc', 'Name (A-Z)')}</option>
-            <option value="client_name-desc">{t('leadsManagement.sort.nameDesc', 'Name (Z-A)')}</option>
-          </select>
+            placeholder={t('common.sort', 'Sort by')}
+            className="w-full"
+          />
         </div>
       </div>
       

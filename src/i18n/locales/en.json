@@ -1959,7 +1959,8 @@
     "retry": "Retry",
     "checking": "Checking...",
     "refresh": "Refresh Page",
-    "connectMeNow": "Connect Me Now"
+    "connectMeNow": "Connect Me Now",
+    "sort": "Sort by"
   },
 
   "quotesManagement": {
@@ -2289,6 +2290,12 @@
         "endDate": "End: {{value}}",
         "removeFilter": "Remove {{filter}} filter"
       }
+    },
+    "sort": {
+      "newest": "Newest first",
+      "oldest": "Oldest first",
+      "nameAsc": "Name (A-Z)",
+      "nameDesc": "Name (Z-A)"
     },
     "title": "Leads Management",
     "subtitle": "Manage your prospects and convert them into clients",

@@ -2125,6 +2125,12 @@
         "removeFilter": "Supprimer le filtre {{filter}}"
       }
     },
+    "sort": {
+      "newest": "Plus récent d'abord",
+      "oldest": "Plus ancien d'abord",
+      "nameAsc": "Nom (A-Z)",
+      "nameDesc": "Nom (Z-A)"
+    },
     "title": "Gestion des Leads",
     "subtitle": "Gérez vos prospects et convertissez-les en clients",
     "tabs": {
@@ -2402,7 +2408,8 @@
     "retry": "Réessayer",
     "checking": "Vérification...",
     "refresh": "Actualiser la page",
-    "connectMeNow": "Me connecter maintenant"
+    "connectMeNow": "Me connecter maintenant",
+    "sort": "Trier par"
   },
 
   "dashboard": {

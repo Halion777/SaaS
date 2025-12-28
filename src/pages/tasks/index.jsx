@@ -144,7 +144,28 @@ const TasksPage = () => {
   };
 
   const handleTaskClick = (task) => {
-    if (task.link) {
+    // Navigate to appropriate follow-up page with search parameter
+    if (task.type === 'follow') {
+      // For quote follow-ups, navigate to quotes-follow-up page
+      if (task.quoteNumber) {
+        navigate(`/quotes-follow-up?search=${encodeURIComponent(task.quoteNumber)}`);
+      } else if (task.link) {
+        navigate(task.link);
+      }
+    } else if (task.type === 'invoice') {
+      // For invoice tasks, navigate to invoices-follow-up page
+      // Exception: invoice-needed tasks (creating invoice from quote) should go to quotes-management
+      if (task.id && task.id.startsWith('invoice-needed-')) {
+        // This is a quote that needs invoice creation, navigate to quotes-management
+        if (task.link) {
+          navigate(task.link);
+        }
+      } else if (task.invoiceNumber) {
+        navigate(`/invoices-follow-up?search=${encodeURIComponent(task.invoiceNumber)}`);
+      } else if (task.link) {
+        navigate(task.link);
+      }
+    } else if (task.link) {
       navigate(task.link);
     }
   };
@@ -207,6 +228,7 @@ const TasksPage = () => {
               action: t('dashboard.taskList.taskLabels.viewInvoice', 'View invoice'),
               amount: invoice.final_amount || invoice.amount || 0,
               daysOverdue: isDueToday ? 0 : daysOverdue,
+              invoiceNumber: invoice.invoice_number,
               link: `/invoices-management?invoice=${invoice.id}`
             });
           });
@@ -254,6 +276,7 @@ const TasksPage = () => {
               action: t('dashboard.taskList.taskLabels.viewInvoice', 'View invoice'),
               amount: invoice.amount || 0,
               daysOverdue: isDueToday ? 0 : daysOverdue,
+              invoiceNumber: invoice.invoice_number,
               link: `/expense-invoices?invoice=${invoice.id}`
             });
           });
@@ -283,6 +306,8 @@ const TasksPage = () => {
                 title,
                 status,
                 sent_at,
+                total_amount,
+                final_amount,
                 client:clients(id, name)
               `)
               .in('id', quoteIds)
@@ -316,6 +341,8 @@ const TasksPage = () => {
                     dueDate: followUp.scheduled_at,
                     action: t('dashboard.taskList.taskLabels.scheduleFollowUp', 'Schedule follow-up'),
                     daysSinceSent,
+                    amount: parseFloat(quote.final_amount || quote.total_amount || 0),
+                    quoteNumber: quote.quote_number,
                     link: `/quotes-management?quote=${quote.id}`
                   });
                 }
@@ -336,6 +363,8 @@ const TasksPage = () => {
             title,
             status,
             sent_at,
+            total_amount,
+            final_amount,
             client:clients(id, name)
           `)
           .eq('user_id', user.id)
@@ -363,6 +392,8 @@ const TasksPage = () => {
               dueDate: quote.sent_at,
               action: t('dashboard.taskList.taskLabels.followUpClient', 'Follow up with client'),
               daysSinceSent,
+              amount: parseFloat(quote.final_amount || quote.total_amount || 0),
+              quoteNumber: quote.quote_number,
               link: `/quotes-management?quote=${quote.id}`
             });
           });
@@ -381,6 +412,8 @@ const TasksPage = () => {
             title,
             status,
             accepted_at,
+            total_amount,
+            final_amount,
             client:clients(id, name)
           `)
           .eq('user_id', user.id)
@@ -407,9 +440,11 @@ const TasksPage = () => {
                 title: t('dashboard.taskList.taskLabels.createInvoiceForQuote', { quoteNumber: quote.quote_number || 'N/A' }, `Create invoice for quote ${quote.quote_number || 'N/A'}`),
                 client: quote.client?.name || t('dashboard.taskList.taskLabels.client', 'Client'),
                 priority: daysSinceAccepted > 3 ? 'high' : 'medium',
+                amount: parseFloat(quote.final_amount || quote.total_amount || 0),
                 dueDate: quote.accepted_at,
                 action: t('dashboard.taskList.taskLabels.createInvoice', 'Create invoice'),
                 daysSinceAccepted,
+                quoteNumber: quote.quote_number,
                 link: `/quotes-management?quote=${quote.id}&action=convert`
               });
             }
