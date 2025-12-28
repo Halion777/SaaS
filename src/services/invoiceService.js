@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient';
 import InvoiceFollowUpService from './invoiceFollowUpService';
 import EmailService from './emailService';
-import { formatCurrency } from '../utils/numberFormat';
+import { formatCurrency, formatNumber } from '../utils/numberFormat';
 
 export class InvoiceService {
   
@@ -245,9 +245,9 @@ export class InvoiceService {
       invoice.client?.country || '',
       invoice.client?.vat_number || '',
       invoice.client?.client_type || '',
-      invoice.amount || invoice.final_amount || 0,
-      invoice.netAmount || invoice.net_amount || 0,
-      invoice.taxAmount || invoice.tax_amount || 0,
+      formatNumber(invoice.amount || invoice.final_amount || 0),
+      formatNumber(invoice.netAmount || invoice.net_amount || 0),
+      formatNumber(invoice.taxAmount || invoice.tax_amount || 0),
       invoice.status || '',
       invoice.issueDate || invoice.issue_date || '',
       invoice.dueDate || invoice.due_date || '',

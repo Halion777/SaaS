@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient';
 import { uploadFile, getPublicUrl, getSignedUrl } from './storageService';
-import { formatCurrency } from '../utils/numberFormat';
+import { formatCurrency, formatNumber } from '../utils/numberFormat';
 
 /**
  * Service for managing expense invoices with Supabase backend
@@ -371,11 +371,11 @@ export class ExpenseInvoicesService {
         supplierAddress.city || '',
         supplierAddress.postalCode || supplierAddress.zip_code || '',
         supplierAddress.country || '',
-        invoice.amount || 0,
-        invoice.net_amount || 0,
-        invoice.vat_amount || 0,
-        depositAmount,
-        balanceAmount,
+        formatNumber(invoice.amount || 0),
+        formatNumber(invoice.net_amount || 0),
+        formatNumber(invoice.vat_amount || 0),
+        depositAmount ? formatNumber(depositAmount) : '',
+        balanceAmount ? formatNumber(balanceAmount) : '',
         invoice.status || '',
         invoice.category || '',
         invoice.source || '',
