@@ -138,7 +138,7 @@ const FinancialConfig = ({
           <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
             <Input
               label={t('quoteCreation.financialConfig.depositAmount', "Montant de l'acompte") + " (€)"}
-              type="number"
+                type="number"
               value={advanceConfig.amount || ''}
               onChange={(e) => {
                 const inputValue = e.target.value;
@@ -176,7 +176,7 @@ const FinancialConfig = ({
               }}
               min={0}
               max={maxDepositAmount !== null && maxDepositAmount > 0 ? maxDepositAmount : undefined}
-              placeholder="0.00"
+                placeholder="0.00"
               description={
                 maxDepositAmount !== null && maxDepositAmount > 0
                   ? t('quoteCreation.financialConfig.depositAmountMax', 'Maximum: {{amount}} €', { amount: maxDepositAmount.toFixed(2) })

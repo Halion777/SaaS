@@ -58,6 +58,13 @@ When sending an invoice:
 - **Attachments:** Files stored in Supabase Storage bucket `invoice-uploads`
 - **No Database Table:** No `invoice_attachments` table - files managed via storage bucket only
 
+**Invoice Types:**
+- `invoice_type` (VARCHAR) - Invoice type: `deposit` or `final`
+- `peppol_metadata` (JSONB) - Contains deposit and balance amounts for deposit/final invoices
+  - `deposit_amount` (NUMERIC) - Deposit amount (excl. VAT)
+  - `balance_amount` (NUMERIC) - Balance amount (incl. VAT)
+  - `buyerReference` (VARCHAR) - Reference to original quote/client invoice
+
 ---
 
 ### 2. `expense_invoices` (Expense Invoices - Inbound)
@@ -88,6 +95,17 @@ When sending an invoice:
 - `sender_peppol_id` (VARCHAR) - Supplier's Peppol identifier
 - `ubl_xml` (TEXT) - Complete UBL XML content
 - `peppol_metadata` (JSONB) - Additional Peppol data
+
+**Invoice Types:**
+- `invoice_type` (VARCHAR) - Invoice type: `deposit` or `final`
+- `peppol_metadata` (JSONB) - Contains deposit and balance amounts for deposit/final invoices
+  - `deposit_amount` (NUMERIC) - Deposit amount (excl. VAT)
+  - `balance_amount` (NUMERIC) - Balance amount (incl. VAT)
+  - `buyerReference` (VARCHAR) - Reference to original quote/client invoice (for final invoices)
+
+**Storage:**
+- **PDF Attachments:** PDF attachments extracted from UBL XML stored in Supabase Storage bucket `expense-invoice-attachments`
+- **Storage Path:** `expense-invoice-pdfs/{userId}/{invoiceNumber}_{filename}`
 
 ---
 
@@ -158,6 +176,9 @@ When sending an invoice:
 - `vat_number` (VARCHAR) - Client VAT number
 - `peppol_id` (VARCHAR) - Client's Peppol identifier
 - `peppol_enabled` (BOOLEAN) - Can receive Peppol invoices?
+- `client_type` (VARCHAR) - Client type: `company` (professional) or `individual` (particulier)
+  - **Professional clients (`company`):** Can receive invoices via Peppol or Email
+  - **Individual clients (`individual`):** Can only receive invoices via Email
 
 ---
 
@@ -185,17 +206,21 @@ When sending an invoice:
 #### Client Invoices (Outbound)
 - **`src/pages/invoices-management/index.jsx`** - Main invoice management page
 - **`src/pages/invoices-management/components/InvoicesDataTable.jsx`** - Invoice table/card display
-- **`src/pages/invoices-management/components/SendPeppolModal.jsx`** - Modal for sending invoice via Peppol
+- **`src/pages/invoices-management/components/SendInvoiceModal.jsx`** - Main modal that routes to Peppol or Email based on client type
+- **`src/pages/invoices-management/components/SendPeppolModal.jsx`** - Modal for sending invoice via Peppol (professional clients only)
+- **`src/pages/invoices-management/components/SendEmailModal.jsx`** - Modal for sending invoice via email (both professional and individual clients)
 - **`src/pages/invoices-management/components/InvoiceDetailModal.jsx`** - Modal for viewing invoice details
 - **`src/pages/invoices-management/components/InvoicesFilterToolbar.jsx`** - Filter toolbar
 
 #### Expense Invoices (Inbound)
 - **`src/pages/expense-invoices/index.jsx`** - Main expense invoice management page
 - **`src/pages/expense-invoices/components/ExpenseInvoicesDataTable.jsx`** - Expense invoice table/card display
+- **`src/pages/expense-invoices/components/ExpenseInvoiceDetailModal.jsx`** - Modal for viewing expense invoice details
 - **`src/pages/expense-invoices/components/QuickExpenseInvoiceCreation.jsx`** - Modal for manual expense invoice creation
 
-#### Peppol Configuration
-- **`src/pages/services/peppol/index.jsx`** - Peppol integration setup and status page
+#### Peppol Configuration & Monitoring
+- **`src/pages/services/peppol/index.jsx`** - Peppol integration setup, configuration, and monitoring page
+- **`src/pages/dashboard/components/PeppolWidget.jsx`** - Dashboard widget showing Peppol statistics
 
 ---
 
@@ -209,20 +234,44 @@ When sending an invoice:
 - **`src/services/expenseInvoicesService.js`** - Service for managing expense invoices
   - `getExpenseInvoices(userId, filters)` - Fetches expense invoices
   - `getExpenseInvoice(invoiceId)` - Fetches single expense invoice
+  - `createExpenseInvoice(invoiceData)` - Creates new expense invoice
   - `updateExpenseInvoiceStatus(invoiceId, status)` - Updates invoice status
 
-- **`src/services/peppolService.js`** - Service for Peppol operations
-  - `sendInvoice(invoiceData)` - Sends invoice via Peppol
+- **`src/services/peppolService.js`** - Main service for Peppol operations
+  - `sendInvoice(invoiceData, options)` - Sends invoice via Peppol with retry logic
   - `convertHaliqoInvoiceToPeppol(haliqoInvoice, senderInfo, receiverInfo)` - Converts invoice format
   - `generatePEPPOLXML(invoiceData)` - Generates UBL XML
   - `getPeppolSettings()` - Gets user's Peppol configuration
   - `getPeppolParticipants()` - Gets saved Peppol participants
+  - `checkReceiverCapability(vatNumber, countryCode)` - Checks if receiver is registered on Peppol
+  - `checkReceiverSupportsDocumentType(peppolId, documentType)` - Checks if receiver supports specific document type
+  - `sendWithRetry(invoiceData, maxRetries)` - Sends invoice with automatic retry logic
+
+- **`src/services/peppolApiExtensions.js`** - Extended Peppol API operations
+  - Additional API methods for Peppol network operations
+
+- **`src/services/peppolWebhookService.js`** - Service for handling Peppol webhook events
+  - Processes webhook events from Digiteal
+  - Handles status updates and acknowledgments
 
 - **`src/services/quotesService.js`** - Service for quote operations
   - `convertQuoteToInvoice(quote, userId)` - Converts accepted quote to invoice
 
 - **`src/services/companyInfoService.js`** - Service for company information
-  - `loadCompanyInfo()` - Loads company profile information
+  - `loadCompanyInfo(userId)` - Loads company profile information
+
+- **`src/services/emailService.js`** - Service for sending emails via Resend
+  - `sendInvoiceEmail(emailData, pdfBlob, attachments)` - Sends invoice via email with PDF attachment
+  - Handles email sending for both professional and individual clients
+
+- **`src/services/pdfService.js`** - Service for generating PDF documents
+  - `generateInvoicePDF(invoiceData, invoiceNumber, language, hideBankInfo, invoiceType, showWarning)` - Generates client invoice PDF
+  - `generateExpenseInvoicePDF(expenseInvoiceData, language)` - Generates expense invoice PDF
+  - Handles deposit and final invoice types
+  - Supports multi-language PDF generation
+
+- **`src/services/ocrService.js`** - Service for OCR processing (manual expense invoices)
+  - `extractInvoiceData(file)` - Extracts invoice data from uploaded document using Gemini AI
 
 ---
 
@@ -232,13 +281,54 @@ When sending an invoice:
   - Handles `send-ubl-document` action
   - Sends UBL XML to Digiteal API: `POST /api/v1/peppol/outbound-ubl-documents`
   - Uses Basic Auth
-  - Returns success/error response
+  - Returns success/error response with message ID
 
 - **`supabase/functions/peppol-webhook/index.ts`** - Edge function for receiving webhooks
   - Receives webhook events from Digiteal
+  - Authenticates requests using Basic Auth
   - Processes inbound invoices (creates expense invoices)
   - Updates invoice status based on webhook events
-  - Handles all webhook event types
+  - Handles all webhook event types:
+    - `PEPPOL_INVOICE_RECEIVED` - Regular invoice received
+    - `PEPPOL_CREDIT_NOTE_RECEIVED` - Credit note received
+    - `PEPPOL_SELF_BILLING_INVOICE_RECEIVED` - Self-billing invoice received
+    - `PEPPOL_SELF_BILLING_CREDIT_NOTE_RECEIVED` - Self-billing credit note received
+    - `PEPPOL_SEND_PROCESSING_OUTCOME` - Send result (status update)
+    - `PEPPOL_MLR_RECEIVED` - Message Level Response (delivery confirmation)
+    - `PEPPOL_TRANSPORT_ACK_RECEIVED` - Transport acknowledgment
+    - `PEPPOL_INVOICE_RESPONSE_RECEIVED` - Buyer business response
+    - `PEPPOL_FUTURE_VALIDATION_FAILED` - Validation warning
+  - Extracts PDF attachments from UBL XML
+  - Stores PDF attachments in Supabase Storage bucket `expense-invoice-attachments`
+  - Parses UBL XML to extract all mandatory fields
+  - Creates/updates supplier participants automatically
+
+- **`supabase/functions/send-emails/index.ts`** - Edge function for sending emails
+  - Handles email sending via Resend service
+  - Sends invoice PDFs as email attachments
+  - Supports multi-language email content
+  - Handles email translation for client language preferences
+
+- **`supabase/functions/process-expense-invoice/index.ts`** - Edge function for processing manual expense invoices
+  - Handles OCR processing for uploaded invoice documents
+  - Extracts invoice data using Gemini AI
+  - Returns extracted data for user verification
+
+### Utility Files
+
+- **`src/utils/peppolSchemes.js`** - Peppol scheme utilities
+  - `getPeppolVATSchemeId(countryCode)` - Gets Peppol scheme ID for country
+  - `parsePeppolId(peppolId)` - Parses Peppol ID into scheme and identifier
+  - `combinePeppolId(scheme, identifier)` - Combines scheme and identifier into full Peppol ID
+  - `PEPPOL_COUNTRY_LANGUAGE_MAP` - Maps countries to Peppol languages
+
+- **`src/utils/vatNumberValidation.js`** - VAT number validation utilities
+  - `validateVATNumber(vatNumber, countryCode)` - Validates VAT number format
+  - `getExpectedFormat(countryCode)` - Gets expected VAT number format for country
+
+- **`src/utils/countryCodes.js`** - Country code utilities
+  - `COUNTRY_CODES` - List of all country codes
+  - `searchCountries(query)` - Search countries by name or code
 
 ---
 
@@ -552,30 +642,76 @@ When sending an invoice:
 
 ## 🔄 Flows
 
-### Flow 1: Sending Client Invoice via Peppol
+### Flow 1: Sending Client Invoice (Professional vs Individual)
+
+**For Professional Clients (`client_type = 'company'`):**
 
 ```
-1. User clicks "Send via Peppol" on invoice
+1. User clicks "Send Invoice" button
    ↓
-2. Check Peppol configuration (peppolSettings.isConfigured)
+2. SendInvoiceModal opens and checks client type
    ↓
-3. Load company info (sender) and client info (receiver)
+3. System automatically checks receiver capability (checkReceiverCapability)
+   - Uses VAT number and country code to find receiver on Peppol network
+   - Stores found Peppol identifier for reuse
    ↓
-4. Create invoice lines from quote tasks or single line
+4. If receiver is on Peppol:
+   - Shows both Peppol and Email options
+   - Auto-selects Peppol option
+   - User can choose Peppol or Email
    ↓
-5. Convert invoice to Peppol format (convertHaliqoInvoiceToPeppol)
+5. If receiver is NOT on Peppol:
+   - Shows Email option only (with warning)
+   - Warning: "This is not the actual invoice. You must send via Peppol to get paid."
    ↓
-6. Generate UBL XML (generatePEPPOLXML)
+6. If user selects Peppol:
+   - Opens SendPeppolModal
+   - Checks if receiver supports INVOICE document type (checkReceiverSupportsDocumentType)
+   - If not supported: Shows error and allows fallback to Email
+   - If supported: Continues with Peppol sending
    ↓
-7. Send via edge function (peppol-webhook-config)
+7. Load company info (sender) and client info (receiver)
    ↓
-8. Edge function sends to Digiteal API (POST /api/v1/peppol/outbound-ubl-documents)
+8. Create invoice lines from quote tasks or single "Deposit payment" line for deposit invoices
    ↓
-9. Update invoice with initial status (peppol_status = 'sent')
+9. Convert invoice to Peppol format (convertHaliqoInvoiceToPeppol)
+   - Handles deposit and final invoice types
+   - Includes deposit invoice number for final invoices
    ↓
-10. Webhook receives status updates (PEPPOL_SEND_PROCESSING_OUTCOME, PEPPOL_MLR_RECEIVED)
+10. Generate UBL XML (generatePEPPOLXML)
     ↓
-11. Invoice status updated to 'delivered' when MLR confirms delivery
+11. Send via edge function (peppol-webhook-config) with retry logic
+    ↓
+12. Edge function sends to Digiteal API (POST /api/v1/peppol/outbound-ubl-documents)
+    ↓
+13. Update invoice with initial status (peppol_status = 'sent')
+    - Creates tracking record in peppol_invoices table
+    ↓
+14. Webhook receives status updates (PEPPOL_SEND_PROCESSING_OUTCOME, PEPPOL_MLR_RECEIVED)
+    ↓
+15. Invoice status updated to 'delivered' when MLR confirms delivery
+```
+
+**For Individual Clients (`client_type = 'individual'`):**
+
+```
+1. User clicks "Send Invoice" button
+   ↓
+2. SendInvoiceModal opens and detects individual client type
+   ↓
+3. System automatically opens SendEmailModal (no Peppol option shown)
+   ↓
+4. Load company info and client info
+   ↓
+5. Generate invoice PDF (generateInvoicePDF)
+   - Shows bank information (not hidden for individual clients)
+   - No warning message in PDF
+   ↓
+6. Send email via Resend service (send-emails edge function)
+   - PDF attached as email attachment
+   - Email content translated to client's language preference
+   ↓
+7. Update invoice with email sent status
 ```
 
 ### Flow 2: Receiving Expense Invoice via Peppol
@@ -664,32 +800,66 @@ When sending an invoice:
 
 ---
 
-### Step 3: Send Client Invoice via Peppol
+### Step 3: Send Client Invoice
+
+**For Professional Clients:**
 
 1. Navigate to `/invoices-management`
 2. Find the invoice you want to send
-3. Click "Send via Peppol" button in actions column
-4. System checks if Peppol is configured
-   - If not configured: Shows warning and redirects to configuration page
-   - If configured: Continues with sending
-5. Select client's Peppol ID (from participants or manual entry)
+3. Click "Send Invoice" button in actions column
+4. System automatically:
+   - Checks client type (must be `company` for Peppol)
+   - Checks if receiver is registered on Peppol network (checkReceiverCapability)
+   - Shows appropriate sending options
+5. **If receiver is on Peppol:**
+   - Select "Send via Peppol" option (auto-selected)
+   - System checks if receiver supports INVOICE document type
+   - If supported: Click "Send" button
+   - System automatically:
+     - Loads company info (sender)
+     - Loads client info (receiver)
+     - Creates invoice lines (full breakdown for final invoices, "Deposit payment" for deposit invoices)
+     - Converts invoice to Peppol format
+     - Generates UBL XML
+     - Sends via Peppol edge function with retry logic
+     - Updates invoice with Peppol status
+     - Creates tracking record in peppol_invoices table
+   - Invoice status updates automatically via webhooks:
+     - Initial: `sent`
+     - When MLR received: `delivered`
+6. **If receiver is NOT on Peppol:**
+   - Select "Send via Email" option (with warning)
+   - Warning: "This is not the actual invoice. You must send via Peppol to get paid."
+   - Click "Send" button
+   - System generates PDF (bank info hidden) and sends via email
+7. **If Peppol sending fails:**
+   - System shows error message
+   - User can fallback to Email option
+   - Email PDF includes warning message
+
+**For Individual Clients:**
+
+1. Navigate to `/invoices-management`
+2. Find the invoice you want to send
+3. Click "Send Invoice" button in actions column
+4. System automatically opens Email modal (no Peppol option)
+5. Review email details (recipient, subject, message)
 6. Click "Send" button
 7. System automatically:
-   - Loads company info (sender)
-   - Loads client info (receiver)
-   - Creates invoice lines from quote tasks
-   - Converts invoice to Peppol format
-   - Generates UBL XML
-   - Sends via Peppol edge function
-   - Updates invoice with Peppol status
-8. Invoice status updates automatically via webhooks:
-   - Initial: `sent`
-   - When MLR received: `delivered`
+   - Generates invoice PDF (bank info shown)
+   - Sends email via Resend service
+   - Email content translated to client's language preference
+   - Updates invoice with email sent status
 
 **Files:**
-- `src/pages/invoices-management/components/SendPeppolModal.jsx`
-- `src/services/peppolService.js` → `sendInvoice()`
-- `supabase/functions/peppol-webhook-config/index.ts`
+- `src/pages/invoices-management/components/SendInvoiceModal.jsx` - Main routing modal
+- `src/pages/invoices-management/components/SendPeppolModal.jsx` - Peppol sending modal
+- `src/pages/invoices-management/components/SendEmailModal.jsx` - Email sending modal
+- `src/services/peppolService.js` → `sendInvoice()`, `checkReceiverCapability()`, `checkReceiverSupportsDocumentType()`
+- `src/services/pdfService.js` → `generateInvoicePDF()`
+- `src/services/emailService.js` → `sendInvoiceEmail()`
+- `supabase/functions/peppol-webhook-config/index.ts` - Peppol sending edge function
+- `supabase/functions/send-emails/index.ts` - Email sending edge function
 
 ---
 
@@ -735,11 +905,12 @@ When sending an invoice:
 3. View invoice details in modal:
    - General invoice information
    - Supplier information
-   - Financial information
+   - Financial information (with HT and TVA breakdown for deposit/final invoices)
    - Notes
    - Peppol metadata tab
+   - PDF attachment (if received via Peppol)
 
-**Files:** `src/pages/expense-invoices/components/ExpenseInvoiceDetailModal.jsx` (if exists)
+**Files:** `src/pages/expense-invoices/components/ExpenseInvoiceDetailModal.jsx`
 
 ---
 
@@ -760,6 +931,19 @@ When sending an invoice:
 - `src/pages/expense-invoices/components/QuickExpenseInvoiceCreation.jsx`
 - `src/services/ocrService.js` → `extractInvoiceData()`
 - `supabase/functions/process-expense-invoice/index.ts`
+
+---
+
+### Step 7: View Peppol Activity
+
+1. Navigate to `/services/peppol`
+2. Switch to "Sent" tab to view all sent invoices
+3. Switch to "Received" tab to view all received invoices
+4. Filter by status, date range, amount, recipient/sender
+5. View detailed information for each invoice
+6. Monitor Peppol statistics (total sent, total received, amounts)
+
+**Files:** `src/pages/services/peppol/index.jsx`
 
 ---
 
@@ -786,11 +970,63 @@ When sending an invoice:
 
 ---
 
+## 🔧 Utility Files
+
+- **`src/utils/peppolSchemes.js`** - Peppol scheme utilities
+  - `getPeppolVATSchemeId(countryCode)` - Gets Peppol scheme ID for country
+  - `parsePeppolId(peppolId)` - Parses Peppol ID into scheme and identifier
+  - `combinePeppolId(scheme, identifier)` - Combines scheme and identifier into full Peppol ID
+  - `PEPPOL_COUNTRY_LANGUAGE_MAP` - Maps countries to Peppol languages
+
+- **`src/utils/vatNumberValidation.js`** - VAT number validation utilities
+  - `validateVATNumber(vatNumber, countryCode)` - Validates VAT number format
+  - `getExpectedFormat(countryCode)` - Gets expected VAT number format for country
+
+- **`src/utils/countryCodes.js`** - Country code utilities
+  - `COUNTRY_CODES` - List of all country codes
+  - `searchCountries(query)` - Search countries by name or code
+
+---
+
 ## 📚 Additional Resources
 
 - **Digiteal API Documentation:** See `DIGITEAL_API_DOCUMENTATION.md`
 - **UBL Syntax & Validation:** See `DIGITEAL_API_DOCUMENTATION.md` → UBL Syntax & Validation Rules
 - **Mandatory Fields:** See `DIGITEAL_API_DOCUMENTATION.md` → Mandatory Fields for Peppol BIS Billing 3.0
+
+---
+
+## 🔍 Key Features
+
+### Client Type-Based Routing
+- **Professional clients (`company`):** System automatically checks if receiver is on Peppol network
+  - If on Peppol: Shows both Peppol and Email options (Peppol auto-selected)
+  - If not on Peppol: Shows Email option with warning
+  - Validates receiver supports INVOICE document type before sending
+- **Individual clients (`individual`):** Directly opens Email modal (no Peppol option)
+
+### Invoice Types Support
+- **Deposit invoices:** Shows simple "Deposit payment" line item
+- **Final invoices:** Shows full task/material breakdown
+- **Deposit/Balance amounts:** Stored in `peppol_metadata` for proper calculation
+
+### Email Sending Features
+- **Multi-language support:** Email content translated to client's language preference
+- **PDF generation:** Bank information hidden for professional clients (unless Peppol failed/not sent)
+- **Warning messages:** Professional clients receive warning when sending via email instead of Peppol
+- **Resend service:** Uses Resend API for reliable email delivery
+
+### Peppol Network Features
+- **Receiver capability checking:** Automatically checks if receiver is registered on Peppol
+- **Document type validation:** Validates receiver supports INVOICE document type
+- **Retry logic:** Automatic retry on failed sends (up to 3 attempts)
+- **Status tracking:** Real-time status updates via webhooks
+- **PDF attachments:** Extracts and stores PDF attachments from received invoices
+
+### Storage
+- **Client invoice attachments:** `invoice-uploads` bucket
+- **Expense invoice PDFs:** `expense-invoice-attachments` bucket
+- **Storage path format:** `expense-invoice-pdfs/{userId}/{invoiceNumber}_{filename}`
 
 ---
 

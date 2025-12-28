@@ -7,4 +7,9 @@ package-lock.json
 .idea/
 vite.config.*s.*
 .env
+.env.local
+.env.*.local
+.env.server
+.env.frontend
+.env.client
 
