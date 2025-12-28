@@ -209,16 +209,26 @@ export async function createClient(clientData) {
       };
     }
     
-    // Validate: Check for duplicate email (globally unique per user)
-    if (clientData.email) {
-      const { data: existingEmail } = await supabase
+    // Validate: Check for duplicate email (user-specific only)
+    // Normalize email for consistent checking and storage
+    // Database uses: lower(TRIM(both from email)) in unique index
+    const normalizedEmail = clientData.email ? clientData.email.trim().toLowerCase() : null;
+    
+    if (normalizedEmail) {
+      // Check for duplicate email ONLY within the current user's clients
+      // Use ilike for case-insensitive matching to catch any existing emails
+      // (matches the database unique index: lower(TRIM(both from email)))
+      const { data: existingEmail, error: checkError } = await supabase
         .from('clients')
         .select('id, name, client_type')
-        .eq('user_id', user.id)
-        .eq('email', clientData.email.trim().toLowerCase())
+        .eq('user_id', user.id)  // CRITICAL: Only check within current user's clients
+        .ilike('email', normalizedEmail)  // Case-insensitive match
         .maybeSingle();
       
-      if (existingEmail) {
+      if (checkError) {
+        console.error('Error checking for duplicate email:', checkError);
+        // Continue with creation if check fails - let database handle it
+      } else if (existingEmail) {
         return { 
           error: { 
             message: `A client with email "${clientData.email}" already exists: "${existingEmail.name}". Please use a different email address.`,
@@ -235,7 +245,7 @@ export async function createClient(clientData) {
     const mappedData = {
       user_id: user.id, // Add the current user's ID
       name: clientData.name,
-      email: clientData.email,
+      email: normalizedEmail || clientData.email, // Use normalized email for consistency
       phone: clientData.phone,
       address: clientData.address,
       city: clientData.city,
@@ -262,6 +272,35 @@ export async function createClient(clientData) {
     if (error) {
       console.error('Supabase error creating client:', error);
       console.error('Error details:', error.details, 'Error hint:', error.hint);
+      
+      // Handle database constraint violations (e.g., unique constraint on email)
+      // PostgreSQL error code 23505 = unique_violation
+      // The database has a unique index on (user_id, lower(TRIM(both from email)))
+      // So this error means duplicate email for the same user
+      if (error.code === '23505' || error.message?.includes('unique') || error.message?.includes('duplicate')) {
+        // If it's a constraint violation, check if it's within the same user
+        // The unique index ensures it's user-specific, so this should always be same user
+        const { data: existingClient } = await supabase
+          .from('clients')
+          .select('id, name, user_id')
+          .eq('user_id', user.id)  // Ensure we only check within current user's clients
+          .ilike('email', normalizedEmail || clientData.email?.trim().toLowerCase())
+          .maybeSingle();
+        
+        if (existingClient && existingClient.user_id === user.id) {
+          return {
+            error: {
+              message: `A client with email "${clientData.email}" already exists: "${existingClient.name}". Please use a different email address.`,
+              code: 'DUPLICATE_EMAIL',
+              existingClientName: existingClient.name
+            }
+          };
+        } else if (existingClient && existingClient.user_id !== user.id) {
+          // This shouldn't happen if RLS is working, but handle it gracefully
+          console.warn('Email exists for different user - this may indicate a database constraint issue');
+        }
+      }
+      
       return { error };
     }
     
@@ -287,17 +326,27 @@ export async function updateClient(id, clientData) {
       return { error: { message: 'User not authenticated', details: userError?.message } };
     }
     
-    // Validate: Check for duplicate email (globally unique per user, excluding current client)
-    if (clientData.email) {
-      const { data: existingEmail } = await supabase
+    // Validate: Check for duplicate email (user-specific only, excluding current client)
+    // Normalize email for consistent checking and storage
+    // Database uses: lower(TRIM(both from email)) in unique index
+    const normalizedEmail = clientData.email ? clientData.email.trim().toLowerCase() : null;
+    
+    if (normalizedEmail) {
+      // Check for duplicate email ONLY within the current user's clients (excluding current client)
+      // Use ilike for case-insensitive matching to catch any existing emails
+      // (matches the database unique index: lower(TRIM(both from email)))
+      const { data: existingEmail, error: checkError } = await supabase
         .from('clients')
         .select('id, name, client_type')
-        .eq('user_id', user.id)
-        .eq('email', clientData.email.trim().toLowerCase())
+        .eq('user_id', user.id)  // CRITICAL: Only check within current user's clients
+        .ilike('email', normalizedEmail)  // Case-insensitive match
         .neq('id', id) // Exclude current client
         .maybeSingle();
       
-      if (existingEmail) {
+      if (checkError) {
+        console.error('Error checking for duplicate email:', checkError);
+        // Continue with update if check fails - let database handle it
+      } else if (existingEmail) {
         return { 
           error: { 
             message: `A client with email "${clientData.email}" already exists: "${existingEmail.name}". Please use a different email address.`,
@@ -313,7 +362,7 @@ export async function updateClient(id, clientData) {
     // Map frontend fields to database fields
     const mappedData = {
       name: clientData.name,
-      email: clientData.email,
+      email: normalizedEmail || clientData.email, // Use normalized email for consistency
       phone: clientData.phone,
       address: clientData.address,
       city: clientData.city,
@@ -339,6 +388,36 @@ export async function updateClient(id, clientData) {
     
     if (error) {
       console.error('Supabase error updating client:', error);
+      
+      // Handle database constraint violations (e.g., unique constraint on email)
+      // PostgreSQL error code 23505 = unique_violation
+      // The database has a unique index on (user_id, lower(TRIM(both from email)))
+      // So this error means duplicate email for the same user
+      if (error.code === '23505' || error.message?.includes('unique') || error.message?.includes('duplicate')) {
+        // If it's a constraint violation, check if it's within the same user
+        // The unique index ensures it's user-specific, so this should always be same user
+        const { data: existingClient } = await supabase
+          .from('clients')
+          .select('id, name, user_id')
+          .eq('user_id', user.id)  // Ensure we only check within current user's clients
+          .ilike('email', normalizedEmail || clientData.email?.trim().toLowerCase())
+          .neq('id', id) // Exclude current client
+          .maybeSingle();
+        
+        if (existingClient && existingClient.user_id === user.id) {
+          return {
+            error: {
+              message: `A client with email "${clientData.email}" already exists: "${existingClient.name}". Please use a different email address.`,
+              code: 'DUPLICATE_EMAIL',
+              existingClientName: existingClient.name
+            }
+          };
+        } else if (existingClient && existingClient.user_id !== user.id) {
+          // This shouldn't happen if RLS is working, but handle it gracefully
+          console.warn('Email exists for different user - this may indicate a database constraint issue');
+        }
+      }
+      
       return { error };
     }
     
