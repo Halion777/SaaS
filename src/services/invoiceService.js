@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient';
 import InvoiceFollowUpService from './invoiceFollowUpService';
 import EmailService from './emailService';
+import { formatCurrency } from '../utils/numberFormat';
 
 export class InvoiceService {
   
@@ -334,7 +335,8 @@ export class InvoiceService {
       const companyName = companyProfile?.company_name || 'Notre entreprise';
 
       // Prepare variables for template (edge function will load and render template)
-      const totalAmount = invoices.reduce((sum, inv) => sum + inv.amount, 0).toFixed(2) + '€';
+      // Use centralized formatCurrency for European formatting
+      const totalAmount = formatCurrency(invoices.reduce((sum, inv) => sum + inv.amount, 0));
       const invoiceDate = new Date().toLocaleDateString('fr-FR');
 
       // Send email via edge function with attachment

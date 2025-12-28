@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 import { uploadFile, getPublicUrl, getSignedUrl } from './storageService';
+import { formatCurrency } from '../utils/numberFormat';
 
 /**
  * Service for managing expense invoices with Supabase backend
@@ -436,7 +437,8 @@ export class ExpenseInvoicesService {
       const companyName = companyProfile?.company_name || 'Notre entreprise';
 
       // Prepare variables for template (edge function will load and render template)
-      const totalAmount = invoicesData.reduce((sum, inv) => sum + parseFloat(inv.amount || 0), 0).toFixed(2) + '€';
+      // Use centralized formatCurrency for European formatting
+      const totalAmount = formatCurrency(invoicesData.reduce((sum, inv) => sum + parseFloat(inv.amount || 0), 0));
       const invoiceDate = new Date().toLocaleDateString('fr-FR');
 
       // Send email via edge function with attachment
