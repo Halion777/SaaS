@@ -32,6 +32,7 @@ import {
   stopFollowUpsForQuote,
   logQuoteEvent 
 } from '../../services/followUpService';
+import { formatCurrency } from '../../utils/numberFormat';
 
 
 const QuotesManagement = () => {
@@ -1094,16 +1095,7 @@ const QuotesManagement = () => {
     return colors[status] || 'bg-gray-100 text-gray-700';
   };
 
-  // Helper functions
-  const formatCurrency = (amount) => {
-    // Use comma as decimal separator (fr-FR format)
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(amount);
-  };
+  // Helper functions - formatCurrency is imported from utils
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';

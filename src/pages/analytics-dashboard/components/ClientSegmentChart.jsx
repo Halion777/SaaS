@@ -2,19 +2,13 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import Icon from '../../../components/AppIcon';
+import { formatCurrency } from '../../../utils/numberFormat';
 
 const ClientSegmentChart = ({ data, isLoading = false }) => {
   const { t, i18n } = useTranslation();
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B'];
 
-  const formatCurrency = (value) => {
-    const locale = i18n.language === 'nl' ? 'nl-NL' : i18n.language === 'en' ? 'en-US' : 'fr-FR';
-    return new Intl.NumberFormat(locale, {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 0
-    }).format(value);
-  };
+  // formatCurrency is imported from utils
 
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {

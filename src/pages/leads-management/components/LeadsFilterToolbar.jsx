@@ -4,6 +4,7 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import { useTranslation } from 'react-i18next';
+import { formatCurrency } from '../../../utils/numberFormat';
 
 const LeadsFilterToolbar = ({ filters, onFiltersChange, filteredCount = 0 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -11,11 +12,11 @@ const LeadsFilterToolbar = ({ filters, onFiltersChange, filteredCount = 0 }) => 
 
   const priceRangeOptions = [
     { value: 'all', label: t('leadsManagement.filter.price.all') },
-    { value: '0-1000', label: '€0 - €1,000' },
-    { value: '1000-5000', label: '€1,000 - €5,000' },
-    { value: '5000-10000', label: '€5,000 - €10,000' },
-    { value: '10000-25000', label: '€10,000 - €25,000' },
-    { value: '25000+', label: '€25,000+' }
+    { value: '0-1000', label: `${formatCurrency(0, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} - ${formatCurrency(1000, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` },
+    { value: '1000-5000', label: `${formatCurrency(1000, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} - ${formatCurrency(5000, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` },
+    { value: '5000-10000', label: `${formatCurrency(5000, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} - ${formatCurrency(10000, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` },
+    { value: '10000-25000', label: `${formatCurrency(10000, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} - ${formatCurrency(25000, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` },
+    { value: '25000+', label: `${formatCurrency(25000, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}+` }
   ];
 
   const periodOptions = [

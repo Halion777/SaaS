@@ -7,6 +7,7 @@ import { Checkbox } from '../../../components/ui/Checkbox';
 import Select from '../../../components/ui/Select';
 import Pagination from '../../../components/ui/Pagination';
 import SortableHeader from '../../../components/ui/SortableHeader';
+import { formatCurrency } from '../../../utils/numberFormat';
 
 const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSelectionChange, filters, onFiltersChange, onStatusUpdate, downloadingInvoiceId = null, canEdit = true, canDelete = true, groupByQuote = false }) => {
   const { t, i18n } = useTranslation();
@@ -32,13 +33,6 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
     return () => window.removeEventListener('resize', handleResize);
   }, [viewMode]);
 
-  const formatCurrency = (amount) => {
-    // Always use comma as decimal separator (fr-FR format) to match quote creation flow
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount);
-  };
 
   const formatDate = (date) => {
     return new Intl.DateTimeFormat(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US').format(new Date(date));

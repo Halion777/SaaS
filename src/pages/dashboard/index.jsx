@@ -422,8 +422,6 @@ const Dashboard = () => {
     }
   }, [user?.id]); // Only depend on user.id, not the entire user object
 
-  // Import formatCurrency at the top
-
   const metricsData = dashboardData.loading ? [
     {
       title: t('dashboard.metrics.quotesThisMonth'),

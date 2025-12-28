@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import { formatCurrency } from '../../../utils/numberFormat';
 
 const InvoiceDetailModal = ({ invoice, isOpen, onClose, allInvoices = [] }) => {
   const { t, i18n } = useTranslation();
@@ -24,13 +25,6 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose, allInvoices = [] }) => {
   // Professional clients can use Peppol, even if they haven't sent via Peppol yet
   const showPeppolTab = isProfessional;
 
-  const formatCurrency = (amount) => {
-    // Always use comma as decimal separator (fr-FR format) to match quote creation flow
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount || 0);
-  };
 
   const formatDate = (date) => {
     if (!date) return t('invoicesManagement.common.notAvailable');

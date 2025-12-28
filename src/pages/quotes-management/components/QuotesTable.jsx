@@ -6,6 +6,7 @@ import { Checkbox } from '../../../components/ui/Checkbox';
 import Pagination from '../../../components/ui/Pagination';
 import SortableHeader from '../../../components/ui/SortableHeader';
 import { useTranslation } from 'react-i18next';
+import { formatCurrency } from '../../../utils/numberFormat';
 
 const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuoteAction, onQuoteSelect, viewMode = 'table', setViewMode = () => {}, searchTerm = '', setSearchTerm = () => {}, canEdit = true, canDelete = true, convertingQuoteId = null }) => {
   const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
@@ -168,12 +169,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
     });
   };
 
-  const formatAmount = (amount) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount);
-  };
+  // formatAmount is replaced with formatCurrency from utils
 
   const renderTableView = () => (
     <div className="overflow-x-auto">
@@ -257,7 +253,7 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
               </td>
               <td className="p-3 md:p-4 font-medium text-foreground">{quote.number}</td>
               <td className="p-3 md:p-4 text-foreground">{quote.clientName}</td>
-              <td className="p-3 md:p-4 font-medium text-foreground">{formatAmount(quote.amount)}</td>
+              <td className="p-3 md:p-4 font-medium text-foreground">{formatCurrency(quote.amount)}</td>
               <td className="p-3 md:p-4">
                 {getStatusBadge(quote)}
               </td>

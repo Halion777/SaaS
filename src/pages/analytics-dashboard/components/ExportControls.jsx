@@ -5,19 +5,12 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import Button from '../../../components/ui/Button';
 import Icon from '../../../components/AppIcon';
+import { formatCurrency } from '../../../utils/numberFormat';
 
 const ExportControls = ({ analyticsData, kpiData, detailedAnalyticsData, revenueData, conversionData, clientSegmentData, isProPlan = false }) => {
   const { t, i18n } = useTranslation();
   const [isExporting, setIsExporting] = useState(false);
 
-  const formatCurrency = (amount) => {
-    // Always use comma as decimal separator (fr-FR format) to match quote creation flow
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 0
-    }).format(amount || 0);
-  };
 
   const formatDate = (date) => {
     const locale = i18n.language === 'nl' ? 'nl-NL' : i18n.language === 'en' ? 'en-US' : 'fr-FR';

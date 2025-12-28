@@ -4,6 +4,7 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import { ExpenseInvoicesService } from '../../../services/expenseInvoicesService';
 import { supabase } from '../../../services/supabaseClient';
+import { formatCurrency } from '../../../utils/numberFormat';
 
 const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
   const { t, i18n } = useTranslation();
@@ -95,13 +96,6 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
 
   if (!isOpen || !invoice) return null;
 
-  const formatCurrency = (amount) => {
-    // Always use comma as decimal separator (fr-FR format) to match quote creation flow
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount);
-  };
 
   const formatDate = (date) => {
     if (!date) return t('expenseInvoices.common.notAvailable', 'N/A');

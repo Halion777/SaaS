@@ -10,6 +10,7 @@ import { createProcessingOverlay } from '../../../components/ui/ProcessingOverla
 import { generateInvoicePDF } from '../../../services/pdfService';
 import { supabase } from '../../../services/supabaseClient';
 import { translateTextWithAI } from '../../../services/googleAIService';
+import { formatCurrency } from '../../../utils/numberFormat';
 
 const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalClient = false, fromInvalidPeppolId = false, isPeppolFailed = false, isPeppolNotSent = false, shouldShowEmailWarning = false }) => {
   const { t, i18n } = useTranslation();
@@ -247,10 +248,8 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
       }
       
       // Format invoice amount (edge function will fetch client's language preference from database)
-      const formattedAmount = new Intl.NumberFormat(
-        'fr-FR', // Default format, edge function will use client's language preference
-        { style: 'currency', currency: 'EUR' }
-      ).format(invoiceAmount);
+      // Use formatCurrency utility for consistent European formatting
+      const formattedAmount = formatCurrency(invoiceAmount);
       
       // Send email to client using invoice_sent template from database
       // Edge function will fetch client's language preference from database using client_id
@@ -276,10 +275,7 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
       // If sendCopy is enabled, send a copy to the user with PDF attachment
       if (emailData.sendCopy && user?.email && result.success) {
         // Format invoice amount for user copy (edge function will fetch user's language preference from database)
-        const userFormattedAmount = new Intl.NumberFormat(
-          'fr-FR', // Default format, edge function will use user's language preference
-          { style: 'currency', currency: 'EUR' }
-        ).format(invoiceAmount);
+        const userFormattedAmount = formatCurrency(invoiceAmount);
         
         // Send copy to user - edge function will fetch user's language preference from database using user_id
         await EmailService.sendEmailViaEdgeFunction('invoice_sent', {

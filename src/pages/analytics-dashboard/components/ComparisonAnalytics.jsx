@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Icon from '../../../components/AppIcon';
+import { formatCurrency } from '../../../utils/numberFormat';
 
 const ComparisonAnalytics = () => {
   const [activeComparison, setActiveComparison] = useState('industry');
@@ -73,13 +74,9 @@ const ComparisonAnalytics = () => {
 
   const formatValue = (value, unit) => {
     if (unit === '€') {
-      return new Intl.NumberFormat('fr-FR', {
-        style: 'currency',
-        currency: 'EUR',
-        minimumFractionDigits: 0
-      }).format(value);
+      return formatCurrency(value || 0, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
     }
-    return `${value}${unit || ''}`;
+    return `${value || 0}${unit || ''}`;
   };
 
   const calculateDifference = (current, comparison) => {

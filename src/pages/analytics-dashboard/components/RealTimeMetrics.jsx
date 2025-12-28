@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import Icon from '../../../components/AppIcon';
+import { formatCurrency } from '../../../utils/numberFormat';
 
 const RealTimeMetrics = ({ data }) => {
   const progressPercentage = data?.currentMonth ? 
@@ -39,10 +40,10 @@ const RealTimeMetrics = ({ data }) => {
           <div className="space-y-2">
             <div className="flex items-baseline justify-between">
               <span className="text-xl font-bold text-foreground">
-                €{data?.currentMonth?.current?.toLocaleString() || '0'}
+                {formatCurrency(data?.currentMonth?.current || 0, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </span>
               <span className="text-sm text-muted-foreground">
-                / €{data?.currentMonth?.target?.toLocaleString() || '0'}
+                / {formatCurrency(data?.currentMonth?.target || 0, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </span>
             </div>
             <div className="w-full h-2 bg-muted rounded-full overflow-hidden">

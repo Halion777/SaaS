@@ -1,6 +1,7 @@
 import React from 'react';
 import { Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Line } from 'recharts';
 import Icon from '../../../components/AppIcon';
+import { formatCurrency } from '../../../utils/numberFormat';
 
 const ProfitabilityChart = ({ serviceCategory }) => {
   const data = [
@@ -61,15 +62,15 @@ const ProfitabilityChart = ({ serviceCategory }) => {
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">CA:</span>
-              <span className="text-sm font-medium text-foreground">€{data.revenue?.toLocaleString()}</span>
+              <span className="text-sm font-medium text-foreground">{formatCurrency(data.revenue || 0, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">Coûts:</span>
-              <span className="text-sm font-medium text-foreground">€{data.cost?.toLocaleString()}</span>
+              <span className="text-sm font-medium text-foreground">{formatCurrency(data.cost || 0, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">Profit:</span>
-              <span className="text-sm font-medium text-success">€{data.profit?.toLocaleString()}</span>
+              <span className="text-sm font-medium text-success">{formatCurrency(data.profit || 0, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">Marge:</span>
@@ -170,7 +171,7 @@ const ProfitabilityChart = ({ serviceCategory }) => {
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-bold text-success">{item.margin}%</p>
-                    <p className="text-xs text-muted-foreground">€{item.profit.toLocaleString()}</p>
+                    <p className="text-xs text-muted-foreground">{formatCurrency(item.profit || 0, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                   </div>
                 </div>
               ))}
