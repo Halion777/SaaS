@@ -32,7 +32,7 @@ import {
   stopFollowUpsForQuote,
   logQuoteEvent 
 } from '../../services/followUpService';
-import { formatCurrency } from '../../utils/numberFormat';
+import { formatCurrency, formatNumber } from '../../utils/numberFormat';
 
 
 const QuotesManagement = () => {
@@ -1198,9 +1198,9 @@ const QuotesManagement = () => {
               created_at: q.created_at,
               client_name: q.client?.name || '',
               client_email: q.client?.email || '',
-              total_amount: q.total_amount ?? '',
-              tax_amount: q.tax_amount ?? '',
-              final_amount: q.final_amount ?? '',
+              total_amount: q.total_amount != null ? formatNumber(q.total_amount) : '',
+              tax_amount: q.tax_amount != null ? formatNumber(q.tax_amount) : '',
+              final_amount: q.final_amount != null ? formatNumber(q.final_amount) : '',
               deadline: q.deadline ?? '',
               category: Array.isArray(q.project_categories) ? q.project_categories.join('|') : '',
             };
@@ -1212,11 +1212,11 @@ const QuotesManagement = () => {
                   task_id: t.id,
                   task_name: t.name || '',
                   task_description: (t.description || '').replace(/\n/g, ' '),
-                  task_quantity: t.quantity ?? '',
+                  task_quantity: t.quantity != null ? formatNumber(t.quantity, { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : '',
                   task_unit: t.unit || '',
-                  task_unit_price: t.unit_price ?? '',
-                  task_total_price: t.total_price ?? '',
-                  task_duration: t.duration ?? '',
+                  task_unit_price: t.unit_price != null ? formatNumber(t.unit_price) : '',
+                  task_total_price: t.total_price != null ? formatNumber(t.total_price) : '',
+                  task_duration: t.duration != null ? formatNumber(t.duration, { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : '',
                   task_duration_unit: t.duration_unit || '',
                 };
 
@@ -1227,10 +1227,10 @@ const QuotesManagement = () => {
                       ...taskRow,
                       material_id: m.id,
                       material_name: m.name || '',
-                      material_quantity: m.quantity ?? '',
+                      material_quantity: m.quantity != null ? formatNumber(m.quantity, { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : '',
                       material_unit: m.unit || '',
-                      material_unit_price: m.unit_price ?? '',
-                      material_total_price: m.total_price ?? '',
+                      material_unit_price: m.unit_price != null ? formatNumber(m.unit_price) : '',
+                      material_total_price: m.total_price != null ? formatNumber(m.total_price) : '',
                     });
                   });
                 } else {

@@ -16,6 +16,7 @@ import { loadCompanyInfo } from '../../services/companyInfoService';
 import { generateExpenseInvoicePDF } from '../../services/pdfService';
 import { useAuth } from '../../context/AuthContext';
 import SendToAccountantModal from '../invoices-management/components/SendToAccountantModal';
+import { formatNumber } from '../../utils/numberFormat';
 
 const ExpenseInvoicesManagement = () => {
   const { t, i18n } = useTranslation();
@@ -656,11 +657,11 @@ const ExpenseInvoicesManagement = () => {
           supplierAddress.city || '',
           supplierAddress.postalCode || supplierAddress.zip_code || '',
           supplierAddress.country || '',
-          invoice.amount,
-          invoice.net_amount || '',
-          invoice.vat_amount || '',
-          depositAmount,
-          balanceAmount,
+          formatNumber(invoice.amount || 0),
+          formatNumber(invoice.net_amount || 0),
+          formatNumber(invoice.vat_amount || 0),
+          depositAmount ? formatNumber(depositAmount) : '',
+          balanceAmount ? formatNumber(balanceAmount) : '',
           invoice.status,
           invoice.category || '',
           invoice.source,

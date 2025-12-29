@@ -47,7 +47,14 @@ const ContactPage = () => {
 
   // Handle form input changes
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const name = e.target?.name || e.target?.getAttribute?.('name');
+    const value = e.target?.value || '';
+    
+    if (!name) {
+      console.warn('Input change event missing name attribute:', e);
+      return;
+    }
+    
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -64,26 +71,41 @@ const ContactPage = () => {
   // Validate form
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.firstName || formData.firstName.trim() === '') {
+    
+    // Check firstName
+    const firstName = formData.firstName?.trim() || '';
+    if (!firstName) {
       newErrors.firstName = t('contact.form.errors.firstNameRequired');
     }
     
-    if (!formData.lastName || formData.lastName.trim() === '') {
+    // Check lastName
+    const lastName = formData.lastName?.trim() || '';
+    if (!lastName) {
       newErrors.lastName = t('contact.form.errors.lastNameRequired');
     }
     
-    if (!formData.email) {
+    // Check email
+    const email = formData.email?.trim() || '';
+    if (!email) {
       newErrors.email = t('contact.form.errors.emailRequired');
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
       newErrors.email = t('contact.form.errors.emailInvalid');
     }
     
-    if (!formData.phone || formData.phone.trim() === '') {
+    // Check phone
+    const phone = formData.phone?.trim() || '';
+    if (!phone) {
       newErrors.phone = t('contact.form.errors.phoneRequired');
     }
     
-    if (!formData.subject) newErrors.subject = t('contact.form.errors.subjectRequired');
-    if (!formData.message || formData.message.trim() === '') {
+    // Check subject
+    if (!formData.subject) {
+      newErrors.subject = t('contact.form.errors.subjectRequired');
+    }
+    
+    // Check message
+    const message = formData.message?.trim() || '';
+    if (!message) {
       newErrors.message = t('contact.form.errors.messageRequired');
     }
     
@@ -95,7 +117,9 @@ const ContactPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      return;
+    }
     
     setIsSubmitting(true);
     setIsSubmitted(false);
@@ -304,7 +328,7 @@ const ContactPage = () => {
                   <div>
                     <h2 className="text-2xl font-bold text-foreground mb-6">{t('contact.form.title')}</h2>
                     
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <form onSubmit={handleSubmit} noValidate className="space-y-6">
                       {/* Name Fields */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>

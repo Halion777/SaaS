@@ -118,10 +118,13 @@ const Input = React.forwardRef(({
         // Call original onChange if provided
         if (onChange) {
             // Create a synthetic event with the validated value
+            // Ensure name attribute is preserved from the original event or props
+            const inputName = e.target?.name || internalRef.current?.name || props.name;
             const syntheticEvent = {
                 ...e,
                 target: {
                     ...e.target,
+                    name: inputName,
                     value: newValue
                 }
             };

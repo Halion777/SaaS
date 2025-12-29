@@ -5,7 +5,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import Button from '../../../components/ui/Button';
 import Icon from '../../../components/AppIcon';
-import { formatCurrency } from '../../../utils/numberFormat';
+import { formatCurrency, formatNumber, formatPercentage, formatInteger } from '../../../utils/numberFormat';
 
 const ExportControls = ({ analyticsData, kpiData, detailedAnalyticsData, revenueData, conversionData, clientSegmentData, isProPlan = false }) => {
   const { t, i18n } = useTranslation();
@@ -330,7 +330,7 @@ const ExportControls = ({ analyticsData, kpiData, detailedAnalyticsData, revenue
       // Create CSV content with translations
       let csvContent = `${t('analyticsDashboard.header.title')},${currentDate}\n\n`;
       
-      // KPIs
+      // KPIs - kpi.value is already formatted, so we keep it as is
       csvContent += `${t('analyticsDashboard.export.kpis')}\n`;
       csvContent += `${t('analyticsDashboard.export.title')},${t('analyticsDashboard.export.value')},${t('analyticsDashboard.export.change')},${t('analyticsDashboard.export.description')}\n`;
       kpiData.forEach(kpi => {
@@ -339,45 +339,45 @@ const ExportControls = ({ analyticsData, kpiData, detailedAnalyticsData, revenue
       
       csvContent += `\n${t('analyticsDashboard.detailedAnalytics.paymentStatus.title')}\n`;
       csvContent += `${t('analyticsDashboard.export.status')},${t('analyticsDashboard.export.count')}\n`;
-      csvContent += `${t('analyticsDashboard.detailedAnalytics.paymentStatus.paid')},${detailedAnalyticsData.paymentStatus.paid}\n`;
-      csvContent += `${t('analyticsDashboard.detailedAnalytics.paymentStatus.pending')},${detailedAnalyticsData.paymentStatus.pending}\n`;
-      csvContent += `${t('analyticsDashboard.detailedAnalytics.paymentStatus.overdue')},${detailedAnalyticsData.paymentStatus.overdue}\n`;
+      csvContent += `${t('analyticsDashboard.detailedAnalytics.paymentStatus.paid')},${formatInteger(detailedAnalyticsData.paymentStatus.paid)}\n`;
+      csvContent += `${t('analyticsDashboard.detailedAnalytics.paymentStatus.pending')},${formatInteger(detailedAnalyticsData.paymentStatus.pending)}\n`;
+      csvContent += `${t('analyticsDashboard.detailedAnalytics.paymentStatus.overdue')},${formatInteger(detailedAnalyticsData.paymentStatus.overdue)}\n`;
       
       csvContent += `\n${t('analyticsDashboard.detailedAnalytics.clientActivity.title')}\n`;
       csvContent += `${t('analyticsDashboard.export.type')},${t('analyticsDashboard.export.count')}\n`;
-      csvContent += `${t('analyticsDashboard.detailedAnalytics.clientActivity.newClients')},${detailedAnalyticsData.clientActivity.newClients}\n`;
-      csvContent += `${t('analyticsDashboard.detailedAnalytics.clientActivity.returningClients')},${detailedAnalyticsData.clientActivity.returningClients}\n`;
-      csvContent += `${t('analyticsDashboard.detailedAnalytics.clientActivity.inactiveClients')},${detailedAnalyticsData.clientActivity.inactiveClients}\n`;
+      csvContent += `${t('analyticsDashboard.detailedAnalytics.clientActivity.newClients')},${formatInteger(detailedAnalyticsData.clientActivity.newClients)}\n`;
+      csvContent += `${t('analyticsDashboard.detailedAnalytics.clientActivity.returningClients')},${formatInteger(detailedAnalyticsData.clientActivity.returningClients)}\n`;
+      csvContent += `${t('analyticsDashboard.detailedAnalytics.clientActivity.inactiveClients')},${formatInteger(detailedAnalyticsData.clientActivity.inactiveClients)}\n`;
       
       csvContent += `\n${t('analyticsDashboard.detailedAnalytics.invoiceStatistics.title')}\n`;
       csvContent += `${t('analyticsDashboard.export.metric')},${t('analyticsDashboard.export.value')}\n`;
-      csvContent += `${t('analyticsDashboard.detailedAnalytics.invoiceStatistics.totalRevenue')},${detailedAnalyticsData.invoiceStatistics.totalRevenue}\n`;
-      csvContent += `${t('analyticsDashboard.detailedAnalytics.invoiceStatistics.averageInvoice')},${detailedAnalyticsData.invoiceStatistics.averageInvoice}\n`;
-      csvContent += `${t('analyticsDashboard.detailedAnalytics.invoiceStatistics.totalInvoices')},${detailedAnalyticsData.invoiceStatistics.totalInvoices}\n`;
+      csvContent += `${t('analyticsDashboard.detailedAnalytics.invoiceStatistics.totalRevenue')},${formatNumber(detailedAnalyticsData.invoiceStatistics.totalRevenue)}\n`;
+      csvContent += `${t('analyticsDashboard.detailedAnalytics.invoiceStatistics.averageInvoice')},${formatNumber(detailedAnalyticsData.invoiceStatistics.averageInvoice)}\n`;
+      csvContent += `${t('analyticsDashboard.detailedAnalytics.invoiceStatistics.totalInvoices')},${formatInteger(detailedAnalyticsData.invoiceStatistics.totalInvoices)}\n`;
       
       csvContent += `\n${t('analyticsDashboard.detailedAnalytics.quoteOverview.title')}\n`;
       csvContent += `${t('analyticsDashboard.export.status')},${t('analyticsDashboard.export.count')}\n`;
-      csvContent += `${t('analyticsDashboard.detailedAnalytics.quoteOverview.totalQuotes')},${detailedAnalyticsData.quoteOverview.totalQuotes}\n`;
-      csvContent += `${t('analyticsDashboard.detailedAnalytics.quoteOverview.acceptedQuotes')},${detailedAnalyticsData.quoteOverview.acceptedQuotes}\n`;
-      csvContent += `${t('analyticsDashboard.detailedAnalytics.quoteOverview.rejectedQuotes')},${detailedAnalyticsData.quoteOverview.rejectedQuotes}\n`;
-      csvContent += `${t('analyticsDashboard.detailedAnalytics.quoteOverview.pendingQuotes')},${detailedAnalyticsData.quoteOverview.pendingQuotes}\n`;
+      csvContent += `${t('analyticsDashboard.detailedAnalytics.quoteOverview.totalQuotes')},${formatInteger(detailedAnalyticsData.quoteOverview.totalQuotes)}\n`;
+      csvContent += `${t('analyticsDashboard.detailedAnalytics.quoteOverview.acceptedQuotes')},${formatInteger(detailedAnalyticsData.quoteOverview.acceptedQuotes)}\n`;
+      csvContent += `${t('analyticsDashboard.detailedAnalytics.quoteOverview.rejectedQuotes')},${formatInteger(detailedAnalyticsData.quoteOverview.rejectedQuotes)}\n`;
+      csvContent += `${t('analyticsDashboard.detailedAnalytics.quoteOverview.pendingQuotes')},${formatInteger(detailedAnalyticsData.quoteOverview.pendingQuotes)}\n`;
       
       csvContent += `\n${t('analyticsDashboard.export.revenueByMonth')}\n`;
       csvContent += `${t('analyticsDashboard.export.month')},${t('analyticsDashboard.export.revenue')}\n`;
       revenueData.forEach(month => {
-        csvContent += `"${month.month}",${month.revenue || 0}\n`;
+        csvContent += `"${month.month}",${formatNumber(month.revenue || 0)}\n`;
       });
       
       csvContent += `\n${t('analyticsDashboard.export.conversionByCategory')}\n`;
       csvContent += `${t('analyticsDashboard.export.category')},${t('analyticsDashboard.charts.conversion.rate')},${t('analyticsDashboard.charts.conversion.quotes')}\n`;
       conversionData.forEach(item => {
-        csvContent += `"${item.name}",${item.rate},${item.count}\n`;
+        csvContent += `"${item.name}",${formatPercentage(item.rate)},${formatInteger(item.count)}\n`;
       });
       
       csvContent += `\n${t('analyticsDashboard.charts.clientSegments.title')}\n`;
       csvContent += `${t('analyticsDashboard.export.segment')},${t('analyticsDashboard.export.percentage')},${t('analyticsDashboard.export.revenue')}\n`;
       clientSegmentData.forEach(segment => {
-        csvContent += `"${segment.name}",${segment.value},${segment.revenue}\n`;
+        csvContent += `"${segment.name}",${formatPercentage(segment.value)},${formatNumber(segment.revenue)}\n`;
       });
       
       // Create blob and download

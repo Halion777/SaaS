@@ -17,6 +17,7 @@ import { useAuth } from '../../context/AuthContext';
 import { loadCompanyInfo } from '../../services/companyInfoService';
 import { generateInvoicePDF } from '../../services/pdfService';
 import SendToAccountantModal from './components/SendToAccountantModal';
+import { formatNumber } from '../../utils/numberFormat';
 
 const InvoicesManagement = () => {
   const { t, i18n } = useTranslation();
@@ -662,9 +663,9 @@ const InvoicesManagement = () => {
           invoice.client?.country || '',
           invoice.client?.vat_number || '',
           invoice.client?.client_type || '',
-          invoice.amount || 0,
-          invoice.netAmount || 0,
-          invoice.taxAmount || 0,
+          formatNumber(invoice.amount || 0),
+          formatNumber(invoice.netAmount || 0),
+          formatNumber(invoice.taxAmount || 0),
           invoice.status || '',
           invoice.issueDate || '',
           invoice.dueDate || '',

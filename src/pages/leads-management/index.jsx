@@ -424,11 +424,11 @@ const LeadsManagementPage = () => {
       
       {/* Filter Toolbar */}
       <div className="mb-4">
-        <LeadsFilterToolbar
-          filters={filters}
-          onFiltersChange={handleFiltersChange}
-          filteredCount={filteredLeads.length}
-        />
+      <LeadsFilterToolbar
+        filters={filters}
+        onFiltersChange={handleFiltersChange}
+        filteredCount={filteredLeads.length}
+      />
       </div>
       
       {/* Sort By - Separate row below filter */}
