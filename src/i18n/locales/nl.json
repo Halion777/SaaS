@@ -2305,6 +2305,11 @@
       "viewed_no_action": "Bekeken zonder actie",
       "general": "Algemeen",
       "manual": "Handmatig"
+    },
+    "upgrade": {
+      "title": "Stop met tijd verspillen aan handmatige opvolgingen?",
+      "message": "Schakel vandaag nog over op automatische e-mailopvolgingen of stuur handmatige herinneringen direct vanuit het platform. Verhoog uw positieve responspercentage zonder dat u zich constant hoeft te herinneren om berichten te sturen of opvolgingsgesprekken te voeren.",
+      "cta": "Upgraden naar Premium"
     }
   },
   "invoiceFollowUp": {
@@ -2435,6 +2440,12 @@
         "save": "Instellingen opslaan",
         "saving": "Opslaan..."
       }
+    },
+    "upgrade": {
+      "title": "Toegang tot Premium Leadgeneratie",
+      "titleWithCount": "{{count}} leads zoeken momenteel naar aannemers",
+      "message": "Krijg toegang tot gekwalificeerde leads die op zoek zijn naar aannemers zoals u. Verhoog uw zakelijke kansen en groei uw klantenbestand met ons geïntegreerde leadgeneratiesysteem.",
+      "cta": "Upgraden naar Premium"
     }
   },
 

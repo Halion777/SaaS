@@ -4,7 +4,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import MainSidebar from '../../components/ui/MainSidebar';
 import PermissionGuard, { usePermissionCheck } from '../../components/PermissionGuard';
-import LimitedAccessGuard from '../../components/LimitedAccessGuard';
+import BlurredUpgradeOverlay from '../../components/BlurredUpgradeOverlay';
 import TableLoader from '../../components/ui/TableLoader';
 import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import Pagination from '../../components/ui/Pagination';
@@ -16,6 +16,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useMultiUser } from '../../context/MultiUserContext';
 import { getCountryOptions, getRegionOptionsForCountry } from '../../constants/countriesAndRegions';
 import { useTranslation } from 'react-i18next';
+import { supabase } from '../../services/supabaseClient';
 
 const LeadsManagementPage = () => {
   const [sidebarOffset, setSidebarOffset] = useState(288);
@@ -34,6 +35,10 @@ const LeadsManagementPage = () => {
   
   // Check if user is on Pro plan for full lead generation
   const isProPlan = userProfile?.selected_plan === 'pro';
+  const isStarterPlan = userProfile?.selected_plan === 'starter';
+  
+  // State for active leads count
+  const [activeLeadsCount, setActiveLeadsCount] = useState(0);
   
   // State for leads and settings
   const [leads, setLeads] = useState([]);
@@ -142,6 +147,28 @@ const LeadsManagementPage = () => {
   }, []);
 
   // Load artisan preferences and leads
+  // Load active leads count for Starter plan users
+  useEffect(() => {
+    const loadActiveLeadsCount = async () => {
+      try {
+        const { count, error } = await supabase
+          .from('lead_requests')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'active');
+        
+        if (!error && count !== null) {
+          setActiveLeadsCount(count);
+        }
+      } catch (error) {
+        console.error('Error loading active leads count:', error);
+      }
+    };
+    
+    if (isStarterPlan) {
+      loadActiveLeadsCount();
+    }
+  }, [isStarterPlan]);
+
   useEffect(() => {
     if (user) {
       loadArtisanPreferences();
@@ -1067,15 +1094,29 @@ const LeadsManagementPage = () => {
 
   return (
     <PermissionGuard module="leadsManagement" requiredPermission="view_only">
-    <LimitedAccessGuard requiredPlan="pro" featureName={t('leadsManagement.title', 'Lead Generation')}>
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      {/* Blurred overlay for Starter plan users */}
+      {isStarterPlan && (
+        <BlurredUpgradeOverlay
+          title={isStarterPlan && activeLeadsCount > 0 
+            ? t('leadsManagement.upgrade.titleWithCount', '{{count}} leads are currently looking for contractors', { count: activeLeadsCount })
+            : t('leadsManagement.upgrade.title', 'Access Premium Lead Generation')}
+          message={t('leadsManagement.upgrade.message', 'Get access to qualified leads looking for contractors like you. Increase your business opportunities and grow your client base with our integrated lead generation system.')}
+          ctaText={t('leadsManagement.upgrade.cta', 'Upgrade to Premium')}
+          iconName="Target"
+          sidebarOffset={sidebarOffset}
+          isMobile={isMobile}
+        />
+      )}
+      
       <MainSidebar />
       
       <div
         className="flex-1 flex flex-col pb-20 md:pb-6"
         style={{ marginLeft: `${sidebarOffset}px` }}
       >
-        <main className="flex-1 px-4 sm:px-6 pt-0 pb-20 sm:pb-6 space-y-4 sm:space-y-6">
+        {/* Blur main content when Starter plan */}
+        <main className={`flex-1 px-4 sm:px-6 pt-0 pb-20 sm:pb-6 space-y-4 sm:space-y-6 ${isStarterPlan ? 'blur-sm pointer-events-none select-none' : ''}`}>
           {/* Header */}
           <header className="bg-card border-b border-border px-4 sm:px-6 py-4 mb-4 sm:mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
@@ -1124,7 +1165,7 @@ const LeadsManagementPage = () => {
         </main>
       </div>
       
-      {/* Image Modal */}
+      {/* Image Modal - Outside main to avoid blur */}
       {showImageModal && selectedImage && (
         <div 
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
@@ -1217,7 +1258,6 @@ const LeadsManagementPage = () => {
         </div>
       )}
     </div>
-    </LimitedAccessGuard>
     </PermissionGuard>
   );
 };

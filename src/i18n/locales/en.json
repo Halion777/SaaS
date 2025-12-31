@@ -2275,6 +2275,11 @@
       "viewed_no_action": "Viewed without action",
       "general": "General",
       "manual": "Manual"
+    },
+    "upgrade": {
+      "title": "Stop wasting time with manual follow-ups?",
+      "message": "Switch today to automatic email follow-ups or send manual reminders instantly from the platform. Increase your positive response rate without having to constantly remember to send messages or make follow-up calls.",
+      "cta": "Upgrade to Premium"
     }
   },
   "invoiceFollowUp": {
@@ -2302,6 +2307,11 @@
     "empty": {
       "title": "No follow-up needed",
       "noScheduled": "No follow-up scheduled"
+    },
+    "upgrade": {
+      "title": "Stop wasting time with manual follow-ups?",
+      "message": "Switch today to automatic email follow-ups or send manual reminders instantly from the platform. Increase your positive response rate without having to constantly remember to send messages or make follow-up calls.",
+      "cta": "Upgrade to Premium"
     }
   },
   "leadsManagement": {
@@ -2405,6 +2415,12 @@
         "save": "Save Settings",
         "saving": "Saving..."
       }
+    },
+    "upgrade": {
+      "title": "Access Premium Lead Generation",
+      "titleWithCount": "{{count}} leads are currently looking for contractors",
+      "message": "Get access to qualified leads looking for contractors like you. Increase your business opportunities and grow your client base with our integrated lead generation system.",
+      "cta": "Upgrade to Premium"
     }
   },
   "dashboard": {

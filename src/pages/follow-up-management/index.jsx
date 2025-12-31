@@ -8,6 +8,7 @@ import ErrorDisplay from '../../components/ui/ErrorDisplay';
 import Pagination from '../../components/ui/Pagination';
 import SortableHeader from '../../components/ui/SortableHeader';
 import FilterToolbar from './components/FilterToolbar';
+import BlurredUpgradeOverlay from '../../components/BlurredUpgradeOverlay';
 import { useScrollPosition } from '../../utils/useScrollPosition';
 import { useAuth } from '../../context/AuthContext';
 import { useMultiUser } from '../../context/MultiUserContext';
@@ -29,7 +30,7 @@ import { formatCurrency } from '../../utils/numberFormat';
 
 const FollowUpManagement = () => {
   const { user } = useAuth();
-  const { currentProfile } = useMultiUser();
+  const { currentProfile, userProfile } = useMultiUser();
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [sidebarOffset, setSidebarOffset] = useState(288);
@@ -1108,14 +1109,29 @@ const FollowUpManagement = () => {
   // Check permissions for actions
   const { canEdit } = usePermissionCheck('quotesFollowUp');
 
+  // Check if user is on Starter plan (automatic reminders not available)
+  const isStarterPlan = userProfile?.selected_plan === 'starter';
+
   return (
     <PermissionGuard module="quotesFollowUp" requiredPermission="view_only">
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      {/* Blurred overlay for Starter plan users */}
+      {isStarterPlan && (
+        <BlurredUpgradeOverlay
+          title={t('followUpManagement.upgrade.title', 'Stop wasting time with manual follow-ups?')}
+          message={t('followUpManagement.upgrade.message', 'Switch today to automatic email follow-ups or send manual reminders instantly from the platform. Increase your positive response rate without having to constantly remember to send messages or make follow-up calls.')}
+          ctaText={t('followUpManagement.upgrade.cta', 'Upgrade to Premium')}
+          iconName="Bell"
+          sidebarOffset={sidebarOffset}
+          isMobile={isMobile}
+        />
+      )}
+      
       <MainSidebar />
       
+      {/* Blur main content when Starter plan */}
       <main 
-        className={`transition-all duration-300 ease-out ${isMobile ? 'pb-16 pt-4' : ''
-        }`}
+        className={`transition-all duration-300 ease-out ${isMobile ? 'pb-16 pt-4' : ''} ${isStarterPlan ? 'blur-sm pointer-events-none select-none' : ''}`}
         style={{ 
           marginLeft: isMobile ? 0 : `${sidebarOffset}px`,
         }}

@@ -2109,6 +2109,11 @@
       "viewed_no_action": "Vue sans action",
       "general": "Général",
       "manual": "Manuel"
+    },
+    "upgrade": {
+      "title": "Arrêtez de perdre du temps avec les relances manuelles ?",
+      "message": "Passez dès aujourd'hui aux relances automatiques par e-mail ou envoyez des rappels manuels instantanément depuis la plateforme. Augmentez votre taux de réponse positif sans avoir à vous rappeler constamment d'envoyer des messages ou de faire des appels de suivi.",
+      "cta": "Passer à Premium"
     }
   },
   "invoiceFollowUp": {
@@ -2136,6 +2141,11 @@
     "empty": {
       "title": "Aucune relance nécessaire",
       "noScheduled": "Aucune relance programmée"
+    },
+    "upgrade": {
+      "title": "Arrêtez de perdre du temps avec les relances manuelles ?",
+      "message": "Passez dès aujourd'hui aux relances automatiques par e-mail ou envoyez des rappels manuels instantanément depuis la plateforme. Augmentez votre taux de réponse positif sans avoir à vous rappeler constamment d'envoyer des messages ou de faire des appels de suivi.",
+      "cta": "Passer à Premium"
     }
   },
   "leadsManagement": {
@@ -2239,6 +2249,12 @@
         "save": "Sauvegarder les paramètres",
         "saving": "Sauvegarde en cours..."
       }
+    },
+    "upgrade": {
+      "title": "Accéder à la génération de leads Premium",
+      "titleWithCount": "{{count}} leads recherchent actuellement des entrepreneurs",
+      "message": "Accédez à des leads qualifiés recherchant des entrepreneurs comme vous. Augmentez vos opportunités commerciales et développez votre base de clients avec notre système intégré de génération de leads.",
+      "cta": "Passer à Premium"
     }
   },
   "followUp": {
