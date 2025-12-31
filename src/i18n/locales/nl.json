@@ -2840,7 +2840,8 @@
         "followUpClient": "Klant opvolgen",
         "client": "Klant",
         "supplier": "Leverancier",
-        "daysOverdue": "{{count}} dag{{count, plural, one {} other {s}}} in achterstand",
+        "daysOverdue_one": "{{count}} dag in achterstand",
+        "daysOverdue_other": "{{count}} dagen in achterstand",
         "daysNoResponse_one": "{{count}} dag zonder reactie",
         "daysNoResponse_other": "{{count}} dagen zonder reactie"
       },

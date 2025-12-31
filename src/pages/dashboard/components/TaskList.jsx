@@ -376,8 +376,8 @@ const TaskList = () => {
               <p className="text-sm font-medium text-foreground truncate">{task.title}</p>
               <p className="text-xs text-muted-foreground">
                 {task.client} • {task.action}
-                {task.daysOverdue && ` • ${t('dashboard.taskList.taskLabels.daysOverdue', { count: task.daysOverdue }, `${task.daysOverdue} day${task.daysOverdue > 1 ? 's' : ''} overdue`)}`}
-                {task.daysSinceSent && ` • ${t('dashboard.taskList.taskLabels.daysNoResponse', { count: task.daysSinceSent }, `${task.daysSinceSent} day${task.daysSinceSent > 1 ? 's' : ''} without response`)}`}
+                {task.daysOverdue && ` • ${t('dashboard.taskList.taskLabels.daysOverdue', { count: task.daysOverdue })}`}
+                {task.daysSinceSent && ` • ${t('dashboard.taskList.taskLabels.daysNoResponse', { count: task.daysSinceSent })}`}
               </p>
             </div>
             <div className="flex items-center space-x-1.5 sm:space-x-2">

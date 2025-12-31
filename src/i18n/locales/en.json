@@ -2796,7 +2796,8 @@
         "followUpClient": "Follow up with client",
         "client": "Client",
         "supplier": "Supplier",
-        "daysOverdue": "{{count}} day{{count, plural, one {} other {s}}} overdue",
+        "daysOverdue_one": "{{count}} day overdue",
+        "daysOverdue_other": "{{count}} days overdue",
         "daysNoResponse_one": "{{count}} day without response",
         "daysNoResponse_other": "{{count}} days without response"
       },
