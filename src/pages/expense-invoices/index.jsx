@@ -363,24 +363,26 @@ const ExpenseInvoicesManagement = () => {
     setDownloadingInvoiceId(invoice.id);
     try {
       // Check if we have sender user ID from Peppol metadata
-      // If yes, use sender's company logo; otherwise use receiver's (current user's) logo
+      // Use sender's company info ONLY for logo; use receiver's (current user's) company info for COMPANY section
       const senderUserId = invoice.peppol_metadata?.sender_user_id;
-      let companyInfo = null;
+      let senderCompanyInfo = null; // For logo only
+      let receiverCompanyInfo = null; // For COMPANY section
       
+      // Load sender's company info for logo if available
       if (senderUserId) {
-        // Load sender's company info for logo
-        companyInfo = await loadCompanyInfo(senderUserId);
+        senderCompanyInfo = await loadCompanyInfo(senderUserId);
       }
       
-      // Fallback to receiver's (current user's) company info if sender info not available
-      if (!companyInfo) {
-        companyInfo = await loadCompanyInfo(user?.id);
-      }
+      // Always load receiver's (current user's) company info for COMPANY section
+      receiverCompanyInfo = await loadCompanyInfo(user?.id);
       
-      if (!companyInfo) {
+      if (!receiverCompanyInfo) {
         alert(t('expenseInvoices.errors.companyInfoNotFound', 'Company information not found'));
         return;
       }
+      
+      // Use sender's logo if available, otherwise use receiver's logo
+      const companyInfoForLogo = senderCompanyInfo || receiverCompanyInfo;
 
       // Prepare expense invoice data for PDF generation
       // Use exact values from UBL XML or database - no calculations
@@ -388,10 +390,12 @@ const ExpenseInvoicesManagement = () => {
       const netAmount = parseFloat(invoice.net_amount || 0);
       const vatAmount = parseFloat(invoice.vat_amount || 0);
       
-      // Extract supplier address from Peppol metadata if available
-      const supplierAddress = invoice.peppol_metadata?.supplierAddress || {};
-      const supplierContact = invoice.peppol_metadata?.supplier || {};
-      const customerContact = invoice.peppol_metadata?.customer || {};
+      // Extract supplier and customer data from Peppol metadata (from UBL XML)
+      // Supplier = AccountingSupplierParty (the sender from original client invoice) - shown in CLIENT section
+      // Customer = AccountingCustomerParty (the receiver) - used for company phone fallback
+      const supplierFromUBL = invoice.peppol_metadata?.supplier || {};
+      const supplierAddressFromUBL = invoice.peppol_metadata?.supplierAddress || {};
+      const customerFromUBL = invoice.peppol_metadata?.customer || {};
       
       // Helper to get display invoice number (prefer original client invoice number from buyerReference)
       const getDisplayInvoiceNumber = (inv) => {
@@ -412,23 +416,41 @@ const ExpenseInvoicesManagement = () => {
         return inv.invoice_number;
       };
       
-      // Use customer phone from Peppol metadata if companyInfo phone is not available
-      const companyPhone = companyInfo?.phone || customerContact?.phone || '';
+      // Use customer phone from Peppol metadata if receiverCompanyInfo phone is not available
+      const companyPhone = receiverCompanyInfo?.phone || customerFromUBL?.phone || customerFromUBL?.email || '';
+      
+      // Extract supplier info from UBL XML (AccountingSupplierParty) - shown in CLIENT section
+      // This should match exactly what was in the original client invoice that was sent
+      // Structure from webhook: supplier.name, supplier.vatNumber, supplier.email, supplier.contactPhone, supplier.address.*
+      const supplierName = supplierFromUBL.name || invoice.peppol_metadata?.supplierName || invoice.supplier_name || '';
+      const supplierEmail = supplierFromUBL.email || invoice.supplier_email || '';
+      const supplierPhone = supplierFromUBL.contactPhone || supplierFromUBL.phone || invoice.supplier_phone || '';
+      const supplierVatNumber = supplierFromUBL.vatNumber || invoice.peppol_metadata?.supplierVatNumber || invoice.supplier_vat_number || '';
+      
+      // Extract supplier address from UBL - check both supplier.address and supplierAddress
+      const supplierAddress = supplierFromUBL.address || supplierAddressFromUBL || {};
+      const supplierStreet = supplierAddress.street || supplierAddressFromUBL.street || invoice.supplier_address || '';
+      const supplierPostalCode = supplierAddress.postalCode || supplierAddressFromUBL.postalCode || supplierAddressFromUBL.zip_code || invoice.supplier_postal_code || '';
+      const supplierCity = supplierAddress.city || supplierAddressFromUBL.city || invoice.supplier_city || '';
+      const supplierCountry = supplierAddress.country || supplierAddressFromUBL.country || '';
       
       const expenseInvoiceData = {
+        // Use sender's company info for logo, receiver's company info for COMPANY section
         companyInfo: {
-          ...companyInfo,
-          phone: companyPhone || companyInfo?.phone || ''
+          ...receiverCompanyInfo,
+          // Override logo with sender's logo if available
+          logo: companyInfoForLogo?.logo || receiverCompanyInfo?.logo,
+          phone: companyPhone || receiverCompanyInfo?.phone || ''
         },
         supplier: {
-          name: invoice.supplier_name,
-          email: invoice.supplier_email || supplierContact.email || '',
-          phone: invoice.supplier_phone || supplierContact.contactPhone || supplierContact.phone || supplierContact.telephone || '',
-          address: invoice.supplier_address || supplierAddress.street || '',
-          postal_code: invoice.supplier_postal_code || supplierAddress.postalCode || supplierAddress.zip_code || '',
-          city: invoice.supplier_city || supplierAddress.city || '',
-          country: supplierAddress.country || '',
-          vat_number: invoice.supplier_vat_number
+          name: supplierName,
+          email: supplierEmail,
+          phone: supplierPhone,
+          address: supplierStreet,
+          postal_code: supplierPostalCode,
+          city: supplierCity,
+          country: supplierCountry,
+          vat_number: supplierVatNumber
         },
         invoice: {
           issue_date: invoice.issue_date,

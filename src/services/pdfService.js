@@ -402,9 +402,9 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
   // Translation labels based on language
   const labels = {
     fr: {
-      invoice: 'FACTURE CLIENT',
-      depositInvoice: 'FACTURE D\'ACOMPTE CLIENT',
-      finalInvoice: 'FACTURE FINALE CLIENT',
+      invoice: 'FACTURE',
+      depositInvoice: 'FACTURE D\'ACOMPTE',
+      finalInvoice: 'FACTURE FINALE',
       client: 'CLIENT',
       company: 'ENTREPRISE',
       paymentInfo: 'INFORMATIONS DE PAIEMENT',
@@ -426,9 +426,9 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
       pdfWarningTitle: 'Document de référence uniquement'
     },
     en: {
-      invoice: 'CLIENT INVOICE',
-      depositInvoice: 'CLIENT DEPOSIT INVOICE',
-      finalInvoice: 'CLIENT FINAL INVOICE',
+      invoice: 'INVOICE',
+      depositInvoice: 'DEPOSIT INVOICE',
+      finalInvoice: 'FINAL INVOICE',
       client: 'CLIENT',
       company: 'COMPANY',
       paymentInfo: 'PAYMENT INFORMATION',
@@ -450,9 +450,9 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
       pdfWarningTitle: 'Reference document only'
     },
     nl: {
-      invoice: 'KLANTENFACTUUR',
-      depositInvoice: 'AANBETALING KLANTENFACTUUR',
-      finalInvoice: 'EIND KLANTENFACTUUR',
+      invoice: 'FACTUUR',
+      depositInvoice: 'AANBETALING FACTUUR',
+      finalInvoice: 'EIND FACTUUR',
       client: 'KLANT',
       company: 'BEDRIJF',
       paymentInfo: 'BETALINGSINFORMATIE',
@@ -1101,9 +1101,9 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
   // Translation labels based on language
   const labels = {
     fr: {
-      invoice: 'FACTURE FOURNISSEUR',
-      depositInvoice: 'FACTURE D\'ACOMPTE FOURNISSEUR',
-      finalInvoice: 'FACTURE FINALE FOURNISSEUR',
+      invoice: 'FACTURE',
+      depositInvoice: 'FACTURE D\'ACOMPTE',
+      finalInvoice: 'FACTURE FINALE',
       client: 'CLIENT',
       company: 'ENTREPRISE',
       invoiceDetails: 'DÉTAILS DE LA FACTURE',
@@ -1130,9 +1130,9 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
       pdfWarningTitle: 'Document de référence uniquement'
     },
     en: {
-      invoice: 'SUPPLIER INVOICE',
-      depositInvoice: 'SUPPLIER DEPOSIT INVOICE',
-      finalInvoice: 'SUPPLIER FINAL INVOICE',
+      invoice: 'INVOICE',
+      depositInvoice: 'DEPOSIT INVOICE',
+      finalInvoice: 'FINAL INVOICE',
       client: 'CLIENT',
       company: 'COMPANY',
       invoiceDetails: 'INVOICE DETAILS',
@@ -1159,9 +1159,9 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
       pdfWarningTitle: 'Reference document only'
     },
     nl: {
-      invoice: 'LEVERANCIERSFACTUUR',
-      depositInvoice: 'AANBETALING LEVERANCIERSFACTUUR',
-      finalInvoice: 'EIND LEVERANCIERSFACTUUR',
+      invoice: 'FACTUUR',
+      depositInvoice: 'AANBETALING FACTUUR',
+      finalInvoice: 'EIND FACTUUR',
       client: 'KLANT',
       company: 'BEDRIJF',
       invoiceDetails: 'FACTUURDETAILS',
