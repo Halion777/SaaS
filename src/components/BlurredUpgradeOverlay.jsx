@@ -42,7 +42,7 @@ const BlurredUpgradeOverlay = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-md"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm"
       style={{
         left: `${leftOffset}px`,
         width: contentWidth
@@ -50,20 +50,20 @@ const BlurredUpgradeOverlay = ({
     >
       <div className="relative w-full max-w-3xl mx-6 sm:mx-8">
         {/* Content Card */}
-        <div className="relative bg-card border border-border/50 rounded-3xl shadow-2xl p-8 sm:p-10 lg:p-12 text-center backdrop-blur-sm bg-gradient-to-b from-card to-card/95">
+        <div className="relative bg-card border border-border rounded-3xl shadow-2xl p-8 sm:p-10 lg:p-12 text-center backdrop-blur-sm">
           {/* Decorative gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 rounded-3xl pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#1e40af]/5 via-transparent to-[#10b981]/5 rounded-3xl pointer-events-none" />
           
           {/* Content */}
           <div className="relative z-10">
             {showIcon && (
               <div className="flex justify-center mb-6 sm:mb-8">
                 <div className="relative">
-                  {/* Outer glow effect */}
-                  <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse" />
-                  {/* Icon container */}
-                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-primary via-primary/90 to-primary/70 rounded-full flex items-center justify-center shadow-lg ring-4 ring-primary/10">
-                    <Icon name={iconName} size={40} className="text-white" />
+                  {/* Outer glow effect with blue-green gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#1e40af]/30 to-[#10b981]/30 rounded-full blur-2xl opacity-60" />
+                  {/* Icon container with blue-green gradient */}
+                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-[#1e40af] via-[#3b82f6] to-[#10b981] rounded-full flex items-center justify-center shadow-xl ring-4 ring-[#1e40af]/10">
+                    <Icon name={iconName} size={40} className="text-white drop-shadow-sm" />
                   </div>
                 </div>
               </div>
@@ -84,7 +84,7 @@ const BlurredUpgradeOverlay = ({
             <div className="flex justify-center">
               <Button
                 onClick={handleUpgrade}
-                className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-8 sm:px-10 py-3 sm:py-3.5 text-base sm:text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 rounded-lg"
+                className="bg-gradient-to-r from-[#1e40af] to-[#10b981] hover:from-[#1e3a8a] hover:to-[#059669] text-white px-8 sm:px-10 py-3 sm:py-3.5 text-base sm:text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 rounded-lg"
                 iconName="ArrowUp"
                 iconPosition="left"
               >
