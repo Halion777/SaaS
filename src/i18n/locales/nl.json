@@ -4279,6 +4279,10 @@
         "failed": "Mislukt",
         "notApplicable": "N/A"
       },
+      "invoiceType": {
+        "deposit": "Voorschot",
+        "final": "Restant"
+      },
       "filter": {
         "title": "Filters",
         "invoicesFound": "{{count}} factuur gevonden",

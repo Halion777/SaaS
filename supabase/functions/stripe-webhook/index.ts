@@ -496,8 +496,8 @@ serve(async (req) => {
                   emailData.variables = {
                     plan_name: sub.plan_name || '',
                     new_plan_name: sub.plan_name || '',
-                    amount: sub.amount ? `${sub.amount}€` : '',
-                    new_amount: sub.amount ? `${sub.amount}€` : '',
+                    amount: sub.amount ? `${sub.amount}` : '',
+                    new_amount: sub.amount ? `${sub.amount}` : '',
                     billing_interval: sub.interval || 'monthly',
                     effective_date: new Date().toLocaleDateString('fr-FR'),
                     company_name: 'Haliqo',
@@ -509,7 +509,7 @@ serve(async (req) => {
                     const oldSub = oldSubData
                     if (oldSub) {
                       emailData.variables.old_plan_name = oldSub.plan_name || ''
-                      emailData.variables.old_amount = oldSub.amount ? `${oldSub.amount}€` : ''
+                      emailData.variables.old_amount = oldSub.amount ? `${oldSub.amount}` : ''
                     }
                   }
                 }

@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Icon from 'components/AppIcon';
 import Button from 'components/ui/Button';
+import { supabase } from 'services/supabaseClient';
 
-const SubscriptionViewModal = ({ isOpen, onClose, subscription }) => {
+const SubscriptionViewModal = ({ isOpen, onClose, subscription, onUpdate }) => {
+  const [isCancellingSchedule, setIsCancellingSchedule] = useState(false);
   if (!isOpen || !subscription) return null;
 
   const formatDate = (dateString) => {
@@ -36,6 +38,62 @@ const SubscriptionViewModal = ({ isOpen, onClose, subscription }) => {
       case 'expired': return 'bg-gray-100 text-gray-800';
       case 'payment_failed': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const handleCancelScheduledChange = async () => {
+    if (!subscription?.stripe_subscription_id || !subscription?.scheduled_change) {
+      alert('No scheduled plan change found to cancel.');
+      return;
+    }
+
+    setIsCancellingSchedule(true);
+    try {
+      const hasStripeSubscription = subscription.stripe_subscription_id && 
+                                    !subscription.stripe_subscription_id.includes('placeholder') &&
+                                    !subscription.stripe_subscription_id.includes('temp_');
+
+      if (hasStripeSubscription) {
+        const { data: stripeResult, error: stripeErr } = await supabase.functions.invoke(
+          'admin-update-subscription',
+          {
+            body: {
+              userId: subscription.user_id,
+              stripeSubscriptionId: subscription.stripe_subscription_id,
+              action: 'cancel_scheduled_change'
+            }
+          }
+        );
+
+        if (stripeErr) {
+          console.error('Error cancelling scheduled change:', stripeErr);
+          alert(`Error cancelling scheduled change: ${stripeErr.message}`);
+          setIsCancellingSchedule(false);
+          return;
+        }
+
+        if (!stripeResult?.success) {
+          console.error('Failed to cancel scheduled change:', stripeResult?.error);
+          alert(`Failed to cancel scheduled change: ${stripeResult?.error || 'Unknown error'}`);
+          setIsCancellingSchedule(false);
+          return;
+        }
+
+        // Refresh subscription data
+        if (onUpdate) {
+          await onUpdate();
+        }
+        
+        // Close modal after successful cancellation
+        onClose();
+      } else {
+        alert('This subscription does not have a Stripe subscription ID.');
+        setIsCancellingSchedule(false);
+      }
+    } catch (error) {
+      console.error('Error cancelling scheduled change:', error);
+      alert(`Error cancelling scheduled change: ${error.message}`);
+      setIsCancellingSchedule(false);
     }
   };
 
@@ -100,6 +158,19 @@ const SubscriptionViewModal = ({ isOpen, onClose, subscription }) => {
                       <Icon name="Info" size={12} className="mr-1" />
                       This change will be applied automatically on the effective date.
                     </p>
+                    <div className="mt-3 pt-3 border-t border-purple-200">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCancelScheduledChange}
+                        disabled={isCancellingSchedule}
+                        className="w-full border-purple-300 text-purple-700 hover:bg-purple-100"
+                        iconName={isCancellingSchedule ? "Loader2" : "XCircle"}
+                        iconPosition="left"
+                      >
+                        {isCancellingSchedule ? 'Cancelling...' : 'Cancel Scheduled Change'}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>

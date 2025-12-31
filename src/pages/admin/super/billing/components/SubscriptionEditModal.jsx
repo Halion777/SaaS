@@ -58,6 +58,14 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
     setIsLoading(true);
     setStripeError(null);
 
+    // Check if subscription is cancelled (Stripe uses 'canceled', database might use 'cancelled')
+    const isCancelled = subscription.status === 'cancelled' || subscription.status === 'canceled';
+    if (isCancelled) {
+      alert('Cannot update a cancelled subscription. Stripe only allows updating cancellation_details and metadata for cancelled subscriptions.');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       // Store original subscription data for comparison
       const originalSubscription = {
@@ -99,8 +107,18 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
                                     !subscription.stripe_subscription_id.includes('temp_');
       
       let stripeError = null;
+      let stripeSuccess = false;
       
       if (hasStripeSubscription) {
+        // Double-check: Don't attempt Stripe update if subscription is cancelled
+        // Stripe only allows updating cancellation_details and metadata for cancelled subscriptions
+        const isCancelled = subscription.status === 'cancelled' || subscription.status === 'canceled';
+        if (isCancelled) {
+          alert('Cannot update a cancelled subscription in Stripe. Stripe only allows updating cancellation_details and metadata for cancelled subscriptions.');
+          setIsLoading(false);
+          return;
+        }
+
         try {
           let stripeAction = null;
           let stripePayload = {
@@ -134,21 +152,39 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
 
             if (stripeErr) {
               console.error('Stripe update error:', stripeErr);
-              stripeError = `Stripe sync failed: ${stripeErr.message}. Database will still be updated.`;
+              stripeError = `Stripe sync failed: ${stripeErr.message}`;
+              stripeSuccess = false;
             } else if (!stripeResult?.success) {
               console.error('Stripe update failed:', stripeResult?.error);
-              stripeError = `Stripe sync failed: ${stripeResult?.error || 'Unknown error'}. Database will still be updated.`;
+              stripeError = `Stripe sync failed: ${stripeResult?.error || 'Unknown error'}`;
+              stripeSuccess = false;
+            } else {
+              stripeSuccess = true;
             } 
+          } else {
+            // No Stripe action needed (e.g., only status change that doesn't require Stripe update)
+            stripeSuccess = true;
           }
         } catch (stripeCallError) {
           console.error('Error calling Stripe edge function:', stripeCallError);
-          stripeError = `Stripe sync error: ${stripeCallError.message}. Database will still be updated.`;
+          stripeError = `Stripe sync error: ${stripeCallError.message}`;
+          stripeSuccess = false;
         }
+      } else {
+        // No Stripe subscription, so we can proceed with database update
+        stripeSuccess = true;
       }
 
       // ============================================
-      // STEP 2: Update Supabase database (always update, even if Stripe fails)
+      // STEP 2: Update Supabase database (only if Stripe succeeded or no Stripe subscription)
       // ============================================
+      
+      // If Stripe update failed, don't update database to maintain consistency
+      if (hasStripeSubscription && !stripeSuccess) {
+        alert(`Subscription update failed.\n\nError: ${stripeError}\n\nThe database was not updated to maintain consistency with Stripe.`);
+        setIsLoading(false);
+        return;
+      }
 
       const updateData = {
         plan_name: plan_name,
@@ -254,10 +290,11 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
         // Don't fail the main operation if notification fails
       }
 
-      if (stripeError) {
-        alert(`Subscription updated in database.\n\nWarning: ${stripeError}`);
-      } else {
+      // Success message
+      if (hasStripeSubscription) {
         alert('Subscription updated successfully (both Stripe and database)!');
+      } else {
+        alert('Subscription updated successfully in database!');
       }
       onUpdate();
       onClose();
@@ -317,7 +354,9 @@ const SubscriptionEditModal = ({ isOpen, onClose, subscription, onUpdate }) => {
   }
 
   // Prevent editing cancelled subscriptions (Stripe restriction)
-  if (subscription.status === 'cancelled') {
+  // Check both 'cancelled' (database) and 'canceled' (Stripe) variants
+  const isCancelled = subscription.status === 'cancelled' || subscription.status === 'canceled';
+  if (isCancelled) {
     return (
       <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div className="bg-card border border-border rounded-lg shadow-xl max-w-md w-full p-6">

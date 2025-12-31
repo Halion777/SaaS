@@ -4245,6 +4245,10 @@
         "failed": "Failed",
         "notApplicable": "N/A"
       },
+      "invoiceType": {
+        "deposit": "Deposit",
+        "final": "Final"
+      },
       "filter": {
         "title": "Filters",
         "invoicesFound": "{{count}} invoice found",

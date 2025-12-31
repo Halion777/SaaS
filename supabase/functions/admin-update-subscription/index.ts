@@ -614,6 +614,27 @@ serve(async (req) => {
         }
         break
 
+      case 'cancel_scheduled_change':
+        // Cancel a scheduled plan change (release the schedule)
+        const scheduledSub = await stripe.subscriptions.retrieve(subscriptionId)
+        const scheduleId = scheduledSub.schedule
+        
+        if (scheduleId) {
+          // Release the schedule to cancel the planned change
+          await stripe.subscriptionSchedules.release(scheduleId as string)
+          // Return the updated subscription (without the schedule)
+          result = await stripe.subscriptions.retrieve(subscriptionId)
+        } else {
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: 'No scheduled plan change found to cancel' 
+            }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        break
+
       case 'update_status':
         // For status-only updates, we can pause/resume
         // Note: Stripe doesn't have a direct "status" update - most status changes happen through other actions
