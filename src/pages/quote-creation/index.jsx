@@ -4751,7 +4751,7 @@ const QuoteCreation = () => {
 
                   <div className="flex items-center">
 
-                    <Icon name="FileText" size={24} className="text-primary mr-3" />
+                    <Icon name="PenTool" size={24} className="text-primary mr-3" />
 
                     <h1 className="text-xl sm:text-2xl font-bold text-foreground">
 

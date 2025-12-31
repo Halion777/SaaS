@@ -1422,7 +1422,7 @@ const QuotesManagement = () => {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
             <div>
               <div className="flex items-center">
-                  <Icon name="FileText" size={24} className="text-primary mr-3" />
+                  <Icon name="FolderOpen" size={24} className="text-primary mr-3" />
                   <h1 className="text-xl sm:text-2xl font-bold text-foreground">{t('quotesManagement.title')}</h1>
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">

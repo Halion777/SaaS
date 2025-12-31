@@ -1390,7 +1390,8 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
       .replace(/'/g, '&#39;');
   };
   
-  // Get logo URL if available
+  // Get logo URL if available - ALWAYS use sender's (company) logo, NEVER supplier logo
+  // This ensures the PDF shows the sender's branding, not the supplier's
   let logoHtml = '';
   if (companyInfo?.logo) {
     if (companyInfo.logo.data) {
@@ -1401,6 +1402,7 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
       logoHtml = `<img src="${companyInfo.logo}" alt="Logo ${companyInfo.name}" style="width: 80px; height: 80px; object-fit: contain; border-radius: 8px;" />`;
     }
   }
+  // Note: We explicitly do NOT check supplier.logo - expense invoices should always show sender's logo
   
   return `
     <div style="max-width: 900px; margin: 0 auto; font-family: 'Arial', 'Helvetica', sans-serif; background: #ffffff; padding: 30px; font-size: 11px;">

@@ -237,7 +237,7 @@ const MainSidebar = () => {
           id: 'leads-management',
           label: t('sidebar.categories.main.items.leadsManagement'),
           path: '/leads-management',
-          icon: 'Users',
+          icon: 'Target',
           notifications: 0
         }
       ]
@@ -252,7 +252,7 @@ const MainSidebar = () => {
           id: 'quote-creation',
           label: t('sidebar.categories.quotes.items.quoteCreation'),
           path: '/quote-creation',
-          icon: 'FileText',
+          icon: 'PenTool',
           notifications: 0
         },
         {
@@ -296,14 +296,14 @@ const MainSidebar = () => {
           id: 'client-invoices',
           label: t('sidebar.categories.invoices.items.clientInvoices'),
           path: '/invoices-management',
-          icon: 'Receipt',
+          icon: 'FileText',
           notifications: 0
         },
         {
           id: 'expense-invoices',
           label: t('sidebar.categories.invoices.items.expenseInvoices'),
           path: '/expense-invoices',
-          icon: 'FileText',
+          icon: 'Receipt',
           notifications: 0
         }
       ]
