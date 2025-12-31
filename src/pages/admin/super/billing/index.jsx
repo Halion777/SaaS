@@ -249,7 +249,7 @@ const SuperAdminBilling = () => {
                 // If current_period_start is in the future (shouldn't happen), use today
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
-                
+            
                 if (billingCycleStart > today) {
                   billingCycleStart = today;
                 }

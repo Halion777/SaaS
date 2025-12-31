@@ -6,6 +6,15 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 // @ts-ignore
 import { XMLParser } from 'npm:fast-xml-parser';
+
+// Import XMLParser at top level for use in processInboundInvoice
+const XMLParserInstance = new XMLParser({
+  ignoreAttributes: false,
+  attributeNamePrefix: '@_',
+  textNodeName: '#text',
+  parseAttributeValue: true,
+  trimValues: true
+});
 // @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
@@ -236,26 +245,6 @@ serve(async (req: Request) => {
     }
 
     // Parse Peppol ID to extract scheme and VAT number for flexible matching
-    // Format: "SCHEME:VATNUMBER" (e.g., "9925:BE0545744269" or "0208:1000000063")
-    const parsePeppolId = (peppolId: string) => {
-      const parts = peppolId.split(':');
-      if (parts.length === 2) {
-        const scheme = parts[0].trim();
-        const vatNumber = parts[1].trim();
-        // Normalize VAT number to uppercase for comparison (remove country prefix if present, then add it back)
-        let normalizedVat = vatNumber.toUpperCase();
-        // If VAT doesn't start with country code, try to infer from scheme
-        if (!normalizedVat.match(/^[A-Z]{2}/)) {
-          // For Belgian schemes, add BE prefix if missing
-          if (scheme === '0208' || scheme === '9925') {
-            normalizedVat = 'BE' + normalizedVat;
-          }
-        }
-        return { scheme, vatNumber: normalizedVat, originalVat: vatNumber };
-      }
-      return null;
-    };
-
     const parsedId = parsePeppolId(receiverPeppolId);
     
     if (!parsedId) {
@@ -421,6 +410,29 @@ serve(async (req: Request) => {
 // =====================================================
 // HELPER FUNCTIONS
 // =====================================================
+
+/**
+ * Parse Peppol ID to extract scheme and VAT number for flexible matching
+ * Format: "SCHEME:VATNUMBER" (e.g., "9925:BE0545744269" or "0208:1000000063")
+ */
+function parsePeppolId(peppolId: string): { scheme: string; vatNumber: string; originalVat: string } | null {
+  const parts = peppolId.split(':');
+  if (parts.length === 2) {
+    const scheme = parts[0].trim();
+    const vatNumber = parts[1].trim();
+    // Normalize VAT number to uppercase for comparison (remove country prefix if present, then add it back)
+    let normalizedVat = vatNumber.toUpperCase();
+    // If VAT doesn't start with country code, try to infer from scheme
+    if (!normalizedVat.match(/^[A-Z]{2}/)) {
+      // For Belgian schemes, add BE prefix if missing
+      if (scheme === '0208' || scheme === '9925') {
+        normalizedVat = 'BE' + normalizedVat;
+      }
+    }
+    return { scheme, vatNumber: normalizedVat, originalVat: vatNumber };
+  }
+  return null;
+}
 
 /**
  * Parse UBL XML to extract all mandatory fields from Peppol BIS Billing 3.0 invoice
@@ -823,13 +835,336 @@ async function storePDFAttachment(
  * Extracts all mandatory fields from UBL XML according to Peppol BIS Billing 3.0
  * Handles: Regular invoices, Credit notes, Self-billing invoices, Self-billing credit notes
  */
+/**
+ * Check if receiver has reached their Peppol invoice limit
+ * Returns { withinLimit: boolean, limit: number, usage: number, unlimited: boolean }
+ */
+async function checkReceiverLimit(supabase: any, userId: string): Promise<{
+  withinLimit: boolean;
+  limit: number;
+  usage: number;
+  unlimited: boolean;
+}> {
+  try {
+    // Get user's subscription to determine plan and billing cycle
+    const { data: subscription, error: subError } = await supabase
+      .from('subscriptions')
+      .select('current_period_start, current_period_end, interval')
+      .eq('user_id', userId)
+      .in('status', ['active', 'trialing', 'past_due'])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    
+    // If error or no subscription found, that's okay - we'll use calendar month fallback
+    if (subError && subError.code !== 'PGRST116') {
+      console.warn('[Peppol Webhook] Error fetching subscription:', subError);
+    }
+    
+    // Get user's plan
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('selected_plan, role, has_lifetime_access')
+      .eq('id', userId)
+      .maybeSingle();
+    
+    // If user not found, allow the invoice (fail open) but log the error
+    if (userError || !userData) {
+      console.warn('[Peppol Webhook] User not found for limit check:', userId, userError);
+      return { withinLimit: true, limit: -1, usage: 0, unlimited: true };
+    }
+    
+    // Super admin and lifetime access users have unlimited quotas
+    if (userData?.role === 'superadmin' || userData?.has_lifetime_access === true) {
+      return { withinLimit: true, limit: -1, usage: 0, unlimited: true };
+    }
+    
+    // Determine billing cycle start
+    let billingCycleStart: Date;
+    if (subscription && subscription.current_period_start) {
+      billingCycleStart = new Date(subscription.current_period_start);
+      billingCycleStart.setHours(0, 0, 0, 0);
+      
+      // If current_period_start is in the future, use today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (billingCycleStart > today) {
+        billingCycleStart = today;
+      }
+    } else {
+      // Fallback to calendar month
+      billingCycleStart = new Date();
+      billingCycleStart.setDate(1);
+      billingCycleStart.setHours(0, 0, 0, 0);
+    }
+    
+    // Get plan quotas
+    const plan = userData?.selected_plan || 'starter';
+    const QUOTAS: any = {
+      starter: { peppolInvoicesPerMonth: 50 },
+      pro: { peppolInvoicesPerMonth: -1 }
+    };
+    const planQuotas = QUOTAS[plan] || QUOTAS.starter;
+    const limit = planQuotas.peppolInvoicesPerMonth;
+    
+    // -1 means unlimited
+    if (limit === -1) {
+      return { withinLimit: true, limit: -1, usage: 0, unlimited: true };
+    }
+    
+    // Count sent Peppol invoices (from invoices table)
+    const { count: sentCount } = await supabase
+      .from('invoices')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('peppol_enabled', true)
+      .not('peppol_sent_at', 'is', null)
+      .gte('peppol_sent_at', billingCycleStart.toISOString());
+    
+    // Count received Peppol invoices (from expense_invoices table)
+    const { count: receivedCount } = await supabase
+      .from('expense_invoices')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('peppol_enabled', true)
+      .eq('source', 'peppol')
+      .not('peppol_received_at', 'is', null)
+      .gte('peppol_received_at', billingCycleStart.toISOString());
+    
+    const usage = (sentCount || 0) + (receivedCount || 0);
+    const withinLimit = usage < limit;
+    
+    return {
+      withinLimit,
+      limit,
+      usage,
+      unlimited: false
+    };
+  } catch (error) {
+    console.error('[Peppol Webhook] Error checking receiver limit:', error);
+    // On error, allow the invoice (fail open) but log the error
+    return { withinLimit: true, limit: -1, usage: 0, unlimited: true };
+  }
+}
+
 async function processInboundInvoice(supabase: any, userId: string, payload: WebhookPayload) {
   try {
     const data = payload.data;
     
-    // Note: Receiver limit check is now done BEFORE sending in peppolService.js
-    // This webhook processes invoices that have already been sent, so we don't check limits here
-    // If a receiver's limit was reached, the sender would have received an error before sending
+    // CRITICAL: Check receiver's Peppol invoice limit BEFORE processing
+    // This is a safety check in case an invoice somehow bypassed the pre-send check
+    const receiverQuota = await checkReceiverLimit(supabase, userId);
+    
+    if (!receiverQuota.withinLimit && !receiverQuota.unlimited) {
+      // CRITICAL: Update sender's invoice to "failed" status if sender is a Haliqo user
+      // Extract sender info and invoice number from UBL XML to find and update sender's invoice
+      try {
+        let senderUserId: string | null = null;
+        let invoiceNumber: string | null = null;
+        let senderPeppolId: string | null = null;
+        
+        // Parse UBL XML to extract sender user ID and invoice number
+        if (data.ublXml) {
+          try {
+            // Use parseUBLInvoice to properly extract invoice data (handles namespace removal)
+            const parsedInvoice = parseUBLInvoice(data.ublXml);
+            
+            // Extract invoice number from parsed invoice
+            invoiceNumber = parsedInvoice?.invoiceId || data.invoiceNumber || null;
+            
+            // Extract sender Peppol ID from parsed invoice
+            senderPeppolId = parsedInvoice?.supplier?.peppolId || null;
+            
+            // Extract sender_user_id from PaymentTerms Note field (if present)
+            const paymentTermsNote = parsedInvoice?.payment?.terms || '';
+            if (paymentTermsNote) {
+              const senderIdMatch = paymentTermsNote.match(/SENDER_USER_ID:([a-f0-9-]{36})/i);
+              if (senderIdMatch && senderIdMatch[1]) {
+                senderUserId = senderIdMatch[1];
+              }
+            }
+            
+            // If no sender_user_id in Note, try to find sender by Peppol ID
+            if (!senderUserId && senderPeppolId) {
+              // Parse Peppol ID to handle different formats
+              const parsedId = parsePeppolId(senderPeppolId);
+              if (parsedId) {
+                // Try exact match first
+                const normalizedSenderIdLower = senderPeppolId.toLowerCase();
+                const normalizedSenderIdUpper = senderPeppolId.toUpperCase();
+                
+                const { data: exactMatch } = await supabase
+                  .from('peppol_settings')
+                  .select('user_id, peppol_id, peppol_id_9925, peppol_id_0208')
+                  .or(`peppol_id.eq.${normalizedSenderIdLower},peppol_id.eq.${normalizedSenderIdUpper},peppol_id.eq.${senderPeppolId}`)
+                  .maybeSingle();
+                
+                if (exactMatch) {
+                  senderUserId = exactMatch.user_id;
+                } else {
+                  // Try matching by scheme + VAT number
+                  const { data: allSettings } = await supabase
+                    .from('peppol_settings')
+                    .select('user_id, peppol_id, peppol_id_9925, peppol_id_0208');
+                  
+                  if (allSettings) {
+                    for (const setting of allSettings) {
+                      if (setting.peppol_id) {
+                        const settingParsed = parsePeppolId(setting.peppol_id);
+                        if (settingParsed && settingParsed.scheme === parsedId.scheme) {
+                          const settingVat = settingParsed.vatNumber.toUpperCase().replace(/^BE/, '');
+                          const incomingVat = parsedId.vatNumber.toUpperCase().replace(/^BE/, '');
+                          if (settingVat === incomingVat) {
+                            senderUserId = setting.user_id;
+                            break;
+                          }
+                        }
+                      }
+                      
+                      if (parsedId.scheme === '9925' && setting.peppol_id_9925) {
+                        const settingParsed = parsePeppolId(setting.peppol_id_9925);
+                        if (settingParsed) {
+                          const settingVat = settingParsed.vatNumber.toUpperCase().replace(/^BE/, '');
+                          const incomingVat = parsedId.vatNumber.toUpperCase().replace(/^BE/, '');
+                          if (settingVat === incomingVat) {
+                            senderUserId = setting.user_id;
+                            break;
+                          }
+                        }
+                      }
+                      
+                      if (parsedId.scheme === '0208' && setting.peppol_id_0208) {
+                        const settingParsed = parsePeppolId(setting.peppol_id_0208);
+                        if (settingParsed) {
+                          const settingVat = settingParsed.vatNumber.toUpperCase().replace(/^BE/, '');
+                          const incomingVat = parsedId.vatNumber.toUpperCase().replace(/^BE/, '');
+                          if (settingVat === incomingVat) {
+                            senderUserId = setting.user_id;
+                            break;
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          } catch (parseError) {
+            console.warn('[Peppol Webhook] Error parsing UBL XML to find sender:', parseError);
+          }
+        }
+        
+        // If we found sender, try to update sender's invoice to "failed"
+        if (senderUserId) {
+          const errorMessage = `Receiver has reached their monthly Peppol invoice limit (${receiverQuota.usage}/${receiverQuota.limit}). The invoice was sent but could not be processed by the receiver.`;
+          
+          let senderInvoice = null;
+          let findError = null;
+          let invoiceTable = 'invoices';
+          
+          // First, try to find by messageId (most reliable) in invoices table
+          if (data.messageId) {
+            const { data: invoiceByMessageId, error: errorByMessageId } = await supabase
+              .from('invoices')
+              .select('id, invoice_number, peppol_status, peppol_message_id')
+              .eq('user_id', senderUserId)
+              .eq('peppol_message_id', data.messageId)
+              .maybeSingle();
+            
+            if (invoiceByMessageId && invoiceByMessageId.id) {
+              senderInvoice = invoiceByMessageId;
+              invoiceTable = 'invoices';
+            } else {
+              findError = errorByMessageId;
+            }
+          }
+          
+          // If not found by messageId, try by invoice number in invoices table
+          if (!senderInvoice && invoiceNumber) {
+            const { data: invoiceByNumber, error: errorByNumber } = await supabase
+              .from('invoices')
+              .select('id, invoice_number, peppol_status, peppol_message_id')
+              .eq('user_id', senderUserId)
+              .eq('invoice_number', invoiceNumber)
+              .maybeSingle();
+            
+            if (invoiceByNumber && invoiceByNumber.id) {
+              senderInvoice = invoiceByNumber;
+              invoiceTable = 'invoices';
+            } else {
+              findError = errorByNumber || findError;
+            }
+          }
+          
+          // If still not found, try to get buyerReference from parsed invoice and search by it
+          if (!senderInvoice && data.ublXml) {
+            try {
+              const parsedInvoice = parseUBLInvoice(data.ublXml);
+              const buyerReference = parsedInvoice?.buyerReference;
+              
+              if (buyerReference) {
+                const { data: invoiceByBuyerRef, error: errorByBuyerRef } = await supabase
+                  .from('invoices')
+                  .select('id, invoice_number, peppol_status, peppol_message_id')
+                  .eq('user_id', senderUserId)
+                  .eq('invoice_number', buyerReference)
+                  .maybeSingle();
+                
+                if (invoiceByBuyerRef && invoiceByBuyerRef.id) {
+                  senderInvoice = invoiceByBuyerRef;
+                  invoiceTable = 'invoices';
+                }
+              }
+            } catch (parseError) {
+              // Ignore parse errors here, we already tried
+            }
+          }
+          
+          // If found, update sender's invoice to failed status
+          if (senderInvoice && senderInvoice.id) {
+            const { error: updateError } = await supabase
+              .from(invoiceTable)
+              .update({
+                peppol_status: 'failed',
+                peppol_error_message: errorMessage,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', senderInvoice.id);
+            
+            if (updateError) {
+              console.error('[Peppol Webhook] Failed to update sender invoice status:', updateError);
+            }
+          } else {
+            console.warn('[Peppol Webhook] Could not find sender invoice to update:', {
+              senderUserId,
+              invoiceNumber,
+              messageId: data.messageId,
+              senderPeppolId,
+              findError: findError?.message
+            });
+          }
+        } else {
+          console.warn('[Peppol Webhook] Could not extract sender info to update invoice:', {
+            senderUserId,
+            invoiceNumber,
+            messageId: data.messageId,
+            senderPeppolId,
+            hasUblXml: !!data.ublXml
+          });
+        }
+      } catch (updateError) {
+        console.error('[Peppol Webhook] Error updating sender invoice status:', updateError);
+        // Don't fail the webhook response if we can't update sender invoice
+      }
+      
+      // Return error response - this will prevent the invoice from being stored
+      return {
+        success: false,
+        error: `RECEIVER_LIMIT_REACHED: Receiver has reached their monthly Peppol invoice limit (${receiverQuota.usage}/${receiverQuota.limit}). This invoice will not be processed.`,
+        limit: receiverQuota.limit,
+        usage: receiverQuota.usage
+      };
+    }
     
     // Determine document type from webhook event type
     const isSelfBilling = payload.eventType === PEPPOL_EVENT_TYPES.SELF_BILLING_INVOICE_RECEIVED || 

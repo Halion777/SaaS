@@ -510,8 +510,12 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
         error: err
       });
       
-      // Check if error is about sender or receiver limit reached
+      // Check if error is about sender limit reached
+      // NOTE: Receiver limit check is now handled in the webhook (peppol-webhook/index.ts)
+      // The webhook will update the invoice to "failed" status when receiver limit is reached
       let errorMessage = err.message || t('invoicesManagement.sendPeppolModal.errors.sendError');
+      let errorMessageForDB = err.message || t('invoicesManagement.sendPeppolModal.errors.sendError');
+      
       if (err.message && err.message.startsWith('SENDER_LIMIT_REACHED:')) {
         // Parse the error: SENDER_LIMIT_REACHED:limit:usage
         const parts = err.message.split(':');
@@ -521,29 +525,24 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
           limit: limit,
           usage: usage
         });
-      } else if (err.message && err.message.startsWith('RECEIVER_LIMIT_REACHED:')) {
-        // Parse the error: RECEIVER_LIMIT_REACHED:limit:usage
-        const parts = err.message.split(':');
-        const limit = parts[1] || '50';
-        errorMessage = t('peppol.messages.errors.receiverLimitReached', {
-          limit: limit
-        });
+        // Store translated message in database
+        errorMessageForDB = errorMessage;
       }
       
       setError(errorMessage);
 
-      // Update invoice with failed status
+      // Update invoice with failed status and readable error message
       try {
         await supabase
           .from('invoices')
           .update({
             peppol_enabled: true,
             peppol_status: 'failed',
-            peppol_error_message: err.message || t('invoicesManagement.sendPeppolModal.errors.sendError')
+            peppol_error_message: errorMessageForDB // Store translated/readable error message
           })
           .eq('id', invoice.id);
       } catch (updateErr) {
-        // Error updating invoice status
+        console.error('[SendPeppolModal] Error updating invoice status:', updateErr);
       }
     } finally {
       setIsSending(false);

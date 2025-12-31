@@ -467,11 +467,15 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                         title={
                           !canEdit 
                             ? t('permissions.noFullAccess') 
-                            : invoice.peppolSentAt 
+                            : invoice.peppolStatus === 'delivered'
                               ? t('invoicesManagement.table.actions.alreadySent', 'Invoice already sent')
+                              : invoice.peppolStatus === 'sent'
+                              ? t('invoicesManagement.table.actions.alreadySent', 'Invoice already sent')
+                              : invoice.peppolStatus === 'failed'
+                              ? t('invoicesManagement.table.actions.retrySend', 'Retry sending invoice')
                               : t('invoicesManagement.table.actions.sendInvoice')
                         }
-                        disabled={!canEdit || !!invoice.peppolSentAt}
+                        disabled={!canEdit || invoice.peppolStatus === 'delivered' || invoice.peppolStatus === 'sent'}
                       />
                       <Button
                         variant="ghost"
@@ -599,11 +603,11 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                 title={
                   !canEdit 
                     ? t('permissions.noFullAccess') 
-                    : invoice.peppolSentAt 
+                    : invoice.peppolStatus === 'delivered' || invoice.peppolStatus === 'sent'
                       ? t('invoicesManagement.table.actions.alreadySent', 'Invoice already sent')
                       : t('invoicesManagement.table.actions.sendInvoice')
                 }
-                disabled={!canEdit || !!invoice.peppolSentAt}
+                disabled={!canEdit || invoice.peppolStatus === 'delivered' || invoice.peppolStatus === 'sent'}
               />
               <Button
                 variant="ghost"
@@ -834,12 +838,16 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                               title={
                                 !canEdit 
                                   ? t('permissions.noFullAccess') 
-                                  : (invoice.peppolSentAt || invoice.peppolStatus === 'sent' || invoice.peppolStatus === 'delivered')
+                                  : invoice.peppolStatus === 'delivered'
                                     ? t('invoicesManagement.table.actions.alreadySent', 'Invoice already sent')
+                                    : invoice.peppolStatus === 'sent'
+                                    ? t('invoicesManagement.table.actions.alreadySent', 'Invoice already sent')
+                                    : invoice.peppolStatus === 'failed'
+                                    ? t('invoicesManagement.table.actions.retrySend', 'Retry sending invoice')
                                     : t('invoicesManagement.table.actions.sendInvoice')
                               }
                               className="text-primary hover:text-primary/80"
-                              disabled={!canEdit || !!invoice.peppolSentAt || invoice.peppolStatus === 'sent' || invoice.peppolStatus === 'delivered'}
+                              disabled={!canEdit || invoice.peppolStatus === 'delivered' || invoice.peppolStatus === 'sent'}
                             />
                             <Button
                               variant="ghost"
@@ -946,12 +954,16 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                         title={
                           !canEdit 
                             ? t('permissions.noFullAccess') 
-                            : (invoice.peppolSentAt || invoice.peppolStatus === 'sent' || invoice.peppolStatus === 'delivered')
+                            : invoice.peppolStatus === 'delivered'
                               ? t('invoicesManagement.table.actions.alreadySent', 'Invoice already sent')
+                              : invoice.peppolStatus === 'sent'
+                              ? t('invoicesManagement.table.actions.alreadySent', 'Invoice already sent')
+                              : invoice.peppolStatus === 'failed'
+                              ? t('invoicesManagement.table.actions.retrySend', 'Retry sending invoice')
                               : t('invoicesManagement.table.actions.sendInvoice')
                         }
                         className="text-primary hover:text-primary/80"
-                        disabled={!canEdit || !!invoice.peppolSentAt || invoice.peppolStatus === 'sent' || invoice.peppolStatus === 'delivered'}
+                        disabled={!canEdit || invoice.peppolStatus === 'delivered' || invoice.peppolStatus === 'sent'}
                       />
                       <Button
                         variant="ghost"
