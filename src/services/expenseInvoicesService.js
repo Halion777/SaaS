@@ -507,10 +507,10 @@ export class ExpenseInvoicesService {
    */
   async getStatistics() {
     try {
-      // Get total counts and amounts
+      // Get total counts and amounts with issue_date for growth calculation
       const { data: invoices, error: invoicesError } = await supabase
         .from(this.tableName)
-        .select('status, amount, due_date, source');
+        .select('status, amount, due_date, source, issue_date, created_at');
 
       if (invoicesError) throw invoicesError;
 
@@ -520,13 +520,21 @@ export class ExpenseInvoicesService {
         outstandingAmount: 0,
         overdueCount: 0,
         peppolInvoices: 0,
-        manualInvoices: 0
+        manualInvoices: 0,
+        expensesGrowth: 0
       };
 
       const today = new Date();
+      const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      const previousMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const previousMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59, 999);
+
+      let currentMonthExpenses = 0;
+      let previousMonthExpenses = 0;
 
       invoices.forEach(invoice => {
-        stats.totalExpenses += parseFloat(invoice.amount || 0);
+        const amount = parseFloat(invoice.amount || 0);
+        stats.totalExpenses += amount;
         
         // Count Peppol vs Manual invoices
         if (invoice.source === 'peppol') {
@@ -536,13 +544,23 @@ export class ExpenseInvoicesService {
         }
         
         if (invoice.status === 'paid') {
-          stats.paidExpenses += parseFloat(invoice.amount || 0);
+          stats.paidExpenses += amount;
         } else {
-          stats.outstandingAmount += parseFloat(invoice.amount || 0);
+          stats.outstandingAmount += amount;
           
           // Check if overdue
           if (invoice.due_date && new Date(invoice.due_date) < today) {
             stats.overdueCount++;
+          }
+        }
+        
+        // Calculate monthly expenses for growth
+        const issueDate = invoice.issue_date ? new Date(invoice.issue_date) : (invoice.created_at ? new Date(invoice.created_at) : null);
+        if (issueDate) {
+          if (issueDate >= currentMonthStart && issueDate <= today) {
+            currentMonthExpenses += amount;
+          } else if (issueDate >= previousMonthStart && issueDate <= previousMonthEnd) {
+            previousMonthExpenses += amount;
           }
         }
       });
@@ -550,6 +568,13 @@ export class ExpenseInvoicesService {
       stats.outstandingAmount = Math.round(stats.outstandingAmount * 100) / 100;
       stats.totalExpenses = Math.round(stats.totalExpenses * 100) / 100;
       stats.paidExpenses = Math.round(stats.paidExpenses * 100) / 100;
+      
+      // Calculate growth percentage
+      if (previousMonthExpenses > 0) {
+        stats.expensesGrowth = Math.round(((currentMonthExpenses - previousMonthExpenses) / previousMonthExpenses) * 100 * 10) / 10;
+      } else if (currentMonthExpenses > 0) {
+        stats.expensesGrowth = 100; // 100% growth if no previous month data
+      }
 
       return {
         success: true,

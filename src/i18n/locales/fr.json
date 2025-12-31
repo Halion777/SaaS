@@ -4298,10 +4298,6 @@
         "failed": "Échouée",
         "notApplicable": "N/A"
       },
-      "invoiceType": {
-        "deposit": "Acompte",
-        "final": "Solde"
-      },
       "filter": {
         "title": "Filtres",
         "invoicesFound": "{{count}} facture trouvée",

@@ -849,9 +849,9 @@ const SuperAdminBilling = () => {
                               variant="outline"
                               size="sm"
                               onClick={() => handleEditSubscription(subscription)}
-                              title={(subscription.status === 'cancelled' || subscription.status === 'canceled') ? 'Cannot edit cancelled subscriptions (Stripe restriction)' : 'Edit subscription'}
-                              disabled={subscription.status === 'cancelled' || subscription.status === 'canceled'}
-                              className={(subscription.status === 'cancelled' || subscription.status === 'canceled') ? 'opacity-50 cursor-not-allowed' : ''}
+                              title={subscription.status === 'cancelled' ? 'Cannot edit cancelled subscriptions (Stripe restriction)' : 'Edit subscription'}
+                              disabled={subscription.status === 'cancelled'}
+                              className={subscription.status === 'cancelled' ? 'opacity-50 cursor-not-allowed' : ''}
                             >
                               <Icon name="Edit" size={14} />
                             </Button>
@@ -983,8 +983,8 @@ const SuperAdminBilling = () => {
                           size="sm"
                           onClick={() => handleEditSubscription(subscription)}
                           className="h-8 px-2"
-                          title={(subscription.status === 'cancelled' || subscription.status === 'canceled') ? 'Cannot edit cancelled subscriptions (Stripe restriction)' : 'Edit'}
-                          disabled={subscription.status === 'cancelled' || subscription.status === 'canceled'}
+                          title={subscription.status === 'cancelled' ? 'Cannot edit cancelled subscriptions (Stripe restriction)' : 'Edit'}
+                          disabled={subscription.status === 'cancelled'}
                         >
                           <Icon name="Edit" size={14} />
                         </Button>
@@ -1170,7 +1170,6 @@ const SuperAdminBilling = () => {
         isOpen={isViewModalOpen}
         onClose={handleModalClose}
         subscription={selectedSubscription}
-        onUpdate={handleSubscriptionUpdate}
       />
 
       <SubscriptionEditModal

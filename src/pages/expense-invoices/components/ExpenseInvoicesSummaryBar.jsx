@@ -7,6 +7,10 @@ const ExpenseInvoicesSummaryBar = ({ summaryData, isLoading = false }) => {
   const { t, i18n } = useTranslation();
   
 
+  const formatPercentage = (value) => {
+    return `${value.toFixed(1)}%`;
+  };
+
   const summaryItems = [
     {
       label: t('expenseInvoices.summary.totalExpenses', 'Total Expenses'),
@@ -22,7 +26,8 @@ const ExpenseInvoicesSummaryBar = ({ summaryData, isLoading = false }) => {
       value: isLoading ? '...' : formatCurrency(summaryData.paidExpenses || 0),
       icon: 'CheckCircle',
       color: 'text-green-600',
-      bgColor: 'bg-green-50'
+      bgColor: 'bg-green-50',
+      percentage: summaryData.totalExpenses > 0 ? (summaryData.paidExpenses / summaryData.totalExpenses) * 100 : 0
     },
     {
       label: t('expenseInvoices.summary.outstandingAmount', 'Outstanding Amount'),
@@ -63,10 +68,17 @@ const ExpenseInvoicesSummaryBar = ({ summaryData, isLoading = false }) => {
                   <span className={`text-xs ml-1 ${
                     item.trend >= 0 ? 'text-success' : 'text-error'
                   }`}>
-                    {item.trend >= 0 ? '+' : ''}{item.trend}%
+                    {item.trend >= 0 ? '+' : ''}{item.trend !== undefined ? formatPercentage(item.trend) : '0.0%'}
                   </span>
                   <span className="text-xs text-muted-foreground ml-1">
                     {item.trendLabel}
+                  </span>
+                </div>
+              )}
+              {item.percentage !== undefined && (
+                <div className="flex items-center mt-1">
+                  <span className="text-xs text-muted-foreground">
+                    {formatPercentage(item.percentage)} {t('expenseInvoices.summary.ofTotal', 'of total')}
                   </span>
                 </div>
               )}

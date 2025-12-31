@@ -224,21 +224,59 @@ const InvoicesManagement = () => {
   };
 
   // Calculate summary data from invoices
-  const summaryData = {
-    totalRevenue: invoices.reduce((sum, invoice) => sum + invoice.amount, 0),
-    paidRevenue: invoices.filter(invoice => invoice.status === 'paid').reduce((sum, invoice) => sum + invoice.amount, 0),
-    outstandingAmount: invoices.filter(invoice => invoice.status === 'unpaid' || invoice.status === 'overdue').reduce((sum, invoice) => sum + invoice.amount, 0),
-    revenueGrowth: 0, // Could be calculated from historical data
+  const calculateSummaryData = () => {
+    const totalRevenue = invoices.reduce((sum, invoice) => sum + invoice.amount, 0);
+    const paidRevenue = invoices.filter(invoice => invoice.status === 'paid').reduce((sum, invoice) => sum + invoice.amount, 0);
+    const outstandingAmount = invoices.filter(invoice => invoice.status === 'unpaid' || invoice.status === 'overdue').reduce((sum, invoice) => sum + invoice.amount, 0);
+    
+    // Calculate revenue growth: current month vs previous month
+    const today = new Date();
+    const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const previousMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const previousMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59, 999);
+    
+    const currentMonthRevenue = invoices
+      .filter(invoice => {
+        const issueDate = new Date(invoice.issueDate);
+        return issueDate >= currentMonthStart && issueDate <= today;
+      })
+      .reduce((sum, invoice) => sum + invoice.amount, 0);
+    
+    const previousMonthRevenue = invoices
+      .filter(invoice => {
+        const issueDate = new Date(invoice.issueDate);
+        return issueDate >= previousMonthStart && issueDate <= previousMonthEnd;
+      })
+      .reduce((sum, invoice) => sum + invoice.amount, 0);
+    
+    // Calculate growth percentage
+    let revenueGrowth = 0;
+    if (previousMonthRevenue > 0) {
+      revenueGrowth = ((currentMonthRevenue - previousMonthRevenue) / previousMonthRevenue) * 100;
+    } else if (currentMonthRevenue > 0) {
+      revenueGrowth = 100; // 100% growth if no previous month data
+    }
+    
     // Calculate overdue count based on due_date, not status field
-    overdueCount: invoices.filter(invoice => {
+    const overdueCount = invoices.filter(invoice => {
       if (invoice.status === 'paid') return false;
       const dueDate = new Date(invoice.dueDate);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const todayDate = new Date();
+      todayDate.setHours(0, 0, 0, 0);
       dueDate.setHours(0, 0, 0, 0);
-      return dueDate < today;
-    }).length
+      return dueDate < todayDate;
+    }).length;
+    
+    return {
+      totalRevenue,
+      paidRevenue,
+      outstandingAmount,
+      revenueGrowth: Math.round(revenueGrowth * 10) / 10, // Round to 1 decimal place
+      overdueCount
+    };
   };
+  
+  const summaryData = calculateSummaryData();
 
   const handleFiltersChange = (newFilters) => {
     setFilters(newFilters);
