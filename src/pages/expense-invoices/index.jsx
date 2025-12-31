@@ -369,7 +369,7 @@ const ExpenseInvoicesManagement = () => {
         alert(t('expenseInvoices.errors.noPDFAvailable', 'PDF is only available for Peppol invoices. This invoice does not have a stored PDF.'));
         return;
       }
-      
+
       const downloadResult = await expenseService.getFileDownloadUrl(pdfAttachmentPath);
       
       if (!downloadResult.success) {
@@ -382,13 +382,13 @@ const ExpenseInvoicesManagement = () => {
         const response = await fetch(downloadResult.data);
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
+      const a = document.createElement('a');
+      a.href = url;
         a.download = `expense-invoice-${invoice.invoice_number || 'invoice'}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
       } catch (fetchError) {
         console.warn('Failed to fetch PDF blob, trying direct download:', fetchError);
         // Fallback: try direct download with download attribute

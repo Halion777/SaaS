@@ -258,8 +258,8 @@ const Input = React.forwardRef(({
                 )}
                 ref={inputRef}
                 id={inputId}
-                min={type === "number" ? (min !== undefined ? min : 0) : undefined}
-                max={type === "number" ? max : undefined}
+                min={type === "number" ? (min !== undefined ? min : 0) : (type === "date" || type === "datetime-local" ? min : undefined)}
+                max={type === "number" ? max : (type === "date" || type === "datetime-local" ? max : undefined)}
                 maxLength={getDefaultMaxLength()}
                 {...props}
             />
