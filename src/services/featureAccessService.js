@@ -450,7 +450,7 @@ class FeatureAccessService {
         .in('status', ['active', 'trialing', 'past_due'])
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
       
       if (subError || !subscription || !subscription.current_period_start) {
         // No active subscription found, fallback to calendar month

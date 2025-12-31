@@ -1261,14 +1261,14 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
     // Check if sender exists as participant, if not create one
     let senderId = null;
     if (supplierPeppolId) {
-      const { data: existingParticipant } = await supabase
+      const { data: existingParticipant, error: participantError } = await supabase
         .from('peppol_participants')
         .select('id')
         .eq('user_id', userId)
         .eq('peppol_identifier', supplierPeppolId)
-        .single();
+        .maybeSingle();
 
-      if (existingParticipant) {
+      if (existingParticipant && !participantError) {
         senderId = existingParticipant.id;
       } else {
         // Create new participant with extracted information

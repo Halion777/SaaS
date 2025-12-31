@@ -1654,13 +1654,13 @@ export class PeppolService {
           // Get sender participant ID if exists
           let senderId = null;
           if (invoiceData.sender?.peppolIdentifier) {
-            const { data: senderParticipant } = await supabase
+            const { data: senderParticipant, error: senderError } = await supabase
               .from('peppol_participants')
               .select('id')
               .eq('user_id', user.id)
               .eq('peppol_identifier', invoiceData.sender.peppolIdentifier)
-              .single();
-            if (senderParticipant) {
+              .maybeSingle();
+            if (senderParticipant && !senderError) {
               senderId = senderParticipant.id;
             }
           }
@@ -1668,13 +1668,13 @@ export class PeppolService {
           // Get receiver participant ID if exists
           let receiverId = null;
           if (receiverPeppolIdentifier) {
-            const { data: receiverParticipant } = await supabase
+            const { data: receiverParticipant, error: receiverError } = await supabase
               .from('peppol_participants')
               .select('id')
               .eq('user_id', user.id)
               .eq('peppol_identifier', receiverPeppolIdentifier)
-              .single();
-            if (receiverParticipant) {
+              .maybeSingle();
+            if (receiverParticipant && !receiverError) {
               receiverId = receiverParticipant.id;
             }
           }
