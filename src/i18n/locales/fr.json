@@ -1345,7 +1345,9 @@
       "recommended": "Recommandé",
       "features": "Fonctionnalités",
       "limitations": "Limitations"
-    }
+    },
+    "lifetimeAccess": "Accès à vie",
+    "lifetime": "à vie"
   },
   "meta": {
     "title": "Haliqo - Votre partenaire digital intelligent",

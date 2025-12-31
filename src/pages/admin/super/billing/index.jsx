@@ -17,7 +17,6 @@ import SubscriptionsFilterToolbar from './components/SubscriptionsFilterToolbar'
 import PaymentsFilterToolbar from './components/PaymentsFilterToolbar';
 
 const SuperAdminBilling = () => {
-  const { t } = useTranslation();
   const navigate = useNavigate();
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
@@ -772,10 +771,16 @@ const SuperAdminBilling = () => {
                         <td className="px-4 py-3">
                           <div>
                             <p className="text-sm font-medium text-foreground">
-                              {subscription.plan_name || 'Standard Plan'}
+                              {subscription.users?.has_lifetime_access 
+                                ? 'Lifetime access'
+                                : (subscription.plan_name || 'Standard Plan')
+                              }
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {subscription.interval || 'monthly'}
+                              {subscription.users?.has_lifetime_access 
+                                ? 'lifetime'
+                                : (subscription.interval || 'monthly')
+                              }
                             </p>
                           </div>
                         </td>
@@ -793,12 +798,20 @@ const SuperAdminBilling = () => {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <p className="text-sm font-medium text-foreground">
-                            {formatCurrency(subscription.amount || 0)}
-                          </p>
+                          {subscription.users?.has_lifetime_access ? (
+                            <span className="text-sm text-muted-foreground">-</span>
+                          ) : (
+                            <p className="text-sm font-medium text-foreground">
+                              {formatCurrency(subscription.amount || 0)}
+                            </p>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-sm text-muted-foreground">
-                          {subscription.current_period_end ? formatDate(subscription.current_period_end) : 'N/A'}
+                          {subscription.users?.has_lifetime_access ? (
+                            <span className="text-muted-foreground">-</span>
+                          ) : (
+                            subscription.current_period_end ? formatDate(subscription.current_period_end) : 'N/A'
+                          )}
                         </td>
                         <td className="px-4 py-3 text-sm text-muted-foreground">
                           {formatDate(subscription.created_at)}
@@ -901,20 +914,34 @@ const SuperAdminBilling = () => {
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-muted-foreground">Plan:</span>
                           <div className="text-right">
-                            <p className="text-sm font-medium text-foreground">{subscription.plan_name || 'Standard Plan'}</p>
-                            <p className="text-xs text-muted-foreground">{subscription.interval || 'monthly'}</p>
+                            <p className="text-sm font-medium text-foreground">
+                              {subscription.users?.has_lifetime_access 
+                                ? 'Lifetime access'
+                                : (subscription.plan_name || 'Standard Plan')
+                              }
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {subscription.users?.has_lifetime_access 
+                                ? 'lifetime'
+                                : (subscription.interval || 'monthly')
+                              }
+                            </p>
                           </div>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-muted-foreground">Amount:</span>
-                          <span className="text-sm font-semibold text-foreground">{formatCurrency(subscription.amount || 0)}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-muted-foreground">Next Billing:</span>
-                          <span className="text-xs text-foreground">
-                            {subscription.current_period_end ? formatDate(subscription.current_period_end) : 'N/A'}
-                          </span>
-                        </div>
+                        {!subscription.users?.has_lifetime_access && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">Amount:</span>
+                            <span className="text-sm font-semibold text-foreground">{formatCurrency(subscription.amount || 0)}</span>
+                          </div>
+                        )}
+                        {!subscription.users?.has_lifetime_access && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">Next Billing:</span>
+                            <span className="text-xs text-foreground">
+                              {subscription.current_period_end ? formatDate(subscription.current_period_end) : 'N/A'}
+                            </span>
+                          </div>
+                        )}
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-muted-foreground">Created:</span>
                           <span className="text-xs text-foreground">{formatDate(subscription.created_at)}</span>

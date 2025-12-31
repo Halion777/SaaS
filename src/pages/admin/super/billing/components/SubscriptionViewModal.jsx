@@ -137,7 +137,10 @@ const SubscriptionViewModal = ({ isOpen, onClose, subscription }) => {
                 <div>
                   <p className="text-xs text-muted-foreground">Plan Name</p>
                   <p className="text-sm font-medium text-foreground">
-                    {subscription.plan_name || 'Unknown Plan'}
+                    {subscription.users?.has_lifetime_access 
+                      ? 'Lifetime access'
+                      : (subscription.plan_name || 'Unknown Plan')
+                    }
                   </p>
                 </div>
                 <div>
@@ -155,15 +158,20 @@ const SubscriptionViewModal = ({ isOpen, onClose, subscription }) => {
                 <div>
                   <p className="text-xs text-muted-foreground">Billing Interval</p>
                   <p className="text-sm font-medium text-foreground">
-                    {subscription.interval || 'monthly'}
+                    {subscription.users?.has_lifetime_access 
+                      ? 'lifetime'
+                      : (subscription.interval || 'monthly')
+                    }
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Amount</p>
-                  <p className="text-sm font-medium text-foreground">
-                    {formatCurrency(subscription.amount || 0)}
-                  </p>
-                </div>
+                {!subscription.users?.has_lifetime_access && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Amount</p>
+                    <p className="text-sm font-medium text-foreground">
+                      {formatCurrency(subscription.amount || 0)}
+                    </p>
+                  </div>
+                )}
                 <div>
                   <p className="text-xs text-muted-foreground">Currency</p>
                   <p className="text-sm font-medium text-foreground">
@@ -183,12 +191,14 @@ const SubscriptionViewModal = ({ isOpen, onClose, subscription }) => {
                     {subscription.current_period_start ? formatDate(subscription.current_period_start) : 'N/A'}
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Current Period End</p>
-                  <p className="text-sm font-medium text-foreground">
-                    {subscription.current_period_end ? formatDate(subscription.current_period_end) : 'N/A'}
-                  </p>
-                </div>
+                {!subscription.users?.has_lifetime_access && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Current Period End</p>
+                    <p className="text-sm font-medium text-foreground">
+                      {subscription.current_period_end ? formatDate(subscription.current_period_end) : 'N/A'}
+                    </p>
+                  </div>
+                )}
                 <div>
                   <p className="text-xs text-muted-foreground">Trial Start</p>
                   <p className="text-sm font-medium text-foreground">
