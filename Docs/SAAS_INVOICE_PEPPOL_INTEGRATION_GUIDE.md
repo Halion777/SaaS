@@ -1030,4 +1030,106 @@ When sending an invoice:
 
 ---
 
+## 📋 UBL XML Element Ordering (Critical for Validation)
+
+**IMPORTANT:** The order of elements in UBL XML is strictly enforced by the UBL 2.1 Invoice schema. Placing elements in the wrong order will cause validation errors.
+
+### Correct Element Order
+
+The following is the **correct and tested** element order for Peppol BIS Billing 3.0 UBL invoices:
+
+```xml
+<Invoice>
+  <!-- 1. Document Identifiers (Mandatory) -->
+  <cbc:CustomizationID>urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0</cbc:CustomizationID>
+  <cbc:ProfileID>urn:fdc:peppol.eu:2017:poacc:billing:01:1.0</cbc:ProfileID>
+  <cbc:ID>INV-001</cbc:ID>
+  <cbc:IssueDate>2025-01-15</cbc:IssueDate>
+  <cbc:DueDate>2025-02-15</cbc:DueDate>
+  <cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>
+  <cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>
+  
+  <!-- 2. Buyer Reference -->
+  <cbc:BuyerReference>PO-12345</cbc:BuyerReference>
+  
+  <!-- 3. Order Reference (Optional - for final invoices with deposit) -->
+  <cac:OrderReference>
+    <cbc:ID>DEP-INV-001</cbc:ID>
+  </cac:OrderReference>
+  
+  <!-- 4. Additional Document Reference (PDF Attachment) - MUST BE HERE -->
+  <!-- ⚠️ CRITICAL: AdditionalDocumentReference MUST be placed AFTER OrderReference and BEFORE party elements -->
+  <cac:AdditionalDocumentReference>
+    <cbc:ID>INVOICE_PDF</cbc:ID>
+    <cac:Attachment>
+      <cbc:EmbeddedDocumentBinaryObject
+        mimeCode="application/pdf"
+        filename="invoice-INV-001.pdf">
+        BASE64_ENCODED_PDF_CONTENT
+      </cbc:EmbeddedDocumentBinaryObject>
+    </cac:Attachment>
+  </cac:AdditionalDocumentReference>
+  
+  <!-- 5. Party Information -->
+  <cac:AccountingSupplierParty>...</cac:AccountingSupplierParty>
+  <cac:AccountingCustomerParty>...</cac:AccountingCustomerParty>
+  
+  <!-- 6. Delivery Information (Optional) -->
+  <cac:Delivery>...</cac:Delivery>
+  
+  <!-- 7. Payment Information -->
+  <cac:PaymentMeans>...</cac:PaymentMeans>
+  <cac:PaymentTerms>...</cac:PaymentTerms>
+  
+  <!-- 8. Allowance/Charge (Optional - for final invoices with deposit deduction) -->
+  <cac:AllowanceCharge>...</cac:AllowanceCharge>
+  
+  <!-- 9. Tax and Monetary Totals -->
+  <cac:TaxTotal>...</cac:TaxTotal>
+  <cac:LegalMonetaryTotal>...</cac:LegalMonetaryTotal>
+  
+  <!-- 10. Invoice Lines -->
+  <cac:InvoiceLine>...</cac:InvoiceLine>
+</Invoice>
+```
+
+### Key Points About Element Ordering
+
+1. **AdditionalDocumentReference (PDF Attachment) Placement:**
+   - ✅ **CORRECT:** After `OrderReference`, before `AccountingSupplierParty`
+   - ❌ **WRONG:** After `AllowanceCharge` and before `TaxTotal` (will cause validation error)
+   - ❌ **WRONG:** After `PaymentTerms` and before `AllowanceCharge` (will cause validation error)
+   - ❌ **WRONG:** After `TaxTotal` or `LegalMonetaryTotal` (will cause validation error)
+
+2. **Payment-Related Elements:**
+   - `PaymentMeans` and `PaymentTerms` must come before `AllowanceCharge`
+   - All payment-related elements must be complete before `TaxTotal`
+
+3. **Tax and Monetary Totals:**
+   - `TaxTotal` must come before `LegalMonetaryTotal`
+   - Both must come before `InvoiceLine` elements
+
+4. **Invoice Lines:**
+   - Must be the last elements in the invoice
+   - At least one `InvoiceLine` is mandatory
+
+### Common Validation Errors
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `Invalid content was found starting with element 'AdditionalDocumentReference'` | `AdditionalDocumentReference` placed after `AllowanceCharge` or `TaxTotal` | Move `AdditionalDocumentReference` to after `OrderReference` and before party elements |
+| `One of 'PaymentTerms, PrepaidPayment, AllowanceCharge...' is expected` | `AdditionalDocumentReference` placed in wrong position | Place `AdditionalDocumentReference` after `OrderReference`, before `AccountingSupplierParty` |
+| `One of 'InvoiceLine' is expected` | Elements placed after `TaxTotal`/`LegalMonetaryTotal` that aren't `InvoiceLine` | Ensure only `InvoiceLine` elements come after `TaxTotal` and `LegalMonetaryTotal` |
+
+### Implementation Reference
+
+The correct element order is implemented in:
+- **File:** `src/services/peppolService.js`
+- **Function:** `generatePEPPOLXML()`
+- **Lines:** ~1042-1048 (element placement)
+
+**Note:** This ordering has been tested and validated successfully with Peppol BIS Billing 3.0 validators.
+
+---
+
 **Last Updated:** 2025-01-15

@@ -6,6 +6,7 @@ import Button from '../../../components/ui/Button';
 import PeppolService, { generatePEPPOLXML } from '../../../services/peppolService';
 import { loadCompanyInfo } from '../../../services/companyInfoService';
 import { fetchClients } from '../../../services/clientsService';
+import { generateInvoicePDF } from '../../../services/pdfService';
 import { supabase } from '../../../services/supabaseClient';
 import { useAuth } from '../../../context/AuthContext';
 
@@ -387,7 +388,65 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
         receiverInfo
       );
 
-      // Generate UBL XML before sending
+      // Generate PDF for embedding in UBL XML
+      // Prepare invoice data for PDF generation (same structure as download to ensure consistency)
+      // Use the due date selected by user (finalDueDate) to match what's sent in UBL XML
+      const invoiceDataForPDF = {
+        companyInfo: companyInfo || {},
+        client: invoice.client || {
+          name: invoice.clientName,
+          email: invoice.clientEmail,
+          phone: invoice.client?.phone,
+          address: invoice.client?.address,
+          postal_code: invoice.client?.postal_code,
+          city: invoice.client?.city,
+          country: invoice.client?.country,
+          vat_number: invoice.client?.vat_number,
+          client_type: invoice.client?.client_type
+        },
+        invoice: {
+          issue_date: invoice.issue_date || invoice.issueDate,
+          due_date: finalDueDate || invoice.due_date || invoice.dueDate, // Use modified due date selected by user
+          amount: invoice.amount,
+          net_amount: invoice.netAmount || invoice.net_amount,
+          tax_amount: invoice.taxAmount || invoice.tax_amount,
+          final_amount: invoice.amount,
+          description: invoice.description,
+          title: invoice.title,
+          notes: invoice.notes,
+          invoice_type: invoiceType,
+          peppol_metadata: invoice.peppol_metadata || null
+        },
+        quote: invoice.quote || null,
+        depositInvoiceStatus: null // Will be calculated if needed by PDF service
+      };
+
+      // Generate PDF blob (show bank info for Peppol PDFs - they're official documents)
+      const pdfBlob = await generateInvoicePDF(
+        invoiceDataForPDF,
+        invoiceNumber,
+        null,
+        i18n.language,
+        false, // Don't hide bank info for Peppol PDFs
+        invoiceType,
+        false // Don't show warning for Peppol PDFs
+      );
+
+      // Convert PDF blob to base64 for UBL XML embedding
+      const pdfBase64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64String = reader.result.split(',')[1]; // Remove data:application/pdf;base64, prefix
+          resolve(base64String);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(pdfBlob);
+      });
+
+      // Add PDF base64 to peppolInvoiceData for UBL generation
+      peppolInvoiceData.pdfBase64 = pdfBase64;
+
+      // Generate UBL XML with embedded PDF
       const ublXml = generatePEPPOLXML(peppolInvoiceData);
 
       // Send invoice via Peppol with tracking options

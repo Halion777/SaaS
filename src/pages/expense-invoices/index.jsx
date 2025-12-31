@@ -362,6 +362,31 @@ const ExpenseInvoicesManagement = () => {
     
     setDownloadingInvoiceId(invoice.id);
     try {
+      // Check if we have a stored PDF from Peppol (the exact PDF that was sent)
+      const pdfAttachmentPath = invoice.peppol_metadata?.pdfAttachmentPath;
+      const expenseService = new ExpenseInvoicesService();
+      
+      // If PDF attachment exists (from Peppol), download the stored PDF (exact same as sent)
+      if (pdfAttachmentPath && invoice.source === 'peppol') {
+        const downloadResult = await expenseService.getFileDownloadUrl(pdfAttachmentPath);
+        
+        if (downloadResult.success) {
+          // Download the stored PDF (exact same as sent via Peppol)
+          const a = document.createElement('a');
+          a.href = downloadResult.data;
+          a.download = `expense-invoice-${invoice.invoice_number || 'invoice'}.pdf`;
+          a.target = '_blank';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          return;
+        } else {
+          console.warn('Failed to download stored PDF, falling back to PDF generation:', downloadResult.error);
+          // Fall through to generate PDF if download fails
+        }
+      }
+      
+      // Fallback: Generate new PDF (for manual invoices or if stored PDF is not available)
       // Check if we have sender user ID from Peppol metadata
       // Use sender's company info ONLY for logo; use receiver's (current user's) company info for COMPANY section
       const senderUserId = invoice.peppol_metadata?.sender_user_id;

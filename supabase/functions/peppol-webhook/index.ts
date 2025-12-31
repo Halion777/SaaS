@@ -992,26 +992,26 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
     }
     
     // Check if invoice number already exists (handle duplicates)
+    // NOTE: expense_invoices has a GLOBAL unique constraint on invoice_number (not per user)
+    // So we must check globally, not just for the current user
     let invoiceNumber = baseInvoiceNumber;
       const { data: existingInvoice } = await supabase
         .from('expense_invoices')
         .select('id, invoice_number')
-        .eq('user_id', userId)
         .eq('invoice_number', baseInvoiceNumber)
         .single();
       
       if (existingInvoice) {
-      // Invoice already exists - append sequence number instead of timestamp
+      // Invoice number already exists globally - append sequence number instead of timestamp
       // This preserves the original invoice number format
       let sequence = 1;
       let newInvoiceNumber = `${baseInvoiceNumber}-${sequence}`;
       
-      // Find next available sequence number
+      // Find next available sequence number (check globally, not per user)
       while (true) {
         const { data: existing } = await supabase
           .from('expense_invoices')
           .select('id')
-          .eq('user_id', userId)
           .eq('invoice_number', newInvoiceNumber)
           .single();
         
@@ -1129,14 +1129,66 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
           sender_user_id: senderUserId || null
         }
     };
-    const { data: expenseInvoice, error: expenseError } = await supabase
+    let expenseInvoice: any = null;
+    let expenseError: any = null;
+    
+    const { data: insertedInvoice, error: insertError } = await supabase
       .from('expense_invoices')
       .insert(insertPayload)
       .select('id')
       .single();
 
+    expenseInvoice = insertedInvoice;
+    expenseError = insertError;
+
     if (expenseError) {
-      return { success: false, error: expenseError.message };
+      // Handle unique constraint violation (invoice_number already exists globally)
+      // This can happen due to race conditions even after our duplicate check
+      if (expenseError.code === '23505' || expenseError.message?.includes('duplicate key') || expenseError.message?.includes('unique constraint')) {
+        console.warn('[Peppol Webhook] Invoice number conflict detected, retrying with sequence number:', invoiceNumber);
+        
+        // Retry with sequence number appended
+        let sequence = 1;
+        let retryInvoiceNumber = `${invoiceNumber}-${sequence}`;
+        let retrySuccess = false;
+        
+        // Try up to 10 times to find an available number
+        for (let attempt = 0; attempt < 10; attempt++) {
+          const { data: retryExisting } = await supabase
+            .from('expense_invoices')
+            .select('id')
+            .eq('invoice_number', retryInvoiceNumber)
+            .single();
+          
+          if (!retryExisting) {
+            // This number is available, try inserting with it
+            insertPayload.invoice_number = retryInvoiceNumber;
+            const { data: retryInvoice, error: retryError } = await supabase
+              .from('expense_invoices')
+              .insert(insertPayload)
+              .select('id')
+              .single();
+            
+            if (!retryError && retryInvoice) {
+              // Success! Use this invoice
+              expenseInvoice = retryInvoice;
+              retrySuccess = true;
+              invoiceNumber = retryInvoiceNumber; // Update invoiceNumber for PDF storage
+              break;
+            }
+          }
+          
+          sequence++;
+          retryInvoiceNumber = `${invoiceNumber}-${sequence}`;
+        }
+        
+        if (!retrySuccess) {
+          return { success: false, error: `Failed to create invoice: invoice number ${invoiceNumber} already exists and unable to generate unique alternative` };
+        }
+      } else {
+        // Other errors
+        return { success: false, error: expenseError.message };
+      }
     }
     
     // Store PDF attachment after invoice is created (now we have the actual invoice number)

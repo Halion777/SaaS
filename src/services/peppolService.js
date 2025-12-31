@@ -798,6 +798,31 @@ const generateInvoiceLines = (lines) => lines.map((line, index) => `
     </cac:InvoiceLine>
   `).join("");
 
+// Generate AdditionalDocumentReference with PDF attachment
+// According to Peppol BIS Billing 3.0, PDF attachments should be embedded in UBL XML
+// Structure: AdditionalDocumentReference > Attachment > EmbeddedDocumentBinaryObject
+// Note: DocumentTypeCode is NOT used for PDF attachments (only for invoice object references)
+const generatePDFAttachment = (pdfBase64, invoiceNumber) => {
+  if (!pdfBase64) {
+    return '';
+  }
+  
+  // Generate filename from invoice number
+  const filename = `invoice-${invoiceNumber}.pdf`;
+  
+  return `
+  <cac:AdditionalDocumentReference>
+    <cbc:ID>INVOICE_PDF</cbc:ID>
+    <cac:Attachment>
+      <cbc:EmbeddedDocumentBinaryObject
+        mimeCode="application/pdf"
+        filename="${xmlEscape(filename)}">
+${pdfBase64}
+      </cbc:EmbeddedDocumentBinaryObject>
+    </cac:Attachment>
+  </cac:AdditionalDocumentReference>`;
+};
+
 // Main UBL generation function
 export const generatePEPPOLXML = (invoiceData) => {
   // Validate required fields before generating XML
@@ -999,6 +1024,9 @@ export const generatePEPPOLXML = (invoiceData) => {
   // This should be passed in invoiceData.depositInvoiceNumber
   const depositInvoiceNumber = invoiceData.depositInvoiceNumber || null;
   
+  // Extract PDF base64 from invoiceData if provided
+  const pdfBase64 = invoiceData.pdfBase64 || null;
+  
   return `<?xml version="1.0" encoding="UTF-8"?>
   <Invoice xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
            xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
@@ -1012,6 +1040,7 @@ export const generatePEPPOLXML = (invoiceData) => {
     <cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>
     <cbc:BuyerReference>${xmlEscape(finalBuyerReference)}</cbc:BuyerReference>
   ${generateOrderReference({ ...invoiceData, depositInvoiceNumber })}
+  ${generatePDFAttachment(pdfBase64, invoiceData.billName)}
   ${generatePartyInfo(invoiceData.sender, true)}
   ${generatePartyInfo(invoiceData.receiver, false)}
   ${generateDelivery({ ...invoiceData, deliveryDate })}

@@ -1898,12 +1898,43 @@ This section provides practical UBL invoice and credit note examples based on Pe
 ```
 
 #### Additional Document Reference
+
+**⚠️ CRITICAL PLACEMENT:** `AdditionalDocumentReference` MUST be placed **after `OrderReference`** and **before `AccountingSupplierParty`** (party elements). Placing it elsewhere (e.g., after `AllowanceCharge` or before `TaxTotal`) will cause validation errors.
+
+**For PDF Attachments (Embedded Documents):**
+```xml
+<!-- Correct placement: After OrderReference, before AccountingSupplierParty -->
+<cac:OrderReference>
+    <cbc:ID>DEP-INV-001</cbc:ID>
+</cac:OrderReference>
+
+<cac:AdditionalDocumentReference>
+    <cbc:ID>INVOICE_PDF</cbc:ID>
+    <cac:Attachment>
+        <cbc:EmbeddedDocumentBinaryObject
+            mimeCode="application/pdf"
+            filename="invoice-INV-001.pdf">
+            BASE64_ENCODED_PDF_CONTENT
+        </cbc:EmbeddedDocumentBinaryObject>
+    </cac:Attachment>
+</cac:AdditionalDocumentReference>
+
+<cac:AccountingSupplierParty>...</cac:AccountingSupplierParty>
+```
+
+**For Document References (without attachments):**
 ```xml
 <cac:AdditionalDocumentReference>
     <cbc:ID schemeID="ABT">DR35141</cbc:ID>
     <cbc:DocumentTypeCode>130</cbc:DocumentTypeCode>
 </cac:AdditionalDocumentReference>
 ```
+
+**Important Notes:**
+- `DocumentTypeCode` is **NOT required** for PDF attachments (only for document object references)
+- Use `cbc:EmbeddedDocumentBinaryObject` (not `cac:`) for embedded binary content
+- Base64-encoded PDF content should be placed directly inside `EmbeddedDocumentBinaryObject` element
+- Filename should follow pattern: `invoice-{invoiceNumber}.pdf`
 
 #### Invoice Line with Allowance/Charge
 ```xml
