@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMultiUser } from '../context/MultiUserContext';
-import { useInternetConnection } from './InternetConnectionCheck';
+import InternetStatusIndicator from './InternetStatusIndicator';
 import Icon from './AppIcon';
 import Button from './ui/Button';
 import MainSidebar from './ui/MainSidebar';
@@ -35,11 +35,7 @@ const LimitedAccessGuard = ({
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const location = useLocation();
   const { userProfile, loading } = useMultiUser();
-  
-  // Internet connection check
-  const { isOnline, isChecking, checkConnection } = useInternetConnection();
   
   // Calculate initial sidebar offset based on saved state and screen size
   const calculateInitialOffset = () => {
@@ -143,70 +139,8 @@ const LimitedAccessGuard = ({
     return null;
   }
 
-  // Check internet connection first (similar to PermissionGuard)
-  // Allow access to public routes when offline
-  const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/pricing', '/about', '/contact', '/features', '/terms', '/privacy', '/cookies', '/blog', '/find-artisan'];
-  const isPublicRoute = publicRoutes.some(route => location.pathname === route || location.pathname.startsWith(route + '/'));
-
-  // If offline and not on public route, show internet connection error
-  if (!isOnline && !isPublicRoute && !isChecking) {
-    return (
-      <div className="min-h-screen bg-background">
-        <MainSidebar />
-        <GlobalProfile />
-        <main 
-          className={`transition-all duration-300 ease-out ${isMobile ? 'pb-16 pt-4' : ''}`}
-          style={{ marginLeft: isMobile ? 0 : `${sidebarOffset}px` }}
-        >
-          <div className="flex items-center justify-center min-h-[calc(100vh-100px)] p-4 sm:p-6">
-            <div className="bg-card border border-border rounded-xl shadow-xl max-w-lg w-full p-8 sm:p-10 text-center">
-              {/* WiFi Icon with animated pulse effect */}
-              <div className="w-24 h-24 bg-error/10 rounded-full flex items-center justify-center mx-auto mb-6 relative">
-                <div className="absolute inset-0 bg-error/20 rounded-full animate-ping opacity-75"></div>
-                <div className="absolute inset-0 bg-error/10 rounded-full"></div>
-                <Icon name="WifiOff" size={48} className="text-error relative z-10" />
-              </div>
-              
-              <h2 className="text-3xl font-bold text-foreground mb-3">
-                {t('common.errors.noInternet', 'No Internet Connection')}
-              </h2>
-              
-              <p className="text-muted-foreground mb-8 text-base">
-                {t('common.errors.noInternetMessage', 'Please check your internet connection and try again.')}
-              </p>
-
-              {/* Connection status info */}
-              <div className="bg-gradient-to-r from-muted/50 to-muted/30 rounded-lg p-5 mb-8 border border-border/50">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-semibold text-foreground">
-                    {t('common.errors.connectionStatus', 'Connection Status')}:
-                  </span>
-                  <span className="text-sm text-error font-bold px-3 py-1 bg-error/10 rounded-full">
-                    {t('common.errors.offline', 'Offline')}
-                  </span>
-                </div>
-                <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
-                  {t('common.errors.connectionHelp', 'Make sure your device is connected to Wi-Fi or mobile data, then click the button below.')}
-                </p>
-              </div>
-              
-              <Button
-                onClick={checkConnection}
-                variant="default"
-                iconName="Wifi"
-                iconPosition="left"
-                disabled={isChecking}
-                className="w-full sm:w-auto min-w-[200px] text-base py-6 px-8 font-semibold"
-                size="lg"
-              >
-                {isChecking ? t('common.checking', 'Checking...') : t('common.connectMeNow', 'Connect Me Now')}
-              </Button>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
+  // Show small internet status indicator when offline (non-blocking)
+  // The indicator will appear in the top-right corner
 
   // If userProfile is null/undefined and we're not loading, it might be a network error
   // In that case, allow access to prevent blocking users with unstable internet
@@ -222,7 +156,12 @@ const LimitedAccessGuard = ({
 
   // If user has required plan, render children without banner
   if (hasRequiredPlan) {
-    return children;
+    return (
+      <>
+        <InternetStatusIndicator />
+        {children}
+      </>
+    );
   }
 
   // If showBanner is true, show banner at top and allow access
@@ -237,6 +176,7 @@ const LimitedAccessGuard = ({
 
     return (
       <div className="min-h-screen bg-background">
+        <InternetStatusIndicator />
         {/* Limited Access Banner */}
         <div className="bg-gradient-to-r from-primary/10 to-primary/5 border-b border-primary/20">
           <div 
@@ -290,6 +230,7 @@ const LimitedAccessGuard = ({
 
   return (
     <div className="min-h-screen bg-background">
+      <InternetStatusIndicator />
       <MainSidebar />
       <GlobalProfile />
       <main 
