@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import Icon from '../../components/AppIcon';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import contactService from '../../services/contactService';
 
 const PrivacyPage = () => {
   const { t, i18n } = useTranslation();
@@ -12,9 +13,21 @@ const PrivacyPage = () => {
     hero: false,
     content: false
   });
+  const [supportEmail, setSupportEmail] = useState('support@haliqo.com');
 
   const heroRef = useRef(null);
   const contentRef = useRef(null);
+
+  // Load company email on mount and when language changes
+  useEffect(() => {
+    const loadCompanyEmail = async () => {
+      const result = await contactService.getCompanyDetails(i18n.language);
+      if (result.success && result.data?.email) {
+        setSupportEmail(result.data.email);
+      }
+    };
+    loadCompanyEmail();
+  }, [i18n.language]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -41,56 +54,63 @@ const PrivacyPage = () => {
     return () => observer.disconnect();
   }, []);
 
+  // Helper function to replace email in content
+  const replaceEmailInContent = (content) => {
+    if (!content) return '';
+    // Replace any hardcoded privacy email with the dynamic one from database
+    return content.replace(/privacy@[hH]aliqo\.com/gi, supportEmail);
+  };
+
   const sections = [
     {
       id: 'introduction',
       title: t('privacy.sections.introduction.title'),
-      content: t('privacy.sections.introduction.content')
+      content: replaceEmailInContent(t('privacy.sections.introduction.content'))
     },
     {
       id: 'collection',
       title: t('privacy.sections.collection.title'),
-      content: t('privacy.sections.collection.content')
+      content: replaceEmailInContent(t('privacy.sections.collection.content'))
     },
     {
       id: 'usage',
       title: t('privacy.sections.usage.title'),
-      content: t('privacy.sections.usage.content')
+      content: replaceEmailInContent(t('privacy.sections.usage.content'))
     },
     {
       id: 'sharing',
       title: t('privacy.sections.sharing.title'),
-      content: t('privacy.sections.sharing.content')
+      content: replaceEmailInContent(t('privacy.sections.sharing.content'))
     },
     {
       id: 'security',
       title: t('privacy.sections.security.title'),
-      content: t('privacy.sections.security.content')
+      content: replaceEmailInContent(t('privacy.sections.security.content'))
     },
     {
       id: 'cookies',
       title: t('privacy.sections.cookies.title'),
-      content: t('privacy.sections.cookies.content')
+      content: replaceEmailInContent(t('privacy.sections.cookies.content'))
     },
     {
       id: 'rights',
       title: t('privacy.sections.rights.title'),
-      content: t('privacy.sections.rights.content')
+      content: replaceEmailInContent(t('privacy.sections.rights.content'))
     },
     {
       id: 'children',
       title: t('privacy.sections.children.title'),
-      content: t('privacy.sections.children.content')
+      content: replaceEmailInContent(t('privacy.sections.children.content'))
     },
     {
       id: 'changes',
       title: t('privacy.sections.changes.title'),
-      content: t('privacy.sections.changes.content')
+      content: replaceEmailInContent(t('privacy.sections.changes.content'))
     },
     {
       id: 'contact',
       title: t('privacy.sections.contact.title'),
-      content: t('privacy.sections.contact.content')
+      content: replaceEmailInContent(t('privacy.sections.contact.content'))
     }
   ];
 

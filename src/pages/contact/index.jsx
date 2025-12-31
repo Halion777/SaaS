@@ -34,16 +34,16 @@ const ContactPage = () => {
     hours: 'Mon-Fri, 9am-6pm'
   });
 
-  // Load company details on mount
+  // Load company details on mount and when language changes
   useEffect(() => {
     const loadCompanyDetails = async () => {
-      const result = await contactService.getCompanyDetails();
+      const result = await contactService.getCompanyDetails(i18n.language);
       if (result.success && result.data) {
         setCompanyDetails(result.data);
       }
     };
     loadCompanyDetails();
-  }, []);
+  }, [i18n.language]);
 
   // Handle form input changes
   const handleInputChange = (e) => {

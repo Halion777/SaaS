@@ -822,7 +822,9 @@
       "english": "English",
       "french": "Français",
       "dutch": "Nederlands"
-    }
+    },
+    "readMore": "Read More",
+    "relatedArticles": "Related Articles"
   },
   "login": {
     "title": "Login",
@@ -904,7 +906,7 @@
       "vatNumberPlaceholder": "Company VAT number",
       "country": "Country",
       "countryPlaceholder": "Select your country",
-      "done": "Done",
+      "done": "Ok",
       "professionsSelected": "professions selected",
       "aiBoost": {
         "title": "Boost your signatures by 40%",
@@ -1563,6 +1565,16 @@
       "title": "Questions about our terms?",
       "description": "Our team is here to help you understand our terms of service",
       "button": "Contact us"
+    },
+    "legal": {
+      "title": "Legal Information",
+      "companyNamePrefix": "Haliqo",
+      "by": "by",
+      "companyNameSuffix": "H7A Global",
+      "companyNumber": "Company number:",
+      "email": "E-mail:",
+      "address": "Address:",
+      "addressValue": "Chaussée de maline 455, 1450 Kraainem, Belgium"
     }
   },
   "privacy": {
@@ -1691,6 +1703,41 @@
       "title": "Questions about cookies?",
       "description": "Our team is here to help you understand our cookie policy",
       "button": "Contact us"
+    }
+  },
+  "cookieConsent": {
+    "title": "We use cookies",
+    "description": "We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic. By clicking 'Accept All', you consent to our use of cookies.",
+    "learnMore": "Learn more",
+    "acceptAll": "Accept All",
+    "rejectAll": "Reject All",
+    "customize": "Customize",
+    "required": "Required",
+    "back": "Back",
+    "savePreferences": "Save Preferences",
+    "customizeTitle": "Customize Your Cookie Preferences",
+    "customizeDescription": "Choose which types of cookies you want to accept. Essential cookies are required for the website to function properly and cannot be disabled.",
+    "categories": {
+      "essential": {
+        "title": "Essential Cookies",
+        "description": "These cookies are necessary for the website to function and cannot be disabled.",
+        "examples": "Authentication, shopping cart, security preferences"
+      },
+      "functional": {
+        "title": "Functional Cookies",
+        "description": "These cookies allow us to improve functionality and site customization.",
+        "examples": "Language preferences, regional settings, navigation history"
+      },
+      "analytics": {
+        "title": "Analytics Cookies",
+        "description": "These cookies help us understand how visitors interact with our site.",
+        "examples": "Google Analytics, visit statistics, popular pages"
+      },
+      "marketing": {
+        "title": "Marketing Cookies",
+        "description": "These cookies are used to deliver relevant advertisements and measure their effectiveness.",
+        "examples": "Targeted ads, social networks, advertising campaigns"
+      }
     }
   },
   "features": {
@@ -1945,7 +1992,7 @@
     "more": "more",
     "invoice": "invoice",
     "invoice_plural": "invoices",
-    "done": "Done",
+    "done": "Ok",
     "errors": {
       "loadError": "Error Loading Data",
       "somethingWentWrong": "Something went wrong",
@@ -3608,6 +3655,10 @@
       "rejected": "Rejected",
       "expired": "Expired"
     },
+    "processing": {
+      "title": "Processing...",
+      "message": "Please wait while we process your quote acceptance."
+    },
     "actions": {
       "reject": "Reject",
       "accept": "Accept",
@@ -3737,11 +3788,13 @@
       "receivedInvoices": "Received Invoices"
     },
     "status": {
+      "sent": "Sent",
       "delivered": "Delivered",
       "received": "Received",
       "processed": "Processed",
       "pending": "Pending",
       "failed": "Failed",
+      "error": "Error",
       "unknown": "Unknown"
     },
     "messages": {
@@ -4418,6 +4471,9 @@
         "messageWarningText": "This email is for reference only. You must use Peppol to get paid.",
         "peppolWarningText": "⚠️IMPORTANT: This message serves as a payment notice. The invoice could not be delivered via PEPPOL because your identifier could not be found. Please update your PEPPOL registration. The PDF attached is only a proforma invoice, not an official invoice.",
         "emailText": "Invoice {{invoiceNumber}} - Amount: {{amount}}",
+        "dueDate": "Due Date",
+        "dueDateHint": "You can modify the due date for this invoice",
+        "optional": "Optional",
         "preview": {
           "invoice": "Invoice",
           "client": "Client",
@@ -4479,7 +4535,10 @@
           "peppolIdNotValidated": "Please wait for Peppol ID validation to complete, or the ID is invalid."
         },
         "peppolIdValid": "Peppol ID is valid",
-        "notPeppolUser": "Not a Peppol user?"
+        "notPeppolUser": "Not a Peppol user?",
+        "dueDate": "Due Date",
+        "dueDateHint": "You can modify the due date for this invoice",
+        "optional": "Optional"
       },
       "sendToAccountant": {
         "title": "Send to Accountant",

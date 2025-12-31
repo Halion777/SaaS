@@ -250,7 +250,7 @@ const BlogDetailPage = () => {
           <section className="py-16 bg-gray-50">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
               <div className="max-w-6xl mx-auto">
-                <h2 className="text-3xl font-bold text-gray-900 mb-8">Related Articles</h2>
+                <h2 className="text-3xl font-bold text-gray-900 mb-8">{t('blog.relatedArticles')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                   {relatedBlogs.map((relatedBlog) => (
                     <article 
@@ -297,7 +297,7 @@ const BlogDetailPage = () => {
                           variant="ghost"
                           className="text-[#0036ab] hover:text-[#0036ab] hover:bg-[#0036ab]/10 p-0"
                         >
-                          Read More
+                          {t('blog.readMore')}
                           <Icon name="ArrowRight" size={16} className="ml-2" />
                         </Button>
                       </div>

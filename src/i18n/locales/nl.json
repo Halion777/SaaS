@@ -822,7 +822,9 @@
       "english": "Engels",
       "french": "Frans",
       "dutch": "Nederlands"
-    }
+    },
+    "readMore": "Lees meer",
+    "relatedArticles": "Gerelateerde artikelen"
   },
   "login": {
     "title": "Inloggen",
@@ -904,7 +906,7 @@
       "vatNumberPlaceholder": "BTW-nummer van het bedrijf",
       "country": "Land",
       "countryPlaceholder": "Selecteer je land",
-      "done": "Klaar",
+      "done": "Ok",
       "professionsSelected": "beroepen geselecteerd",
       "aiBoost": {
         "title": "Boost je handtekeningen met 40%",
@@ -1569,6 +1571,16 @@
       "title": "Vragen over onze voorwaarden?",
       "description": "Ons team staat klaar om je te helpen onze gebruiksvoorwaarden te begrijpen",
       "button": "Neem contact op"
+    },
+    "legal": {
+      "title": "Juridische informatie",
+      "companyNamePrefix": "Haliqo",
+      "by": "door",
+      "companyNameSuffix": "H7A Global",
+      "companyNumber": "Ondernemingsnummer:",
+      "email": "E-mail:",
+      "address": "Adres:",
+      "addressValue": "Chaussée de maline 455, 1450 Kraainem, België"
     }
   },
   "privacy": {
@@ -1697,6 +1709,41 @@
       "title": "Vragen over cookies?",
       "description": "Ons team staat klaar om je te helpen ons cookiebeleid te begrijpen",
       "button": "Neem contact op"
+    }
+  },
+  "cookieConsent": {
+    "title": "We gebruiken cookies",
+    "description": "We gebruiken cookies om uw browse-ervaring te verbeteren, gepersonaliseerde inhoud te leveren en ons verkeer te analyseren. Door op 'Alles accepteren' te klikken, stemt u in met ons gebruik van cookies.",
+    "learnMore": "Meer informatie",
+    "acceptAll": "Alles accepteren",
+    "rejectAll": "Alles weigeren",
+    "customize": "Aanpassen",
+    "required": "Verplicht",
+    "back": "Terug",
+    "savePreferences": "Voorkeuren opslaan",
+    "customizeTitle": "Pas uw cookievoorkeuren aan",
+    "customizeDescription": "Kies welke soorten cookies u wilt accepteren. Essentiële cookies zijn vereist voor de goede werking van de website en kunnen niet worden uitgeschakeld.",
+    "categories": {
+      "essential": {
+        "title": "Essentiële cookies",
+        "description": "Deze cookies zijn noodzakelijk voor de werking van de website en kunnen niet worden uitgeschakeld.",
+        "examples": "Authenticatie, winkelwagen, beveiligingsvoorkeuren"
+      },
+      "functional": {
+        "title": "Functionele cookies",
+        "description": "Deze cookies stellen ons in staat om functionaliteit en site-aanpassing te verbeteren.",
+        "examples": "Taalvoorkeuren, regionale instellingen, navigatiegeschiedenis"
+      },
+      "analytics": {
+        "title": "Analytische cookies",
+        "description": "Deze cookies helpen ons te begrijpen hoe bezoekers met onze site interacteren.",
+        "examples": "Google Analytics, bezoekstatistieken, populaire pagina's"
+      },
+      "marketing": {
+        "title": "Marketing cookies",
+        "description": "Deze cookies worden gebruikt om relevante advertenties te leveren en hun effectiviteit te meten.",
+        "examples": "Gerichte advertenties, sociale netwerken, advertentiecampagnes"
+      }
     }
   },
   "features": {
@@ -1977,7 +2024,7 @@
     "more": "meer",
     "invoice": "factuur",
     "invoice_plural": "facturen",
-    "done": "Klaar",
+    "done": "Ok",
     "errors": {
       "loadError": "Fout bij het laden van gegevens",
       "somethingWentWrong": "Er is iets misgegaan",
@@ -3645,6 +3692,10 @@
       "rejected": "Afgewezen",
       "expired": "Verlopen"
     },
+    "processing": {
+      "title": "Verwerken...",
+      "message": "Even geduld terwijl we uw offerte-acceptatie verwerken."
+    },
     "actions": {
       "reject": "Afwijzen",
       "accept": "Accepteren",
@@ -3774,11 +3825,13 @@
       "receivedInvoices": "Ontvangen facturen"
     },
     "status": {
+      "sent": "Verzonden",
       "delivered": "Afgeleverd",
       "received": "Ontvangen",
       "processed": "Verwerkt",
       "pending": "In behandeling",
       "failed": "Mislukt",
+      "error": "Fout",
       "unknown": "Onbekend"
     },
     "messages": {
@@ -4457,6 +4510,9 @@
         "messageWarningText": "Deze e-mail is alleen ter referentie. U moet Peppol gebruiken om betaald te worden.",
         "peppolWarningText": "⚠️BELANGRIJK: Dit bericht dient als betalingskennisgeving. De factuur kon niet via PEPPOL worden afgeleverd omdat uw identifier niet kon worden gevonden. Werk alstublieft uw PEPPOL-registratie bij. De bijgevoegde PDF is alleen een proformafactuur, geen officiële factuur.",
         "emailText": "Factuur {{invoiceNumber}} - Bedrag: {{amount}}",
+        "dueDate": "Vervaldatum",
+        "dueDateHint": "U kunt de vervaldatum voor deze factuur wijzigen",
+        "optional": "Optioneel",
         "preview": {
           "invoice": "Factuur",
           "client": "Klant",
@@ -4517,7 +4573,10 @@
           "peppolIdNotValidated": "Wacht tot de Peppol ID-validatie is voltooid, of het ID is ongeldig."
         },
         "peppolIdValid": "Peppol ID is geldig",
-        "notPeppolUser": "Geen Peppol-gebruiker?"
+        "notPeppolUser": "Geen Peppol-gebruiker?",
+        "dueDate": "Vervaldatum",
+        "dueDateHint": "U kunt de vervaldatum voor deze factuur wijzigen",
+        "optional": "Optioneel"
       }
     },
     "expenseInvoices": {

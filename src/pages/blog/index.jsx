@@ -256,7 +256,7 @@ const BlogPage = () => {
                           variant="outline"
                           className="text-[#0036ab] border-[#0036ab] hover:bg-[#0036ab] hover:text-white transition-all duration-200"
                         >
-                          Read More
+                          {t('blog.readMore')}
                           <Icon 
                             name="ArrowRight" 
                             size={16} 

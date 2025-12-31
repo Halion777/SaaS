@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import Icon from '../../components/AppIcon';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import contactService from '../../services/contactService';
 
 const CookiesPage = () => {
   const { t, i18n } = useTranslation();
@@ -12,9 +13,21 @@ const CookiesPage = () => {
     hero: false,
     content: false
   });
+  const [supportEmail, setSupportEmail] = useState('support@haliqo.com');
 
   const heroRef = useRef(null);
   const contentRef = useRef(null);
+
+  // Load company email on mount and when language changes
+  useEffect(() => {
+    const loadCompanyEmail = async () => {
+      const result = await contactService.getCompanyDetails(i18n.language);
+      if (result.success && result.data?.email) {
+        setSupportEmail(result.data.email);
+      }
+    };
+    loadCompanyEmail();
+  }, [i18n.language]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -72,36 +85,43 @@ const CookiesPage = () => {
     }
   ];
 
+  // Helper function to replace email in content
+  const replaceEmailInContent = (content) => {
+    if (!content) return '';
+    // Replace any hardcoded cookies email with the dynamic one from database
+    return content.replace(/cookies@[hH]aliqo\.com/gi, supportEmail);
+  };
+
   const sections = [
     {
       id: 'what',
       title: t('cookies.sections.what.title'),
-      content: t('cookies.sections.what.content')
+      content: replaceEmailInContent(t('cookies.sections.what.content'))
     },
     {
       id: 'types',
       title: t('cookies.sections.types.title'),
-      content: t('cookies.sections.types.content')
+      content: replaceEmailInContent(t('cookies.sections.types.content'))
     },
     {
       id: 'management',
       title: t('cookies.sections.management.title'),
-      content: t('cookies.sections.management.content')
+      content: replaceEmailInContent(t('cookies.sections.management.content'))
     },
     {
       id: 'thirdparty',
       title: t('cookies.sections.thirdparty.title'),
-      content: t('cookies.sections.thirdparty.content')
+      content: replaceEmailInContent(t('cookies.sections.thirdparty.content'))
     },
     {
       id: 'updates',
       title: t('cookies.sections.updates.title'),
-      content: t('cookies.sections.updates.content')
+      content: replaceEmailInContent(t('cookies.sections.updates.content'))
     },
     {
       id: 'contact',
       title: t('cookies.sections.contact.title'),
-      content: t('cookies.sections.contact.content')
+      content: replaceEmailInContent(t('cookies.sections.contact.content'))
     }
   ];
 

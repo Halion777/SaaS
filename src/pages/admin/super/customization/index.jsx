@@ -50,6 +50,7 @@ const Customization = () => {
   const [isTablet, setIsTablet] = useState(false);
   const [activeTab, setActiveTab] = useState('services'); // 'services', 'banner', 'company', 'media', 'pricing'
   const [selectedLanguage, setSelectedLanguage] = useState('fr'); // Language for banner settings
+  const [selectedCompanyLanguage, setSelectedCompanyLanguage] = useState('fr'); // Language for company details
   const [serviceSettings, setServiceSettings] = useState({
     creditInsurance: true,
     recovery: true
@@ -59,11 +60,27 @@ const Customization = () => {
   });
   const [companyDetails, setCompanyDetails] = useState({
     email: 'support@haliqo.com',
-    phone: '028846333',
-    address: 'Brussels, Belgium',
-    addressType: 'Headquarters',
-    responseTime: 'Response within 24h',
-    hours: 'Mon-Fri, 9am-6pm',
+    phone: '+3228846333',
+    address: {
+      fr: 'Brussels, Belgium',
+      en: 'Brussels, Belgium',
+      nl: 'Brussel, België'
+    },
+    addressType: {
+      fr: 'Headquarters',
+      en: 'Headquarters',
+      nl: 'Hoofdkantoor'
+    },
+    responseTime: {
+      fr: 'Response within 24h',
+      en: 'Response within 24h',
+      nl: 'Reactie binnen 24u'
+    },
+    hours: {
+      fr: 'Mon-Fri, 9am-6pm',
+      en: 'Mon-Fri, 9am-6pm',
+      nl: 'Ma-Vr, 9u-18u'
+    },
     socialLinks: {
       facebook: '',
       twitter: '',
@@ -309,10 +326,48 @@ const Customization = () => {
         console.error('❌ Error loading company details:', companyError);
       } else if (companyData && companyData.setting_value) {
         
-        // Ensure socialLinks exists
+        // Ensure socialLinks exists and handle backward compatibility for multi-language fields
         const loadedDetails = companyData.setting_value;
+        
+        // Convert old string format to new object format for backward compatibility
+        const convertToMultiLang = (value, defaultValue) => {
+          if (typeof value === 'object' && value !== null && (value.fr || value.en || value.nl)) {
+            return {
+              fr: value.fr || defaultValue.fr || '',
+              en: value.en || defaultValue.en || '',
+              nl: value.nl || defaultValue.nl || ''
+            };
+          }
+          // Old format: string
+          return {
+            fr: value || defaultValue.fr || '',
+            en: value || defaultValue.en || '',
+            nl: value || defaultValue.nl || ''
+          };
+        };
+        
         setCompanyDetails({
           ...loadedDetails,
+          address: convertToMultiLang(loadedDetails.address, {
+            fr: 'Brussels, Belgium',
+            en: 'Brussels, Belgium',
+            nl: 'Brussel, België'
+          }),
+          addressType: convertToMultiLang(loadedDetails.addressType, {
+            fr: 'Headquarters',
+            en: 'Headquarters',
+            nl: 'Hoofdkantoor'
+          }),
+          responseTime: convertToMultiLang(loadedDetails.responseTime, {
+            fr: 'Response within 24h',
+            en: 'Response within 24h',
+            nl: 'Reactie binnen 24u'
+          }),
+          hours: convertToMultiLang(loadedDetails.hours, {
+            fr: 'Mon-Fri, 9am-6pm',
+            en: 'Mon-Fri, 9am-6pm',
+            nl: 'Ma-Vr, 9u-18u'
+          }),
           socialLinks: loadedDetails.socialLinks || {
             facebook: '',
             twitter: '',
@@ -778,6 +833,28 @@ const Customization = () => {
   // Debounced auto-save for company details
   const handleCompanyDetailsChange = (field, value) => {
     const updated = { ...companyDetails, [field]: value };
+    setCompanyDetails(updated);
+    
+    // Clear existing timeout
+    if (companySaveTimeoutRef.current) {
+      clearTimeout(companySaveTimeoutRef.current);
+    }
+    
+    // Set new timeout for auto-save (1 second delay)
+    companySaveTimeoutRef.current = setTimeout(() => {
+      saveCompanyDetails(updated);
+    }, 1000);
+  };
+
+  // Handle multi-language company details change
+  const handleCompanyDetailsMultiLangChange = (field, language, value) => {
+    const updated = {
+      ...companyDetails,
+      [field]: {
+        ...companyDetails[field],
+        [language]: value
+      }
+    };
     setCompanyDetails(updated);
     
     // Clear existing timeout
@@ -1716,6 +1793,12 @@ const Customization = () => {
                       </div>
                     </div>
 
+                    {/* Language Selection */}
+                    <LanguageSelector
+                      selectedLanguage={selectedCompanyLanguage}
+                      onLanguageChange={setSelectedCompanyLanguage}
+                    />
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Email */}
                     <div className="bg-muted/30 rounded-lg p-4 border border-border">
@@ -1752,12 +1835,12 @@ const Customization = () => {
                     <div className="bg-muted/30 rounded-lg p-4 border border-border">
                       <label className="block text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                         <Icon name="Clock" size={16} className="text-primary" />
-                        Operating Hours
+                        Operating Hours ({languages.find(l => l.code === selectedCompanyLanguage)?.flag})
                       </label>
                       <input
                         type="text"
-                        value={companyDetails.hours || ''}
-                        onChange={(e) => handleCompanyDetailsChange('hours', e.target.value)}
+                        value={companyDetails.hours?.[selectedCompanyLanguage] || ''}
+                        onChange={(e) => handleCompanyDetailsMultiLangChange('hours', selectedCompanyLanguage, e.target.value)}
                         className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                         placeholder="Mon-Fri, 9am-6pm"
                       />
@@ -1767,12 +1850,12 @@ const Customization = () => {
                     <div className="bg-muted/30 rounded-lg p-4 border border-border">
                       <label className="block text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                         <Icon name="MapPin" size={16} className="text-primary" />
-                        Address
+                        Address ({languages.find(l => l.code === selectedCompanyLanguage)?.flag})
                       </label>
                       <input
                         type="text"
-                        value={companyDetails.address || ''}
-                        onChange={(e) => handleCompanyDetailsChange('address', e.target.value)}
+                        value={companyDetails.address?.[selectedCompanyLanguage] || ''}
+                        onChange={(e) => handleCompanyDetailsMultiLangChange('address', selectedCompanyLanguage, e.target.value)}
                         className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                         placeholder="Brussels, Belgium"
                       />
@@ -1782,12 +1865,12 @@ const Customization = () => {
                     <div className="bg-muted/30 rounded-lg p-4 border border-border">
                       <label className="block text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                         <Icon name="Tag" size={16} className="text-primary" />
-                        Address Type
+                        Address Type ({languages.find(l => l.code === selectedCompanyLanguage)?.flag})
                       </label>
                       <input
                         type="text"
-                        value={companyDetails.addressType || ''}
-                        onChange={(e) => handleCompanyDetailsChange('addressType', e.target.value)}
+                        value={companyDetails.addressType?.[selectedCompanyLanguage] || ''}
+                        onChange={(e) => handleCompanyDetailsMultiLangChange('addressType', selectedCompanyLanguage, e.target.value)}
                         className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                         placeholder="Headquarters"
                       />
@@ -1797,12 +1880,12 @@ const Customization = () => {
                     <div className="bg-muted/30 rounded-lg p-4 border border-border">
                       <label className="block text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                         <Icon name="Zap" size={16} className="text-primary" />
-                        Response Time
+                        Response Time ({languages.find(l => l.code === selectedCompanyLanguage)?.flag})
                       </label>
                       <input
                         type="text"
-                        value={companyDetails.responseTime || ''}
-                        onChange={(e) => handleCompanyDetailsChange('responseTime', e.target.value)}
+                        value={companyDetails.responseTime?.[selectedCompanyLanguage] || ''}
+                        onChange={(e) => handleCompanyDetailsMultiLangChange('responseTime', selectedCompanyLanguage, e.target.value)}
                         className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                         placeholder="Response within 24h"
                       />

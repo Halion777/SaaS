@@ -8,6 +8,7 @@ import Icon from '../../components/AppIcon';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import TestimonialCarousel from '../../components/TestimonialCarousel';
+import CookieConsentBar from '../../components/CookieConsentBar';
 import appSettingsService from '../../services/appSettingsService';
 import contactService from '../../services/contactService';
 import { supabase } from '../../services/supabaseClient';
@@ -106,16 +107,16 @@ const HomePage = () => {
     loadHomeServicesVisibility();
   }, []);
 
-  // Load company details
+  // Load company details on mount and when language changes
   useEffect(() => {
     const loadCompanyDetails = async () => {
-      const result = await contactService.getCompanyDetails();
+      const result = await contactService.getCompanyDetails(i18n.language);
       if (result.success && result.data) {
         setCompanyDetails(result.data);
       }
     };
     loadCompanyDetails();
-  }, []);
+  }, [i18n.language]);
 
   // Load media settings - reload when language changes
   useEffect(() => {
@@ -1578,6 +1579,9 @@ const HomePage = () => {
         
         {/* Footer */}
         <Footer />
+        
+        {/* Cookie Consent Bar */}
+        <CookieConsentBar />
         
         {/* Schema.org JSON-LD for SEO */}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({

@@ -125,10 +125,21 @@ class ContactService {
 
   /**
    * Get company details from app settings
+   * @param {string} language - Optional language code (defaults to 'fr')
    * @returns {Promise<{success: boolean, data?: object, error?: string}>}
    */
-  async getCompanyDetails() {
+  async getCompanyDetails(language = null) {
     try {
+      // Get user language preference
+      let userLanguage = language;
+      if (!userLanguage && typeof window !== 'undefined') {
+        userLanguage = localStorage.getItem('language') || localStorage.getItem('i18nextLng') || 'fr';
+      }
+      if (!userLanguage) {
+        userLanguage = 'fr';
+      }
+      const finalLanguage = userLanguage.split('-')[0] || 'fr'; // Extract base language (e.g., 'fr' from 'fr-FR')
+
       const { data, error } = await supabase
         .from('app_settings')
         .select('setting_value')
@@ -139,7 +150,66 @@ class ContactService {
         throw error;
       }
 
+      // Helper function to get language-specific value
+      const getLangValue = (value, defaultValues) => {
+        if (typeof value === 'object' && value !== null && (value.fr || value.en || value.nl)) {
+          // New format: object with language keys
+          return value[finalLanguage] || value.fr || value.en || value.nl || defaultValues[finalLanguage] || defaultValues.fr || '';
+        }
+        // Old format: string (backward compatibility)
+        return value || defaultValues[finalLanguage] || defaultValues.fr || '';
+      };
+
+      const rawDetails = data?.setting_value || {};
+      
       // Return default values if no settings found
+      const defaultDetails = {
+        email: 'support@haliqo.com',
+        phone: '028846333',
+        address: {
+          fr: 'Brussels, Belgium',
+          en: 'Brussels, Belgium',
+          nl: 'Brussel, België'
+        },
+        addressType: {
+          fr: 'Headquarters',
+          en: 'Headquarters',
+          nl: 'Hoofdkantoor'
+        },
+        responseTime: {
+          fr: 'Response within 24h',
+          en: 'Response within 24h',
+          nl: 'Reactie binnen 24u'
+        },
+        hours: {
+          fr: 'Mon-Fri, 9am-6pm',
+          en: 'Mon-Fri, 9am-6pm',
+          nl: 'Ma-Vr, 9u-18u'
+        },
+        socialLinks: {
+          facebook: '',
+          twitter: '',
+          linkedin: '',
+          instagram: ''
+        }
+      };
+
+      // Return language-specific values for display
+      return {
+        success: true,
+        data: {
+          email: rawDetails.email || defaultDetails.email,
+          phone: rawDetails.phone || defaultDetails.phone,
+          address: getLangValue(rawDetails.address, defaultDetails.address),
+          addressType: getLangValue(rawDetails.addressType, defaultDetails.addressType),
+          responseTime: getLangValue(rawDetails.responseTime, defaultDetails.responseTime),
+          hours: getLangValue(rawDetails.hours, defaultDetails.hours),
+          socialLinks: rawDetails.socialLinks || defaultDetails.socialLinks
+        }
+      };
+    } catch (error) {
+      
+      
       const defaultDetails = {
         email: 'support@haliqo.com',
         phone: '028846333',
@@ -154,31 +224,11 @@ class ContactService {
           instagram: ''
         }
       };
-
-      return {
-        success: true,
-        data: data?.setting_value || defaultDetails
-      };
-    } catch (error) {
-      
       
       return {
         success: false,
         error: error.message,
-        data: {
-          email: 'support@haliqo.com',
-          phone: '028846333',
-          address: 'Brussels, Belgium',
-          addressType: 'Headquarters',
-          responseTime: 'Response within 24h',
-          hours: 'Mon-Fri, 9am-6pm',
-          socialLinks: {
-            facebook: '',
-            twitter: '',
-            linkedin: '',
-            instagram: ''
-          }
-        }
+        data: defaultDetails
       };
     }
   }

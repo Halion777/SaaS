@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import Icon from '../../components/AppIcon';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import contactService from '../../services/contactService';
 
 const TermsPage = () => {
   const { t, i18n } = useTranslation();
@@ -12,9 +13,21 @@ const TermsPage = () => {
     hero: false,
     content: false
   });
+  const [supportEmail, setSupportEmail] = useState('support@haliqo.com');
 
   const heroRef = useRef(null);
   const contentRef = useRef(null);
+
+  // Load company email on mount and when language changes
+  useEffect(() => {
+    const loadCompanyEmail = async () => {
+      const result = await contactService.getCompanyDetails(i18n.language);
+      if (result.success && result.data?.email) {
+        setSupportEmail(result.data.email);
+      }
+    };
+    loadCompanyEmail();
+  }, [i18n.language]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -41,56 +54,63 @@ const TermsPage = () => {
     return () => observer.disconnect();
   }, []);
 
+  // Helper function to replace email in content
+  const replaceEmailInContent = (content) => {
+    if (!content) return '';
+    // Replace any hardcoded email with the dynamic one from database
+    return content.replace(/support@haliqo\.com/gi, supportEmail);
+  };
+
   const sections = [
     {
       id: 'acceptance',
       title: t('terms.sections.acceptance.title'),
-      content: t('terms.sections.acceptance.content')
+      content: replaceEmailInContent(t('terms.sections.acceptance.content'))
     },
     {
       id: 'services',
       title: t('terms.sections.services.title'),
-      content: t('terms.sections.services.content')
+      content: replaceEmailInContent(t('terms.sections.services.content'))
     },
     {
       id: 'accounts',
       title: t('terms.sections.accounts.title'),
-      content: t('terms.sections.accounts.content')
+      content: replaceEmailInContent(t('terms.sections.accounts.content'))
     },
     {
       id: 'payment',
       title: t('terms.sections.payment.title'),
-      content: t('terms.sections.payment.content')
+      content: replaceEmailInContent(t('terms.sections.payment.content'))
     },
     {
       id: 'privacy',
       title: t('terms.sections.privacy.title'),
-      content: t('terms.sections.privacy.content')
+      content: replaceEmailInContent(t('terms.sections.privacy.content'))
     },
     {
       id: 'intellectual',
       title: t('terms.sections.intellectual.title'),
-      content: t('terms.sections.intellectual.content')
+      content: replaceEmailInContent(t('terms.sections.intellectual.content'))
     },
     {
       id: 'liability',
       title: t('terms.sections.liability.title'),
-      content: t('terms.sections.liability.content')
+      content: replaceEmailInContent(t('terms.sections.liability.content'))
     },
     {
       id: 'termination',
       title: t('terms.sections.termination.title'),
-      content: t('terms.sections.termination.content')
+      content: replaceEmailInContent(t('terms.sections.termination.content'))
     },
     {
       id: 'changes',
       title: t('terms.sections.changes.title'),
-      content: t('terms.sections.changes.content')
+      content: replaceEmailInContent(t('terms.sections.changes.content'))
     },
     {
       id: 'contact',
       title: t('terms.sections.contact.title'),
-      content: t('terms.sections.contact.content')
+      content: replaceEmailInContent(t('terms.sections.contact.content'))
     }
   ];
 
@@ -197,6 +217,52 @@ const TermsPage = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* Legal Information Section */}
+              <div className={`mt-16 bg-white rounded-2xl p-8 shadow-lg border-2 border-gray-200 transition-all duration-1000 delay-1100 ${isVisible.content ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 bg-gradient-to-br from-[#0036ab] to-[#12bf23] rounded-xl flex items-center justify-center">
+                    <Icon name="Building" size={24} className="text-white" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900">{t('terms.legal.title')}</h3>
+                </div>
+                
+                <div className="space-y-4 text-gray-700">
+                  <div className="flex items-start gap-3">
+                    <Icon name="Building" size={20} className="text-[#0036ab] mt-1 flex-shrink-0" />
+                    <div>
+                      <p className="font-semibold text-gray-900">
+                        {t('terms.legal.companyNamePrefix')} {t('terms.legal.by')} {t('terms.legal.companyNameSuffix')}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3">
+                    <Icon name="FileText" size={20} className="text-[#0036ab] mt-1 flex-shrink-0" />
+                    <div>
+                      <p className="text-gray-600">{t('terms.legal.companyNumber')} <span className="font-semibold text-gray-900">1009915104</span></p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3">
+                    <Icon name="Mail" size={20} className="text-[#0036ab] mt-1 flex-shrink-0" />
+                    <div>
+                      <p className="text-gray-600">
+                        {t('terms.legal.email')} <a href={`mailto:${supportEmail}`} className="font-semibold text-[#0036ab] hover:underline">{supportEmail}</a>
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3">
+                    <Icon name="MapPin" size={20} className="text-[#0036ab] mt-1 flex-shrink-0" />
+                    <div>
+                      <p className="text-gray-600">
+                        {t('terms.legal.address')} <span className="font-semibold text-gray-900">{t('terms.legal.addressValue')}</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Contact Section */}

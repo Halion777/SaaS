@@ -823,7 +823,9 @@
       "english": "Anglais",
       "french": "Français",
       "dutch": "Néerlandais"
-    }
+    },
+    "readMore": "Lire la suite",
+    "relatedArticles": "Articles connexes"
   },
   "login": {
     "title": "Connexion",
@@ -905,7 +907,7 @@
       "vatNumberPlaceholder": "Numéro de TVA de l'entreprise",
       "country": "Pays",
       "countryPlaceholder": "Sélectionnez votre pays",
-      "done": "Terminé",
+      "done": "Ok",
       "professionsSelected": "professions sélectionnées",
       "aiBoost": {
         "title": "Boostez vos signatures de 40%",
@@ -1565,6 +1567,16 @@
       "title": "Questions sur nos conditions ?",
       "description": "Notre équipe est là pour vous aider à comprendre nos conditions d'utilisation",
       "button": "Nous contacter"
+    },
+    "legal": {
+      "title": "Informations légales",
+      "companyNamePrefix": "Haliqo",
+      "by": "par",
+      "companyNameSuffix": "H7A Global",
+      "companyNumber": "Numéro d'entreprise :",
+      "email": "E-mail :",
+      "address": "Adresse :",
+      "addressValue": "Chaussée de maline 455, 1450 Kraainem, Belgique"
     }
   },
   "privacy": {
@@ -1693,6 +1705,41 @@
       "title": "Questions sur les cookies ?",
       "description": "Notre équipe est là pour vous aider à comprendre notre politique des cookies",
       "button": "Nous contacter"
+    }
+  },
+  "cookieConsent": {
+    "title": "Nous utilisons des cookies",
+    "description": "Nous utilisons des cookies pour améliorer votre expérience de navigation, proposer du contenu personnalisé et analyser notre trafic. En cliquant sur 'Tout accepter', vous acceptez notre utilisation des cookies.",
+    "learnMore": "En savoir plus",
+    "acceptAll": "Tout accepter",
+    "rejectAll": "Tout refuser",
+    "customize": "Personnaliser",
+    "required": "Obligatoire",
+    "back": "Retour",
+    "savePreferences": "Enregistrer les préférences",
+    "customizeTitle": "Personnaliser vos préférences de cookies",
+    "customizeDescription": "Choisissez les types de cookies que vous souhaitez accepter. Les cookies essentiels sont nécessaires au bon fonctionnement du site et ne peuvent pas être désactivés.",
+    "categories": {
+      "essential": {
+        "title": "Cookies essentiels",
+        "description": "Ces cookies sont nécessaires au fonctionnement du site web et ne peuvent pas être désactivés.",
+        "examples": "Authentification, panier d'achat, préférences de sécurité"
+      },
+      "functional": {
+        "title": "Cookies fonctionnels",
+        "description": "Ces cookies permettent d'améliorer les fonctionnalités et la personnalisation du site.",
+        "examples": "Préférences de langue, paramètres régionaux, historique de navigation"
+      },
+      "analytics": {
+        "title": "Cookies d'analyse",
+        "description": "Ces cookies nous aident à comprendre comment les visiteurs interagissent avec notre site.",
+        "examples": "Google Analytics, statistiques de visite, pages populaires"
+      },
+      "marketing": {
+        "title": "Cookies marketing",
+        "description": "Ces cookies sont utilisés pour diffuser des publicités pertinentes et mesurer leur efficacité.",
+        "examples": "Publicités ciblées, réseaux sociaux, campagnes publicitaires"
+      }
     }
   },
   "features": {
@@ -2394,7 +2441,7 @@
     "more": "autres",
     "invoice": "facture",
     "invoice_plural": "factures",
-    "done": "Terminé",
+    "done": "Ok",
     "errors": {
       "loadError": "Erreur lors du chargement des données",
       "somethingWentWrong": "Une erreur s'est produite",
@@ -3656,6 +3703,10 @@
       "rejected": "Rejeté",
       "expired": "Expiré"
     },
+    "processing": {
+      "title": "Traitement en cours...",
+      "message": "Veuillez patienter pendant que nous traitons votre acceptation du devis."
+    },
     "actions": {
       "reject": "Rejeter",
       "accept": "Accepter",
@@ -3785,11 +3836,13 @@
       "receivedInvoices": "Factures reçues"
     },
     "status": {
+      "sent": "Envoyé",
       "delivered": "Livré",
       "received": "Reçu",
       "processed": "Traité",
       "pending": "En attente",
       "failed": "Échoué",
+      "error": "Erreur",
       "unknown": "Inconnu"
     },
     "messages": {
@@ -4469,6 +4522,9 @@
         "messageWarningText": "Cet email est uniquement à titre de référence. Vous devez utiliser Peppol pour être payé.",
         "peppolWarningText": "⚠️IMPORTANT: Ce message sert d'avis de paiement. La facture n'a pas pu être livrée via PEPPOL car votre identifiant n'a pas pu être trouvé. Veuillez mettre à jour votre inscription PEPPOL. Le PDF joint n'est qu'une facture proforma, pas une facture officielle.",
         "emailText": "Facture {{invoiceNumber}} - Montant: {{amount}}",
+        "dueDate": "Date d'échéance",
+        "dueDateHint": "Vous pouvez modifier la date d'échéance de cette facture",
+        "optional": "Optionnel",
         "preview": {
           "invoice": "Facture",
           "client": "Client",
@@ -4529,7 +4585,10 @@
           "peppolIdNotValidated": "Veuillez attendre que la validation de l'ID Peppol soit terminée, ou l'ID est invalide."
         },
         "peppolIdValid": "L'ID Peppol est valide",
-        "notPeppolUser": "Pas un utilisateur Peppol ?"
+        "notPeppolUser": "Pas un utilisateur Peppol ?",
+        "dueDate": "Date d'échéance",
+        "dueDateHint": "Vous pouvez modifier la date d'échéance de cette facture",
+        "optional": "Optionnel"
       },
       "sendToAccountant": {
         "title": "Envoyer au comptable",

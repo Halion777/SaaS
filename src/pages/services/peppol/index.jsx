@@ -2332,49 +2332,49 @@ const PeppolNetworkPage = () => {
 
                         {/* Status Filter */}
                         <div>
-                          <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Statut</label>
+                          <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">{t('peppol.filters.status')}</label>
                           <Select
                             value={filters.status}
                             onChange={(e) => handleFilterChange('status', e.target.value)}
-                            placeholder="Tous les statuts"
+                            placeholder={t('peppol.filters.allStatuses')}
                             options={[
-                              { value: '', label: 'Tous les statuts' },
-                              { value: 'sent', label: 'Envoyé' },
-                              { value: 'failed', label: 'Échoué' },
-                              { value: 'error', label: 'Erreur' }
+                              { value: '', label: t('peppol.filters.allStatuses') },
+                              { value: 'sent', label: t('peppol.status.sent') },
+                              { value: 'failed', label: t('peppol.status.failed') },
+                              { value: 'error', label: t('peppol.status.error') }
                             ]}
                           />
                         </div>
 
                         {/* Date Range */}
                         <div>
-                          <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Période</label>
+                          <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">{t('peppol.filters.dateRange')}</label>
                           <Select
                             value={filters.dateRange}
                             onChange={(e) => handleFilterChange('dateRange', e.target.value)}
-                            placeholder="Toutes les dates"
+                            placeholder={t('peppol.filters.allDates')}
                             options={[
-                              { value: '', label: 'Toutes les dates' },
-                              { value: 'today', label: 'Aujourd\'hui' },
-                              { value: 'week', label: '7 derniers jours' },
-                              { value: 'month', label: '30 derniers jours' },
-                              { value: 'quarter', label: '3 derniers mois' }
+                              { value: '', label: t('peppol.filters.allDates') },
+                              { value: 'today', label: t('peppol.filters.today') },
+                              { value: 'week', label: t('peppol.filters.last7Days') },
+                              { value: 'month', label: t('peppol.filters.last30Days') },
+                              { value: 'quarter', label: t('peppol.filters.last3Months') }
                             ]}
                           />
                         </div>
 
                         {/* Amount Range */}
                         <div>
-                          <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Montant</label>
+                          <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">{t('peppol.filters.amountRange')}</label>
                           <Select
                             value={filters.amountRange}
                             onChange={(e) => handleFilterChange('amountRange', e.target.value)}
-                            placeholder="Tous les montants"
+                            placeholder={t('peppol.filters.allAmounts')}
                             options={[
-                              { value: '', label: 'Tous les montants' },
-                              { value: 'low', label: 'Moins de 1000€' },
-                              { value: 'medium', label: '1000€ - 5000€' },
-                              { value: 'high', label: 'Plus de 5000€' }
+                              { value: '', label: t('peppol.filters.allAmounts') },
+                              { value: 'low', label: t('peppol.filters.lessThan1000') },
+                              { value: 'medium', label: t('peppol.filters.between1000And5000') },
+                              { value: 'high', label: t('peppol.filters.moreThan5000') }
                             ]}
                           />
                         </div>
