@@ -3850,6 +3850,8 @@
         "unknownError": "An unknown error occurred",
         "peppolDisabled": "Peppol functionality is currently disabled. Please enable it in Peppol settings to send invoices.",
         "quotaExceeded": "Peppol invoice limit reached. Please upgrade to Pro for unlimited Peppol invoices.",
+        "senderLimitReached": "Peppol invoice limit reached. You can send/receive up to {{limit}} Peppol invoices per month on your current plan. You have used {{usage}} of {{limit}}. Please upgrade to Pro for unlimited Peppol invoices.",
+        "receiverLimitReached": "Receiver has reached their monthly Peppol invoice limit ({{limit}}/month). Please wait for the limit to reset or contact them to upgrade to Pro.",
         "invalidPeppolId": "Invalid Peppol ID format",
         "missingRequiredFields": "Missing required fields",
         "unregisterError": "Error unregistering participant",

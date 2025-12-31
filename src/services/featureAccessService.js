@@ -411,15 +411,14 @@ class FeatureAccessService {
    */
   async getMonthlyClientsUsage(userId) {
     try {
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
+      // Get billing cycle start date (subscription-based or calendar month)
+      const billingCycleStart = await this.getBillingCycleStart(userId);
       
       const { count, error } = await supabase
         .from('clients')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', userId)
-        .gte('created_at', startOfMonth.toISOString());
+        .gte('created_at', billingCycleStart.toISOString());
       
       if (error) throw error;
       return count || 0;
@@ -438,13 +437,60 @@ class FeatureAccessService {
   }
   
   /**
-   * Get monthly Peppol invoices usage (sent + received)
+   * Get billing cycle start date for a user based on their subscription
+   * Returns the start of the current billing period, or calendar month start if no subscription
    */
-  async getMonthlyPeppolInvoicesUsage(userId) {
+  async getBillingCycleStart(userId) {
     try {
+      // Get user's subscription to find billing cycle start
+      const { data: subscription, error: subError } = await supabase
+        .from('subscriptions')
+        .select('current_period_start, current_period_end, interval')
+        .eq('user_id', userId)
+        .in('status', ['active', 'trialing', 'past_due'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (subError || !subscription || !subscription.current_period_start) {
+        // No active subscription found, fallback to calendar month
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+        return startOfMonth;
+      }
+      
+      // Use subscription's current_period_start as billing cycle start
+      const periodStart = new Date(subscription.current_period_start);
+      periodStart.setHours(0, 0, 0, 0);
+      
+      // If current_period_start is in the future (shouldn't happen), use today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (periodStart > today) {
+        return today;
+      }
+      
+      return periodStart;
+    } catch (error) {
+      console.error('Error getting billing cycle start:', error);
+      // Fallback to calendar month
       const startOfMonth = new Date();
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
+      return startOfMonth;
+    }
+  }
+
+  /**
+   * Get monthly Peppol invoices usage (sent + received)
+   * Uses subscription billing cycle if available, otherwise uses calendar month
+   */
+  async getMonthlyPeppolInvoicesUsage(userId) {
+    try {
+      // Get billing cycle start date (subscription-based or calendar month)
+      const billingCycleStart = await this.getBillingCycleStart(userId);
       
       // Count Peppol invoices sent (from invoices table)
       // Use peppol_sent_at if available for accurate monthly count
@@ -454,7 +500,7 @@ class FeatureAccessService {
         .eq('user_id', userId)
         .eq('peppol_enabled', true)
         .not('peppol_sent_at', 'is', null)
-        .gte('peppol_sent_at', startOfMonth.toISOString());
+        .gte('peppol_sent_at', billingCycleStart.toISOString());
       
       if (sentError) throw sentError;
       
@@ -468,7 +514,7 @@ class FeatureAccessService {
         .eq('peppol_enabled', true)
         .eq('source', 'peppol')
         .not('peppol_received_at', 'is', null)
-        .gte('peppol_received_at', startOfMonth.toISOString());
+        .gte('peppol_received_at', billingCycleStart.toISOString());
       
       if (receivedError) throw receivedError;
       

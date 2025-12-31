@@ -1580,9 +1580,9 @@ export class PeppolService {
           // Don't fail the request if email fails
         }
         
+        // Error message will be translated in the UI component
         throw new Error(
-          `Peppol invoice limit reached. You can send/receive up to ${peppolQuota.limit} Peppol invoices per month on your current plan. ` +
-          `You have used ${peppolQuota.usage} of ${peppolQuota.limit}. Please upgrade to Pro for unlimited Peppol invoices.`
+          `SENDER_LIMIT_REACHED:${peppolQuota.limit}:${peppolQuota.usage}`
         );
       }
 
@@ -1617,7 +1617,40 @@ export class PeppolService {
             `Receiver Peppol ID ${receiverPeppolIdentifier} not found on Peppol network. ` +
             `Please verify the Peppol ID is correct or use email delivery method.`
           );
+        }
       }
+
+      // CRITICAL: Check receiver's Peppol invoice limit BEFORE sending
+      // This prevents sending invoices to receivers who have reached their limit
+      try {
+        // Find receiver's user ID from their Peppol identifier
+        // Check all possible Peppol ID fields (0208, 9925, and primary peppol_id)
+        const { data: receiverSettings } = await supabase
+          .from('peppol_settings')
+          .select('user_id, peppol_id, peppol_id_0208, peppol_id_9925')
+          .or(`peppol_id.eq.${receiverPeppolIdentifier},peppol_id_0208.eq.${receiverPeppolIdentifier},peppol_id_9925.eq.${receiverPeppolIdentifier}`)
+          .maybeSingle();
+        
+        if (receiverSettings && receiverSettings.user_id) {
+          // Check receiver's limit using FeatureAccessService
+          const receiverQuota = await featureAccessService.canSendPeppolInvoice(receiverSettings.user_id);
+          
+          if (!receiverQuota.withinLimit && !receiverQuota.unlimited) {
+            // Receiver has reached their limit - throw error before sending
+            // Error message will be translated in the UI component
+            throw new Error(
+              `RECEIVER_LIMIT_REACHED:${receiverQuota.limit}:${receiverQuota.usage}`
+            );
+          }
+        }
+      } catch (receiverLimitError) {
+        // If error is about receiver limit, re-throw it
+        if (receiverLimitError.message && receiverLimitError.message.startsWith('RECEIVER_LIMIT_REACHED:')) {
+          throw receiverLimitError;
+        }
+        // If error is about not finding receiver settings, that's okay - they might not be a Haliqo user
+        // Continue with sending (the webhook will handle the limit check on their end)
+        console.warn('[Peppol Service] Could not check receiver limit (receiver may not be a Haliqo user):', receiverLimitError.message);
       }
 
       // CRITICAL: Check if receiver supports INVOICE document type before sending

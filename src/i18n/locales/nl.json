@@ -3882,6 +3882,8 @@
         "unknownError": "Er is een onbekende fout opgetreden",
         "peppolDisabled": "Peppol-functionaliteit is momenteel uitgeschakeld. Schakel deze in in Peppol-instellingen om facturen te verzenden.",
         "quotaExceeded": "Peppol-factuurlijmiet bereikt. Upgrade naar Pro voor onbeperkte Peppol-facturen.",
+        "senderLimitReached": "Peppol-factuurlimiet bereikt. U kunt maximaal {{limit}} Peppol-facturen per maand verzenden/ontvangen met uw huidige plan. U heeft {{usage}} van {{limit}} gebruikt. Upgrade naar Pro voor onbeperkte Peppol-facturen.",
+        "receiverLimitReached": "Ontvanger heeft zijn maandelijkse Peppol-factuurlijmiet bereikt ({{limit}}/maand). Wacht tot de limiet wordt gereset of neem contact op om te upgraden naar Pro.",
         "invalidPeppolId": "Ongeldig Peppol-ID-formaat",
         "missingRequiredFields": "Ontbrekende verplichte velden",
         "unregisterError": "Fout bij uitschrijven van deelnemer",

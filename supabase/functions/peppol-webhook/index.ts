@@ -396,15 +396,15 @@ serve(async (req: Request) => {
         processResult = { success: true, message: 'Event logged but not processed' };
     }
 
-    // Return success response
+    // Return success response for successful processing
     return new Response(
       JSON.stringify({
-        success: true,
-        message: 'Webhook processed successfully',
+        success: processResult?.success !== false,
+        message: processResult?.success === false ? processResult?.error : 'Webhook processed successfully',
         eventType: payload.eventType,
         result: processResult
       }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: processResult?.success === false ? 400 : 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
@@ -826,6 +826,10 @@ async function storePDFAttachment(
 async function processInboundInvoice(supabase: any, userId: string, payload: WebhookPayload) {
   try {
     const data = payload.data;
+    
+    // Note: Receiver limit check is now done BEFORE sending in peppolService.js
+    // This webhook processes invoices that have already been sent, so we don't check limits here
+    // If a receiver's limit was reached, the sender would have received an error before sending
     
     // Determine document type from webhook event type
     const isSelfBilling = payload.eventType === PEPPOL_EVENT_TYPES.SELF_BILLING_INVOICE_RECEIVED || 

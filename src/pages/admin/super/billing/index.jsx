@@ -224,34 +224,61 @@ const SuperAdminBilling = () => {
           if (!userId) return subscription;
 
           try {
-            // Get monthly clients added count (clients created this month)
-            const startOfMonthForClients = new Date();
-            startOfMonthForClients.setDate(1);
-            startOfMonthForClients.setHours(0, 0, 0, 0);
+            // Get billing cycle start date based on subscription (not global calendar month)
+            // This ensures each user's limit resets based on their subscription cycle
+            let billingCycleStart = new Date();
+            billingCycleStart.setDate(1);
+            billingCycleStart.setHours(0, 0, 0, 0); // Default to calendar month
             
+            try {
+              // Get user's subscription to find billing cycle start
+              const { data: subscription } = await supabase
+                .from('subscriptions')
+                .select('current_period_start, current_period_end, interval')
+                .eq('user_id', userId)
+                .in('status', ['active', 'trialing', 'past_due'])
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single();
+              
+              if (subscription && subscription.current_period_start) {
+                // Use subscription's current_period_start as billing cycle start
+                billingCycleStart = new Date(subscription.current_period_start);
+                billingCycleStart.setHours(0, 0, 0, 0);
+                
+                // If current_period_start is in the future (shouldn't happen), use today
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                if (billingCycleStart > today) {
+                  billingCycleStart = today;
+                }
+              }
+            } catch (subError) {
+              // Error fetching subscription, fallback to calendar month
+              console.warn(`[Billing] Error getting subscription for user ${userId}, using calendar month:`, subError);
+            }
+            
+            // Get monthly clients added count (clients created in current billing cycle)
             const { count: monthlyClientsAdded } = await supabase
               .from('clients')
               .select('*', { count: 'exact', head: true })
               .eq('user_id', userId)
-              .gte('created_at', startOfMonthForClients.toISOString());
+              .gte('created_at', billingCycleStart.toISOString());
 
-            // Get monthly Peppol invoices usage (sent + received)
-            const startOfMonth = new Date();
-            startOfMonth.setDate(1);
-            startOfMonth.setHours(0, 0, 0, 0);
-            
+            // Get monthly Peppol invoices usage (sent + received) within current billing cycle
             // Count sent Peppol invoices (from invoices table)
-            // Use peppol_sent_at if available, otherwise created_at
+            // Use peppol_sent_at if available for accurate billing cycle count
             const { count: peppolSentCount } = await supabase
               .from('invoices')
               .select('*', { count: 'exact', head: true })
               .eq('user_id', userId)
               .eq('peppol_enabled', true)
               .not('peppol_sent_at', 'is', null)
-              .gte('peppol_sent_at', startOfMonth.toISOString());
+              .gte('peppol_sent_at', billingCycleStart.toISOString());
             
             // Count received Peppol invoices (from expense_invoices table)
-            // Use peppol_received_at for accurate monthly count
+            // Use peppol_received_at for accurate billing cycle count
             // Note: peppol_received_at is timestamp without timezone, but Supabase handles ISO format correctly
             const { count: peppolReceivedCount } = await supabase
               .from('expense_invoices')
@@ -260,7 +287,7 @@ const SuperAdminBilling = () => {
               .eq('peppol_enabled', true)
               .eq('source', 'peppol')
               .not('peppol_received_at', 'is', null)
-              .gte('peppol_received_at', startOfMonth.toISOString());
+              .gte('peppol_received_at', billingCycleStart.toISOString());
 
             const peppolUsage = (peppolSentCount || 0) + (peppolReceivedCount || 0);
 

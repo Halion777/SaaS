@@ -3900,6 +3900,8 @@
         "unknownError": "Une erreur inconnue s'est produite",
         "peppolDisabled": "La fonctionnalité Peppol est actuellement désactivée. Veuillez l'activer dans les paramètres Peppol pour envoyer des factures.",
         "quotaExceeded": "Limite de factures Peppol atteinte. Veuillez passer à Pro pour des factures Peppol illimitées.",
+        "senderLimitReached": "Limite de factures Peppol atteinte. Vous pouvez envoyer/recevoir jusqu'à {{limit}} factures Peppol par mois avec votre plan actuel. Vous avez utilisé {{usage}} sur {{limit}}. Veuillez passer au plan Pro pour des factures Peppol illimitées.",
+        "receiverLimitReached": "Le destinataire a atteint sa limite mensuelle de factures Peppol ({{limit}}/mois). Veuillez attendre la réinitialisation de la limite ou le contacter pour passer au plan Pro.",
         "invalidPeppolId": "Format d'identifiant Peppol invalide",
         "missingRequiredFields": "Champs obligatoires manquants",
         "unregisterError": "Erreur lors du désenregistrement du participant",

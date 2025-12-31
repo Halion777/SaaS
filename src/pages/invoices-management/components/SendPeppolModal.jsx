@@ -509,7 +509,28 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
         stack: err.stack,
         error: err
       });
-      setError(err.message || t('invoicesManagement.sendPeppolModal.errors.sendError'));
+      
+      // Check if error is about sender or receiver limit reached
+      let errorMessage = err.message || t('invoicesManagement.sendPeppolModal.errors.sendError');
+      if (err.message && err.message.startsWith('SENDER_LIMIT_REACHED:')) {
+        // Parse the error: SENDER_LIMIT_REACHED:limit:usage
+        const parts = err.message.split(':');
+        const limit = parts[1] || '50';
+        const usage = parts[2] || '0';
+        errorMessage = t('peppol.messages.errors.senderLimitReached', {
+          limit: limit,
+          usage: usage
+        });
+      } else if (err.message && err.message.startsWith('RECEIVER_LIMIT_REACHED:')) {
+        // Parse the error: RECEIVER_LIMIT_REACHED:limit:usage
+        const parts = err.message.split(':');
+        const limit = parts[1] || '50';
+        errorMessage = t('peppol.messages.errors.receiverLimitReached', {
+          limit: limit
+        });
+      }
+      
+      setError(errorMessage);
 
       // Update invoice with failed status
       try {
