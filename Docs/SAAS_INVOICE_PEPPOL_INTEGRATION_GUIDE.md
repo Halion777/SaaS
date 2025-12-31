@@ -266,9 +266,9 @@ When sending an invoice:
 
 - **`src/services/pdfService.js`** - Service for generating PDF documents
   - `generateInvoicePDF(invoiceData, invoiceNumber, language, hideBankInfo, invoiceType, showWarning)` - Generates client invoice PDF
-  - `generateExpenseInvoicePDF(expenseInvoiceData, language)` - Generates expense invoice PDF
   - Handles deposit and final invoice types
   - Supports multi-language PDF generation
+  - **Note:** Expense invoice PDFs are now exclusively sourced from Peppol attachments (stored PDFs from received invoices). PDF generation for expense invoices has been removed.
 
 - **`src/services/ocrService.js`** - Service for OCR processing (manual expense invoices)
   - `extractInvoiceData(file)` - Extracts invoice data from uploaded document using Gemini AI

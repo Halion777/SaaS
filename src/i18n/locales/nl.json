@@ -4752,6 +4752,7 @@
         "actions": {
           "viewDetails": "Details bekijken",
           "exportPDF": "PDF exporteren",
+          "noPDFAvailable": "PDF niet beschikbaar (alleen voor Peppol facturen met opgeslagen PDF)",
           "edit": "Bewerken"
         }
       },
@@ -4782,7 +4783,11 @@
         "actionError": "Fout tijdens factuuractie",
         "createError": "Fout bij aanmaken van factuur",
         "updateError": "Fout bij bijwerken van factuur",
-        "loadError": "Fout bij het laden van uitgavenfacturen"
+        "loadError": "Fout bij het laden van uitgavenfacturen",
+        "exportError": "Fout bij exporteren van factuur PDF",
+        "companyInfoNotFound": "Bedrijfsinformatie niet gevonden",
+        "noPDFAvailable": "PDF is alleen beschikbaar voor Peppol facturen. Deze factuur heeft geen opgeslagen PDF.",
+        "pdfDownloadError": "Fout bij downloaden van PDF: {{error}}"
       },
       "retry": "Opnieuw proberen",
       "export": {
@@ -4841,7 +4846,9 @@
           "netAmount": "Netto bedrag",
           "vatAmount": "BTW-bedrag"
         },
-        "notes": "Notities"
+        "notes": "Notities",
+        "viewPDF": "Factuur PDF bekijken",
+        "viewingPDF": "Openen..."
       },
       "common": {
         "notAvailable": "N/A",

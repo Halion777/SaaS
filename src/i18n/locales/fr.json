@@ -4785,6 +4785,7 @@
         "actions": {
           "viewDetails": "Voir les détails",
           "exportPDF": "Exporter PDF",
+          "noPDFAvailable": "PDF non disponible (uniquement pour les factures Peppol avec PDF stocké)",
           "edit": "Modifier"
         }
       },
@@ -4815,7 +4816,11 @@
         "noAttachment": "Aucun fichier joint à cette facture",
         "actionError": "Erreur lors de l'action sur la facture",
         "createError": "Erreur lors de la création de la facture",
-        "updateError": "Erreur lors de la mise à jour de la facture"
+        "updateError": "Erreur lors de la mise à jour de la facture",
+        "exportError": "Erreur lors de l'exportation du PDF de la facture",
+        "companyInfoNotFound": "Informations sur l'entreprise introuvables",
+        "noPDFAvailable": "Le PDF n'est disponible que pour les factures Peppol. Cette facture n'a pas de PDF stocké.",
+        "pdfDownloadError": "Erreur lors du téléchargement du PDF : {{error}}"
       },
       "retry": "Réessayer",
       "export": {
@@ -4874,7 +4879,9 @@
           "netAmount": "Montant HT",
           "vatAmount": "Montant TVA"
         },
-        "notes": "Notes"
+        "notes": "Notes",
+        "viewPDF": "Voir la facture PDF",
+        "viewingPDF": "Ouverture..."
       },
       "common": {
         "notAvailable": "N/A",

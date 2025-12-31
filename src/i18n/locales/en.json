@@ -4732,6 +4732,7 @@
         "actions": {
           "viewDetails": "View details",
           "exportPDF": "Export PDF",
+          "noPDFAvailable": "PDF not available (only for Peppol invoices with stored PDF)",
           "edit": "Edit"
         }
       },
@@ -4764,7 +4765,9 @@
         "createError": "Error creating invoice",
         "updateError": "Error updating invoice",
         "exportError": "Error exporting invoice PDF",
-        "companyInfoNotFound": "Company information not found"
+        "companyInfoNotFound": "Company information not found",
+        "noPDFAvailable": "PDF is only available for Peppol invoices. This invoice does not have a stored PDF.",
+        "pdfDownloadError": "Error downloading PDF: {{error}}"
       },
       "export": {
         "invoiceNumber": "Invoice Number",
@@ -4795,17 +4798,6 @@
       "modal": {
         "title": "Invoice Details",
         "close": "Close",
-        "invoiceLines": "Invoice Line Items",
-        "invoiceLinesTable": {
-          "number": "N°",
-          "description": "Description",
-          "quantity": "Qty",
-          "unitPrice": "Unit Price",
-          "totalExclVat": "Total Excl. VAT",
-          "subtotalExclVat": "Subtotal Excl. VAT",
-          "vat": "VAT",
-          "totalInclVat": "Total Incl. VAT"
-        },
         "tabs": {
           "details": "Details",
           "peppol": "Peppol"
@@ -4833,7 +4825,9 @@
           "netAmount": "Net Amount",
           "vatAmount": "VAT Amount"
         },
-        "notes": "Notes"
+        "notes": "Notes",
+        "viewPDF": "View Invoice PDF",
+        "viewingPDF": "Opening..."
       },
       "common": {
         "notAvailable": "N/A",

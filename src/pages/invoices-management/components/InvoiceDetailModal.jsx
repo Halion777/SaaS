@@ -381,6 +381,26 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose, allInvoices = [] }) => {
                             )}
                             {invoiceType === 'final' && depositEnabled && (
                               <>
+                                {/* Project totals breakdown (subtotal and VAT) */}
+                                {(() => {
+                                  // Calculate project subtotal and VAT from totalWithVAT (full project total)
+                                  const projectSubtotal = totalWithVAT / (1 + vatRate);
+                                  const projectVAT = totalWithVAT - projectSubtotal;
+                                  return (
+                                    <>
+                                      <tr className="bg-muted/30">
+                                        <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-foreground border-t border-border">{t('invoicesManagement.modal.invoiceLinesTable.subtotalExclVat', 'Subtotal Excl. VAT')}</td>
+                                        <td className="px-4 py-3 text-sm font-semibold text-foreground border-t border-border text-right">{formatCurrency(projectSubtotal)}</td>
+                                      </tr>
+                                      {projectVAT > 0 && (
+                                        <tr className="bg-muted/30">
+                                          <td colSpan="4" className="px-4 py-3 text-sm font-semibold text-foreground">{t('invoicesManagement.modal.invoiceLinesTable.vat', 'VAT')}</td>
+                                          <td className="px-4 py-3 text-sm font-semibold text-foreground text-right">{formatCurrency(projectVAT)}</td>
+                                        </tr>
+                                      )}
+                                    </>
+                                  );
+                                })()}
                                 <tr className="bg-primary/10 border-t-2 border-primary">
                                   <td colSpan="4" className="px-4 py-3 text-base font-bold text-foreground">{t('invoicesManagement.modal.invoiceLinesTable.totalInclVat', 'Total Incl. VAT')}</td>
                                   <td className="px-4 py-3 text-base font-bold text-foreground text-right">{formatCurrency(totalWithVAT)}</td>

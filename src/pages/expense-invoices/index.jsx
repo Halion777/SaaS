@@ -13,7 +13,6 @@ import QuickExpenseInvoiceCreation from './components/QuickExpenseInvoiceCreatio
 import ExpenseInvoiceDetailModal from './components/ExpenseInvoiceDetailModal';
 import ExpenseInvoicesService from '../../services/expenseInvoicesService';
 import { loadCompanyInfo } from '../../services/companyInfoService';
-import { generateExpenseInvoicePDF } from '../../services/pdfService';
 import { useAuth } from '../../context/AuthContext';
 import SendToAccountantModal from '../invoices-management/components/SendToAccountantModal';
 import { formatNumber } from '../../utils/numberFormat';
@@ -362,166 +361,44 @@ const ExpenseInvoicesManagement = () => {
     
     setDownloadingInvoiceId(invoice.id);
     try {
-      // Check if we have a stored PDF from Peppol (the exact PDF that was sent)
+      // Only use stored PDF from Peppol (the exact PDF that was sent)
       const pdfAttachmentPath = invoice.peppol_metadata?.pdfAttachmentPath;
       const expenseService = new ExpenseInvoicesService();
       
-      // If PDF attachment exists (from Peppol), download the stored PDF (exact same as sent)
-      if (pdfAttachmentPath && invoice.source === 'peppol') {
-        const downloadResult = await expenseService.getFileDownloadUrl(pdfAttachmentPath);
-        
-        if (downloadResult.success) {
-          // Download the stored PDF (exact same as sent via Peppol)
-          const a = document.createElement('a');
-          a.href = downloadResult.data;
-          a.download = `expense-invoice-${invoice.invoice_number || 'invoice'}.pdf`;
-          a.target = '_blank';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          return;
-        } else {
-          console.warn('Failed to download stored PDF, falling back to PDF generation:', downloadResult.error);
-          // Fall through to generate PDF if download fails
-        }
-      }
-      
-      // Fallback: Generate new PDF (for manual invoices or if stored PDF is not available)
-      // Check if we have sender user ID from Peppol metadata
-      // Use sender's company info ONLY for logo; use receiver's (current user's) company info for COMPANY section
-      const senderUserId = invoice.peppol_metadata?.sender_user_id;
-      let senderCompanyInfo = null; // For logo only
-      let receiverCompanyInfo = null; // For COMPANY section
-      
-      // Load sender's company info for logo if available
-      if (senderUserId) {
-        senderCompanyInfo = await loadCompanyInfo(senderUserId);
-      }
-      
-      // Always load receiver's (current user's) company info for COMPANY section
-      receiverCompanyInfo = await loadCompanyInfo(user?.id);
-      
-      if (!receiverCompanyInfo) {
-        alert(t('expenseInvoices.errors.companyInfoNotFound', 'Company information not found'));
+      if (!pdfAttachmentPath || invoice.source !== 'peppol') {
+        alert(t('expenseInvoices.errors.noPDFAvailable', 'PDF is only available for Peppol invoices. This invoice does not have a stored PDF.'));
         return;
       }
       
-      // Use sender's logo if available, otherwise use receiver's logo
-      const companyInfoForLogo = senderCompanyInfo || receiverCompanyInfo;
-
-      // Prepare expense invoice data for PDF generation
-      // Use exact values from UBL XML or database - no calculations
-      const amount = parseFloat(invoice.amount || 0);
-      const netAmount = parseFloat(invoice.net_amount || 0);
-      const vatAmount = parseFloat(invoice.vat_amount || 0);
+      const downloadResult = await expenseService.getFileDownloadUrl(pdfAttachmentPath);
       
-      // Extract supplier and customer data from Peppol metadata (from UBL XML)
-      // Supplier = AccountingSupplierParty (the sender from original client invoice) - shown in CLIENT section
-      // Customer = AccountingCustomerParty (the receiver) - used for company phone fallback
-      const supplierFromUBL = invoice.peppol_metadata?.supplier || {};
-      const supplierAddressFromUBL = invoice.peppol_metadata?.supplierAddress || {};
-      const customerFromUBL = invoice.peppol_metadata?.customer || {};
+      if (!downloadResult.success) {
+        alert(t('expenseInvoices.errors.pdfDownloadError', 'Error downloading PDF: {{error}}', { error: downloadResult.error }));
+        return;
+      }
       
-      // Helper to get display invoice number (prefer original client invoice number from buyerReference)
-      const getDisplayInvoiceNumber = (inv) => {
-        // For Peppol invoices, check if buyerReference contains the original client invoice number
-        if (inv.source === 'peppol' && inv.peppol_metadata?.buyerReference) {
-          const buyerRef = inv.peppol_metadata.buyerReference;
-          // If buyerReference looks like a client invoice number (INV-* or FACT-*), use it
-          if (buyerRef && (buyerRef.match(/^(INV|FACT)-\d+$/i) || buyerRef.startsWith('INV-') || buyerRef.startsWith('FACT-'))) {
-            return buyerRef;
-          }
-        }
-        // Also check the invoice_number itself - if it's from UBL XML (cbc:ID), it should be the original invoice number
-        if (inv.source === 'peppol' && inv.invoice_number && 
-            (inv.invoice_number.match(/^(INV|FACT)-\d+$/i) || inv.invoice_number.startsWith('INV-') || inv.invoice_number.startsWith('FACT-'))) {
-          return inv.invoice_number;
-        }
-        // Otherwise, use the stored invoice_number (Peppol-generated or manual)
-        return inv.invoice_number;
-      };
-      
-      // Use customer phone from Peppol metadata if receiverCompanyInfo phone is not available
-      const companyPhone = receiverCompanyInfo?.phone || customerFromUBL?.phone || customerFromUBL?.email || '';
-      
-      // Extract supplier info from UBL XML (AccountingSupplierParty) - shown in CLIENT section
-      // This should match exactly what was in the original client invoice that was sent
-      // Structure from webhook: supplier.name, supplier.vatNumber, supplier.email, supplier.contactPhone, supplier.address.*
-      const supplierName = supplierFromUBL.name || invoice.peppol_metadata?.supplierName || invoice.supplier_name || '';
-      const supplierEmail = supplierFromUBL.email || invoice.supplier_email || '';
-      const supplierPhone = supplierFromUBL.contactPhone || supplierFromUBL.phone || invoice.supplier_phone || '';
-      const supplierVatNumber = supplierFromUBL.vatNumber || invoice.peppol_metadata?.supplierVatNumber || invoice.supplier_vat_number || '';
-      
-      // Extract supplier address from UBL - check both supplier.address and supplierAddress
-      const supplierAddress = supplierFromUBL.address || supplierAddressFromUBL || {};
-      const supplierStreet = supplierAddress.street || supplierAddressFromUBL.street || invoice.supplier_address || '';
-      const supplierPostalCode = supplierAddress.postalCode || supplierAddressFromUBL.postalCode || supplierAddressFromUBL.zip_code || invoice.supplier_postal_code || '';
-      const supplierCity = supplierAddress.city || supplierAddressFromUBL.city || invoice.supplier_city || '';
-      const supplierCountry = supplierAddress.country || supplierAddressFromUBL.country || '';
-      
-      const expenseInvoiceData = {
-        // Use sender's company info for logo, receiver's company info for COMPANY section
-        companyInfo: {
-          ...receiverCompanyInfo,
-          // Override logo with sender's logo if available
-          logo: companyInfoForLogo?.logo || receiverCompanyInfo?.logo,
-          phone: companyPhone || receiverCompanyInfo?.phone || ''
-        },
-        supplier: {
-          name: supplierName,
-          email: supplierEmail,
-          phone: supplierPhone,
-          address: supplierStreet,
-          postal_code: supplierPostalCode,
-          city: supplierCity,
-          country: supplierCountry,
-          vat_number: supplierVatNumber
-        },
-        invoice: {
-          issue_date: invoice.issue_date,
-          due_date: invoice.due_date,
-          amount: amount,
-          net_amount: netAmount,
-          vat_amount: vatAmount,
-          category: invoice.category,
-          payment_method: invoice.payment_method,
-          source: invoice.source,
-          notes: invoice.notes,
-          status: invoice.status,
-          invoice_type: invoice.invoice_type || 'final',
-          // Include deposit/balance amounts if available (for manual invoices or Peppol invoices)
-          deposit_amount: invoice.deposit_amount || invoice.peppol_metadata?.deposit_amount || null,
-          balance_amount: invoice.balance_amount || invoice.peppol_metadata?.balance_amount || null,
-          // Include full peppol_metadata for deposit/balance information
-          peppol_metadata: invoice.peppol_metadata || null,
-          // Include invoice lines from Peppol metadata if available
-          invoiceLines: invoice.peppol_metadata?.invoiceLines || [],
-          // Include payment information from Peppol metadata if available
-          payment: invoice.peppol_metadata?.payment || null
-        }
-      };
-
-      // Use original client invoice number from buyerReference if available, otherwise use stored invoice_number
-      const invoiceNumber = getDisplayInvoiceNumber(invoice) || 'EXP-INV-001';
-      
-      // Get user's preferred language
-      const userLanguage = i18n.language || localStorage.getItem('language') || 'fr';
-      
-      // Get invoice_type for PDF generation
-      const invoiceType = invoice.invoice_type || 'final';
-      
-      // Generate PDF blob
-      const pdfBlob = await generateExpenseInvoicePDF(expenseInvoiceData, invoiceNumber, userLanguage, invoiceType);
-      
-      // Create download link
-      const url = URL.createObjectURL(pdfBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `expense-invoice-${invoiceNumber}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      // Fetch the PDF as a blob to ensure direct download (not opening in new tab)
+      try {
+        const response = await fetch(downloadResult.data);
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `expense-invoice-${invoice.invoice_number || 'invoice'}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch (fetchError) {
+        console.warn('Failed to fetch PDF blob, trying direct download:', fetchError);
+        // Fallback: try direct download with download attribute
+        const a = document.createElement('a');
+        a.href = downloadResult.data;
+        a.download = `expense-invoice-${invoice.invoice_number || 'invoice'}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
     } catch (error) {
       console.error('Error exporting expense invoice PDF:', error);
       alert(t('expenseInvoices.errors.exportError', 'Error exporting invoice PDF'));
@@ -624,7 +501,28 @@ const ExpenseInvoicesManagement = () => {
           if (invoice.attachments && invoice.attachments.length > 0) {
             const downloadResult = await expenseService.getFileDownloadUrl(invoice.attachments[0].file_path);
             if (downloadResult.success) {
-              window.open(downloadResult.data, '_blank');
+              // Fetch the file as a blob to ensure direct download (not opening in new tab)
+              try {
+                const response = await fetch(downloadResult.data);
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = invoice.attachments[0].file_path.split('/').pop() || 'invoice.pdf';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              } catch (fetchError) {
+                console.warn('Failed to fetch file blob, trying direct download:', fetchError);
+                // Fallback: try direct download with download attribute
+                const a = document.createElement('a');
+                a.href = downloadResult.data;
+                a.download = invoice.attachments[0].file_path.split('/').pop() || 'invoice.pdf';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+              }
             } else {
               alert(t('expenseInvoices.errors.downloadError', 'Error downloading: {{error}}', { error: downloadResult.error }));
             }

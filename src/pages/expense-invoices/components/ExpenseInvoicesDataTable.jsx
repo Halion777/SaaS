@@ -50,6 +50,11 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
     return null;
   };
 
+  // Helper to check if invoice has PDF available for download
+  const hasPDFAvailable = (invoice) => {
+    return invoice.source === 'peppol' && invoice.peppol_metadata?.pdfAttachmentPath;
+  };
+
   // Auto-switch to card view on mobile/tablet
   React.useEffect(() => {
     const handleResize = () => {
@@ -576,10 +581,12 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
             size="sm"
             onClick={() => onExpenseInvoiceAction('export', invoice)}
             iconName="Download"
-            className="text-primary hover:text-primary/80"
-            title={t('expenseInvoices.table.actions.exportPDF', 'Export PDF')}
+            className={hasPDFAvailable(invoice) ? "text-primary hover:text-primary/80" : "text-muted-foreground opacity-50 cursor-not-allowed"}
+            title={hasPDFAvailable(invoice) 
+              ? t('expenseInvoices.table.actions.exportPDF', 'Export PDF')
+              : t('expenseInvoices.table.actions.noPDFAvailable', 'PDF not available (only for Peppol invoices with stored PDF)')}
             loading={downloadingInvoiceId === invoice.id}
-            disabled={downloadingInvoiceId === invoice.id}
+            disabled={!hasPDFAvailable(invoice) || downloadingInvoiceId === invoice.id}
           />
           <Button
             variant="ghost"
@@ -825,10 +832,12 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                                 size="sm"
                                 iconName="Download"
                                 onClick={() => onExpenseInvoiceAction('export', invoice)}
-                                title={t('expenseInvoices.table.actions.exportPDF', 'Export PDF')}
-                                className="text-primary hover:text-primary/80"
+                                title={hasPDFAvailable(invoice) 
+                                  ? t('expenseInvoices.table.actions.exportPDF', 'Export PDF')
+                                  : t('expenseInvoices.table.actions.noPDFAvailable', 'PDF not available (only for Peppol invoices with stored PDF)')}
+                                className={hasPDFAvailable(invoice) ? "text-primary hover:text-primary/80" : "text-muted-foreground opacity-50 cursor-not-allowed"}
                                 loading={downloadingInvoiceId === invoice.id}
-                                disabled={downloadingInvoiceId === invoice.id}
+                                disabled={!hasPDFAvailable(invoice) || downloadingInvoiceId === invoice.id}
                               />
                               <Button
                                 variant="ghost"
@@ -946,10 +955,12 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                         size="sm"
                         iconName="Download"
                         onClick={() => onExpenseInvoiceAction('export', invoice)}
-                        title={t('expenseInvoices.table.actions.exportPDF', 'Export PDF')}
-                        className="text-primary hover:text-primary/80"
+                        title={hasPDFAvailable(invoice) 
+                          ? t('expenseInvoices.table.actions.exportPDF', 'Export PDF')
+                          : t('expenseInvoices.table.actions.noPDFAvailable', 'PDF not available (only for Peppol invoices with stored PDF)')}
+                        className={hasPDFAvailable(invoice) ? "text-primary hover:text-primary/80" : "text-muted-foreground opacity-50 cursor-not-allowed"}
                         loading={downloadingInvoiceId === invoice.id}
-                        disabled={downloadingInvoiceId === invoice.id}
+                        disabled={!hasPDFAvailable(invoice) || downloadingInvoiceId === invoice.id}
                       />
                       <Button
                         variant="ghost"
