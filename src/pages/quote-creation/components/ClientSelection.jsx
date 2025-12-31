@@ -1999,14 +1999,14 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                   ))}
                   </div>
                   
-                  {/* Done Button */}
+                  {/* Ok Button */}
                   <div className="border-t border-border p-2 bg-popover sticky bottom-0">
                     <button
                       type="button"
                       onClick={() => setCategoryDropdownOpen(false)}
                       className="w-full px-4 py-2 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                     >
-                      {t('quoteCreation.projectInfo.done', 'Done')}
+                      {t('quoteCreation.projectInfo.done', 'Ok')}
                     </button>
                   </div>
                 </div>

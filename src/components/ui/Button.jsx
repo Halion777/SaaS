@@ -122,7 +122,7 @@ const Button = React.forwardRef(({
             disabled={disabled || isLoadingState}
             {...domProps}
         >
-            {isLoadingState && <LoadingSpinner className="-ml-1 mr-2" />}
+            {isLoadingState && <LoadingSpinner className={cn(!children && iconName && "m-0", children && iconPosition === 'left' && "-ml-1 mr-2", children && iconPosition === 'right' && "ml-2 -mr-1")} />}
             {iconName && iconPosition === 'left' && !isLoadingState && renderIcon()}
             {children}
             {iconName && iconPosition === 'right' && !isLoadingState && renderIcon()}

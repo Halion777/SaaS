@@ -1104,7 +1104,7 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
       invoice: 'FACTURE FOURNISSEUR',
       depositInvoice: 'FACTURE D\'ACOMPTE FOURNISSEUR',
       finalInvoice: 'FACTURE FINALE FOURNISSEUR',
-      supplier: 'FOURNISSEUR',
+      client: 'CLIENT',
       company: 'ENTREPRISE',
       invoiceDetails: 'DÉTAILS DE LA FACTURE',
       category: 'Catégorie:',
@@ -1133,7 +1133,7 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
       invoice: 'SUPPLIER INVOICE',
       depositInvoice: 'SUPPLIER DEPOSIT INVOICE',
       finalInvoice: 'SUPPLIER FINAL INVOICE',
-      supplier: 'SUPPLIER',
+      client: 'CLIENT',
       company: 'COMPANY',
       invoiceDetails: 'INVOICE DETAILS',
       category: 'Category:',
@@ -1162,7 +1162,7 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
       invoice: 'LEVERANCIERSFACTUUR',
       depositInvoice: 'AANBETALING LEVERANCIERSFACTUUR',
       finalInvoice: 'EIND LEVERANCIERSFACTUUR',
-      supplier: 'LEVERANCIER',
+      client: 'KLANT',
       company: 'BEDRIJF',
       invoiceDetails: 'FACTUURDETAILS',
       category: 'Categorie:',
@@ -1390,8 +1390,10 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
       .replace(/'/g, '&#39;');
   };
   
-  // Get logo URL if available - ALWAYS use sender's (company) logo, NEVER supplier logo
-  // This ensures the PDF shows the sender's branding, not the supplier's
+  // Get logo URL if available - Use sender's (company) logo when available, NEVER supplier logo
+  // For Peppol invoices: companyInfo contains sender's company info (loaded from sender_user_id)
+  // For manual invoices: companyInfo contains receiver's (current user's) company info
+  // This ensures the PDF shows the sender's branding when available, not the supplier's
   let logoHtml = '';
   if (companyInfo?.logo) {
     if (companyInfo.logo.data) {
@@ -1402,7 +1404,7 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
       logoHtml = `<img src="${companyInfo.logo}" alt="Logo ${companyInfo.name}" style="width: 80px; height: 80px; object-fit: contain; border-radius: 8px;" />`;
     }
   }
-  // Note: We explicitly do NOT check supplier.logo - expense invoices should always show sender's logo
+  // Note: We explicitly do NOT check supplier.logo - expense invoices should always show sender's logo (when available)
   
   return `
     <div style="max-width: 900px; margin: 0 auto; font-family: 'Arial', 'Helvetica', sans-serif; background: #ffffff; padding: 30px; font-size: 11px;">
@@ -1423,10 +1425,10 @@ const generateExpenseInvoiceHTML = (expenseInvoiceData, invoiceNumber, language 
         </div>
       </div>
       
-      <!-- Company and Supplier Information -->
+      <!-- Company and Client Information -->
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
         <div>
-          <h3 style="margin: 0 0 12px 0; font-size: 12px; color: ${primaryColor}; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">${t.supplier}</h3>
+          <h3 style="margin: 0 0 12px 0; font-size: 12px; color: ${primaryColor}; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">${t.client}</h3>
           <div style="color: ${secondaryColor}; font-size: 11px; line-height: 1.6;">
             <p style="margin: 0 0 5px 0; font-size: 12px;">${escapeHtml(supplier?.name || (language === 'en' ? 'Supplier' : language === 'nl' ? 'Leverancier' : 'Fournisseur'))}</p>
             ${supplier?.email ? `<p style="margin: 0 0 3px 0;">${escapeHtml(supplier.email)}</p>` : ''}

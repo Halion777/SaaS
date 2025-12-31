@@ -642,8 +642,8 @@ const generatePaymentMeansAndTerms = (invoiceConfig) => {
   const cleanedIBAN = invoiceConfig.sender.iban ? invoiceConfig.sender.iban.replace(/\s+/g, '') : '';
   const hasIBAN = cleanedIBAN && cleanedIBAN.trim() !== '';
   
-  // Build Note field: include payment terms, invoice_type, and deposit/balance amounts if provided
-  // Format: "Net within X days | INVOICE_TYPE:deposit | DEPOSIT_AMOUNT:500 | BALANCE_AMOUNT:1500"
+  // Build Note field: include payment terms, invoice_type, deposit/balance amounts, and sender user ID if provided
+  // Format: "Net within X days | INVOICE_TYPE:deposit | DEPOSIT_AMOUNT:500 | BALANCE_AMOUNT:1500 | SENDER_USER_ID:uuid"
   // For deposit invoices: Only include deposit amount (no balance)
   // For final invoices: Include both deposit and balance amounts
   let noteText = `Net within ${invoiceConfig.paymentDelay} days`;
@@ -664,6 +664,11 @@ const generatePaymentMeansAndTerms = (invoiceConfig) => {
     if (invoiceConfig.balanceAmount && invoiceConfig.balanceAmount > 0) {
       noteText += ` | BALANCE_AMOUNT:${invoiceConfig.balanceAmount.toFixed(2)}`;
     }
+  }
+  
+  // Include sender user ID if provided
+  if (invoiceConfig.senderUserId) {
+    noteText += ` | SENDER_USER_ID:${invoiceConfig.senderUserId}`;
   }
   
   return `
@@ -1754,6 +1759,8 @@ export class PeppolService {
       balanceAmount: parseFloat(haliqoInvoice.balance_amount || 0),
       // Include deposit invoice number for final invoices (for OrderReference)
       depositInvoiceNumber: haliqoInvoice.deposit_invoice_number || null,
+      // Include sender user ID to be included in Note field
+      senderUserId: senderInfo.user_id || null,
       sender: {
         vatNumber: cleanVATNumber(senderInfo.vat_number), // Clean VAT number (remove Peppol scheme prefixes)
         name: senderInfo.company_name || senderInfo.full_name || 'Company Name Required',

@@ -1030,11 +1030,12 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
       }
     }
 
-    // Extract invoice_type and deposit/balance amounts from payment terms Note field if present
-    // Format: "Net within X days | INVOICE_TYPE:deposit | DEPOSIT_AMOUNT:100 | BALANCE_AMOUNT:200"
+    // Extract invoice_type, deposit/balance amounts, and sender user ID from payment terms Note field if present
+    // Format: "Net within X days | INVOICE_TYPE:deposit | DEPOSIT_AMOUNT:100 | BALANCE_AMOUNT:200 | SENDER_USER_ID:uuid"
     let invoiceType: string = 'final'; // Default to final
     let depositAmount: number = 0;
     let balanceAmount: number = 0;
+    let senderUserId: string | null = null;
     const paymentTermsNote = invoiceData.payment?.terms || '';
     if (paymentTermsNote) {
       const invoiceTypeMatch = paymentTermsNote.match(/INVOICE_TYPE:(deposit|final)/i);
@@ -1052,6 +1053,12 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
       const balanceMatch = paymentTermsNote.match(/BALANCE_AMOUNT:([\d.,]+)/i);
       if (balanceMatch && balanceMatch[1]) {
         balanceAmount = parseFloat(balanceMatch[1].replace(',', '.')) || 0;
+      }
+      
+      // Extract sender user ID if present
+      const senderUserIdMatch = paymentTermsNote.match(/SENDER_USER_ID:([a-f0-9-]+)/i);
+      if (senderUserIdMatch && senderUserIdMatch[1]) {
+        senderUserId = senderUserIdMatch[1];
       }
       
       // If invoice_type is deposit but no deposit amount extracted, use totalAmount as deposit
@@ -1117,7 +1124,9 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
           // Store invoice_type and deposit/balance amounts for PDF generation
           invoice_type: invoiceType,
           deposit_amount: depositAmount > 0 ? depositAmount : null,
-          balance_amount: balanceAmount > 0 ? balanceAmount : null
+          balance_amount: balanceAmount > 0 ? balanceAmount : null,
+          // Store sender user ID if extracted from Note field
+          sender_user_id: senderUserId || null
         }
     };
     const { data: expenseInvoice, error: expenseError } = await supabase

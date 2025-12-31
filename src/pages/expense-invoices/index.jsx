@@ -362,8 +362,20 @@ const ExpenseInvoicesManagement = () => {
     
     setDownloadingInvoiceId(invoice.id);
     try {
-      // Load company info
-      const companyInfo = await loadCompanyInfo(user?.id);
+      // Check if we have sender user ID from Peppol metadata
+      // If yes, use sender's company logo; otherwise use receiver's (current user's) logo
+      const senderUserId = invoice.peppol_metadata?.sender_user_id;
+      let companyInfo = null;
+      
+      if (senderUserId) {
+        // Load sender's company info for logo
+        companyInfo = await loadCompanyInfo(senderUserId);
+      }
+      
+      // Fallback to receiver's (current user's) company info if sender info not available
+      if (!companyInfo) {
+        companyInfo = await loadCompanyInfo(user?.id);
+      }
       
       if (!companyInfo) {
         alert(t('expenseInvoices.errors.companyInfoNotFound', 'Company information not found'));

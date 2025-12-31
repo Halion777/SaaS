@@ -215,7 +215,8 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
         peppol_identifier: peppolSettings.peppolId, // Use Peppol ID directly from settings
         contact_name: peppolSettings.contact_person_name || companyInfo?.name || '',
         contact_email: companyInfo?.email || '',
-        contact_phone: companyInfo?.phone || ''
+        contact_phone: companyInfo?.phone || '',
+        user_id: user?.id || null // Include sender user ID to be sent in UBL XML
       };
 
       // Get receiver country code (convert to ISO if needed)
