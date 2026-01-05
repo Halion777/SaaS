@@ -2,19 +2,20 @@ import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Icon from '../../../components/AppIcon';
+import { formatCurrency } from '../../../utils/numberFormat';
 
-const QuoteChart = ({ quotes = [], loading = false }) => {
+const RevenueChart = ({ invoices = [], loading = false }) => {
   const { t } = useTranslation();
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
-  // Get available years from quotes data
+  // Get available years from invoices data
   const availableYears = useMemo(() => {
-    if (!quotes || quotes.length === 0) return [new Date().getFullYear()];
+    if (!invoices || invoices.length === 0) return [new Date().getFullYear()];
     
     const years = new Set();
-    quotes.forEach(quote => {
-      if (quote.created_at) {
-        const year = new Date(quote.created_at).getFullYear();
+    invoices.forEach(invoice => {
+      if (invoice.created_at) {
+        const year = new Date(invoice.created_at).getFullYear();
         years.add(year);
       }
     });
@@ -23,27 +24,25 @@ const QuoteChart = ({ quotes = [], loading = false }) => {
     years.add(new Date().getFullYear());
     
     return Array.from(years).sort((a, b) => b - a);
-  }, [quotes]);
+  }, [invoices]);
 
-  // Process quotes data to get monthly statistics for selected year
+  // Process invoices data to get monthly revenue for selected year
   const chartData = useMemo(() => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     
     if (loading) {
       // Return loading data with "..." for all 12 months
       return months.map(month => ({
-        month: t(`dashboard.quoteChart.months.${month}`) || month,
-        quotes: '...',
-        signed: '...'
+        month: t(`dashboard.revenueChart.months.${month}`) || month,
+        revenue: '...'
       }));
     }
     
-    if (!quotes || quotes.length === 0) {
+    if (!invoices || invoices.length === 0) {
       // Return empty data for all 12 months
       return months.map(month => ({
-        month: t(`dashboard.quoteChart.months.${month}`) || month,
-        quotes: 0,
-        signed: 0
+        month: t(`dashboard.revenueChart.months.${month}`) || month,
+        revenue: 0
       }));
     }
 
@@ -51,34 +50,30 @@ const QuoteChart = ({ quotes = [], loading = false }) => {
     const monthlyData = {};
     months.forEach((monthKey, index) => {
       monthlyData[index] = {
-        month: t(`dashboard.quoteChart.months.${monthKey}`) || monthKey,
+        month: t(`dashboard.revenueChart.months.${monthKey}`) || monthKey,
         monthIndex: index,
-        quotes: 0,
-        signed: 0
+        revenue: 0
       };
     });
 
-    // Process quotes for selected year
-    quotes.forEach(quote => {
-      if (!quote.created_at) return;
+    // Process invoices for selected year
+    invoices.forEach(invoice => {
+      if (!invoice.created_at) return;
       
-      const quoteDate = new Date(quote.created_at);
-      const quoteYear = quoteDate.getFullYear();
-      const quoteMonth = quoteDate.getMonth();
+      const invoiceDate = new Date(invoice.created_at);
+      const invoiceYear = invoiceDate.getFullYear();
+      const invoiceMonth = invoiceDate.getMonth();
       
-      // Only count quotes from the selected year
-      if (quoteYear === selectedYear && monthlyData[quoteMonth] !== undefined) {
-        monthlyData[quoteMonth].quotes++;
-        // Count both 'accepted' and 'converted_to_invoice' as signed quotes
-        if (quote.status === 'accepted' || quote.status === 'converted_to_invoice') {
-          monthlyData[quoteMonth].signed++;
-        }
+      // Only count invoices from the selected year
+      if (invoiceYear === selectedYear && monthlyData[invoiceMonth] !== undefined) {
+        const amount = parseFloat(invoice.final_amount || invoice.amount || 0);
+        monthlyData[invoiceMonth].revenue += amount;
       }
     });
 
     // Return all 12 months in order
     return Object.values(monthlyData).sort((a, b) => a.monthIndex - b.monthIndex);
-  }, [quotes, t, loading, selectedYear]);
+  }, [invoices, t, loading, selectedYear]);
 
   const handlePreviousYear = () => {
     const currentIndex = availableYears.indexOf(selectedYear);
@@ -98,19 +93,29 @@ const QuoteChart = ({ quotes = [], loading = false }) => {
   const canGoPrevious = availableYears.indexOf(selectedYear) < availableYears.length - 1;
   const canGoNext = availableYears.indexOf(selectedYear) > 0 && selectedYear < currentYear;
 
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
+          <p className="font-medium text-foreground mb-2">{label}</p>
+          {payload.map((entry, index) => (
+            <p key={index} style={{ color: entry.color }} className="text-sm">
+              {t('dashboard.revenueChart.revenue')}: {formatCurrency(entry.value)}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-professional">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 space-y-3 sm:space-y-0">
-        <h3 className="text-base sm:text-lg font-semibold text-foreground">{t('dashboard.quoteChart.title')}</h3>
-        <div className="flex items-center space-x-3 sm:space-x-4 text-xs sm:text-sm">
-          <div className="flex items-center space-x-1.5 sm:space-x-2">
-            <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-primary rounded-full"></div>
-            <span className="text-muted-foreground">{t('dashboard.quoteChart.seriesLabels.quotes')}</span>
-          </div>
-          <div className="flex items-center space-x-1.5 sm:space-x-2">
-            <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-success rounded-full"></div>
-            <span className="text-muted-foreground">{t('dashboard.quoteChart.seriesLabels.signed')}</span>
-          </div>
+        <h3 className="text-base sm:text-lg font-semibold text-foreground">{t('dashboard.revenueChart.title')}</h3>
+        <div className="flex items-center space-x-1.5 sm:space-x-2">
+          <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-warning rounded-full"></div>
+          <span className="text-muted-foreground text-xs sm:text-sm">{t('dashboard.revenueChart.seriesLabel')}</span>
         </div>
       </div>
       
@@ -124,7 +129,7 @@ const QuoteChart = ({ quotes = [], loading = false }) => {
               ? 'hover:bg-muted text-foreground'
               : 'opacity-50 cursor-not-allowed text-muted-foreground'
           }`}
-          aria-label={t('dashboard.quoteChart.previousYear')}
+          aria-label={t('dashboard.revenueChart.previousYear')}
         >
           <Icon name="ChevronLeft" size={20} />
         </button>
@@ -139,13 +144,13 @@ const QuoteChart = ({ quotes = [], loading = false }) => {
               ? 'hover:bg-muted text-foreground'
               : 'opacity-50 cursor-not-allowed text-muted-foreground'
           }`}
-          aria-label={t('dashboard.quoteChart.nextYear')}
+          aria-label={t('dashboard.revenueChart.nextYear')}
         >
           <Icon name="ChevronRight" size={20} />
         </button>
       </div>
 
-      <div className="w-full h-64 sm:h-80" aria-label={t('dashboard.quoteChart.chartAriaLabel')}>
+      <div className="w-full h-64 sm:h-80" aria-label={t('dashboard.revenueChart.chartAriaLabel')}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
@@ -159,18 +164,13 @@ const QuoteChart = ({ quotes = [], loading = false }) => {
               stroke="var(--color-muted-foreground)"
               fontSize={11}
               className="sm:text-xs"
-            />
-            <Tooltip 
-              contentStyle={{
-                backgroundColor: 'var(--color-popover)',
-                border: '1px solid var(--color-border)',
-                borderRadius: '8px',
-                color: 'var(--color-popover-foreground)',
-                fontSize: '12px'
+              tickFormatter={(value) => {
+                if (typeof value === 'string' && value === '...') return value;
+                return formatCurrency(value, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
               }}
             />
-            <Bar dataKey="quotes" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="signed" fill="var(--color-success)" radius={[4, 4, 0, 0]} />
+            <Tooltip content={<CustomTooltip />} />
+            <Bar dataKey="revenue" fill="var(--color-warning)" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -178,4 +178,5 @@ const QuoteChart = ({ quotes = [], loading = false }) => {
   );
 };
 
-export default QuoteChart;
+export default RevenueChart;
+

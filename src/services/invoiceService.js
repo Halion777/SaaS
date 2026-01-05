@@ -2,6 +2,8 @@ import { supabase } from './supabaseClient';
 import InvoiceFollowUpService from './invoiceFollowUpService';
 import EmailService from './emailService';
 import { formatCurrency, formatNumber } from '../utils/numberFormat';
+import { generateInvoicePDF } from './pdfService';
+import { loadCompanyInfo } from './companyInfoService';
 
 export class InvoiceService {
   
@@ -12,6 +14,7 @@ export class InvoiceService {
    */
   static async fetchInvoices(userId) {
     try {
+      // Try to fetch all invoices including peppol_metadata
       const { data, error } = await supabase
         .from('invoices')
         .select(`
@@ -53,13 +56,107 @@ export class InvoiceService {
         throw new Error(`Failed to fetch invoices: ${error.message}`);
       }
 
+      // Validate and sanitize JSONB fields to prevent JSON parsing errors
+      const sanitizedInvoices = (data || []).map(invoice => {
+        // Validate peppol_metadata
+        if (invoice.peppol_metadata) {
+          try {
+            // Try to stringify and parse to validate JSON
+            JSON.stringify(invoice.peppol_metadata);
+          } catch (jsonError) {
+            console.warn(`Invalid JSON in peppol_metadata for invoice ${invoice.invoice_number || invoice.id}, setting to null:`, jsonError);
+            invoice.peppol_metadata = null;
+          }
+        }
+        return invoice;
+      });
+
       return {
         success: true,
-        data: data || []
+        data: sanitizedInvoices
       };
 
     } catch (error) {
       console.error('Error fetching invoices:', error);
+      
+      // If it's a JSON parsing error, try fetching without JSONB columns
+      if (error.message && (error.message.includes('JSON') || error.message.includes('Unterminated string'))) {
+        console.warn('JSON parsing error detected, attempting to fetch invoices without JSONB columns...');
+        try {
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from('invoices')
+            .select(`
+              id,
+              user_id,
+              client_id,
+              invoice_number,
+              title,
+              status,
+              due_date,
+              issue_date,
+              amount,
+              net_amount,
+              tax_amount,
+              discount_amount,
+              final_amount,
+              description,
+              notes,
+              quote_id,
+              invoice_type,
+              created_at,
+              updated_at,
+              paid_at,
+              client:clients(id, name, email, phone, address, city, postal_code, country, vat_number, peppol_id, peppol_enabled, client_type),
+              quote:quotes(
+                id, 
+                quote_number, 
+                title, 
+                description,
+                deposit_amount,
+                balance_amount,
+                quote_tasks(
+                  id,
+                  name,
+                  description,
+                  quantity,
+                  unit,
+                  unit_price,
+                  total_price
+                ),
+                quote_materials(
+                  id,
+                  quote_task_id,
+                  name,
+                  description,
+                  quantity,
+                  unit,
+                  unit_price,
+                  total_price,
+                  order_index
+                )
+              )
+            `)
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
+          
+          if (!fallbackError && fallbackData) {
+            // Set peppol_metadata to null for all invoices
+            const invoicesWithoutMetadata = (fallbackData || []).map(inv => ({
+              ...inv,
+              peppol_metadata: null
+            }));
+            
+            return {
+              success: true,
+              data: invoicesWithoutMetadata,
+              warning: 'Some invoice metadata could not be loaded due to JSON parsing errors'
+            };
+          }
+        } catch (fallbackError) {
+          console.error('Fallback fetch also failed:', fallbackError);
+        }
+      }
+      
       return {
         success: false,
         error: error.message
@@ -400,6 +497,186 @@ export class InvoiceService {
     }
   }
 
+  /**
+   * Generate and store invoice PDF in Supabase Storage
+   * This PDF will be used for automatic follow-up emails
+   * @param {string} invoiceId - The invoice ID
+   * @param {string} userId - The user ID
+   * @returns {Promise<{success: boolean, storagePath: string, error: string}>}
+   */
+  static async generateAndStoreInvoicePDF(invoiceId, userId) {
+    try {
+      // Fetch full invoice data with client and quote
+      const { data: invoice, error: invoiceError } = await supabase
+        .from('invoices')
+        .select(`
+          id,
+          user_id,
+          client_id,
+          invoice_number,
+          title,
+          status,
+          due_date,
+          issue_date,
+          final_amount,
+          amount,
+          net_amount,
+          tax_amount,
+          discount_amount,
+          description,
+          notes,
+          invoice_type,
+          quote_id,
+          quote:quotes(
+            id,
+            quote_tasks(
+              id,
+              name,
+              description,
+              quantity,
+              unit,
+              unit_price,
+              total_price
+            )
+          ),
+          client:clients(
+            id,
+            name,
+            email,
+            phone,
+            address,
+            city,
+            postal_code,
+            country,
+            vat_number,
+            client_type
+          )
+        `)
+        .eq('id', invoiceId)
+        .single();
+
+      if (invoiceError || !invoice) {
+        throw new Error('Invoice not found');
+      }
+
+      // Get company info
+      const companyInfo = await loadCompanyInfo(userId);
+      if (!companyInfo) {
+        throw new Error('Company information not found');
+      }
+
+      // Prepare invoice data for PDF generation
+      const invoiceDataForPDF = {
+        companyInfo: companyInfo,
+        client: invoice.client || {},
+        invoice: {
+          issue_date: invoice.issue_date,
+          due_date: invoice.due_date,
+          amount: invoice.amount,
+          net_amount: invoice.net_amount,
+          tax_amount: invoice.tax_amount,
+          discount_amount: invoice.discount_amount,
+          final_amount: invoice.final_amount,
+          description: invoice.description,
+          title: invoice.title,
+          notes: invoice.notes,
+          invoice_type: invoice.invoice_type || 'final'
+        },
+        quote: invoice.quote || null
+      };
+
+      // Generate PDF blob
+      const isProfessionalClient = invoice.client?.client_type === 'company' || invoice.client?.client_type === 'professional';
+      const pdfBlob = await generateInvoicePDF(
+        invoiceDataForPDF,
+        invoice.invoice_number,
+        null,
+        'fr',
+        false,
+        invoice.invoice_type || 'final',
+        isProfessionalClient
+      );
+
+      // Convert blob to base64
+      const pdfBase64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64String = reader.result.split(',')[1];
+          resolve(base64String);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(pdfBlob);
+      });
+
+      // Convert base64 to Uint8Array for storage
+      const pdfBuffer = Uint8Array.from(atob(pdfBase64), c => c.charCodeAt(0));
+
+      // Generate storage path: invoice-pdfs/{userId}/{invoiceNumber}.pdf
+      const sanitizedInvoiceNumber = invoice.invoice_number.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const storagePath = `invoice-pdfs/${userId}/${sanitizedInvoiceNumber}.pdf`;
+
+      // Upload to Supabase Storage
+      // Try 'invoice-attachments' first, fallback to 'expense-invoice-attachments' if needed
+      let bucketName = 'invoice-attachments';
+      let uploadData = null;
+      let uploadError = null;
+      
+      ({ data: uploadData, error: uploadError } = await supabase.storage
+        .from(bucketName)
+        .upload(storagePath, pdfBuffer, {
+          contentType: 'application/pdf',
+          upsert: true // Overwrite if exists
+        }));
+
+      // If bucket doesn't exist, try alternative bucket
+      if (uploadError && uploadError.message?.includes('Bucket not found')) {
+        console.warn(`Bucket '${bucketName}' not found, trying 'expense-invoice-attachments'`);
+        bucketName = 'expense-invoice-attachments';
+        ({ data: uploadData, error: uploadError } = await supabase.storage
+          .from(bucketName)
+          .upload(storagePath, pdfBuffer, {
+            contentType: 'application/pdf',
+            upsert: true
+          }));
+      }
+
+      if (uploadError) {
+        console.warn('Error uploading PDF to storage:', uploadError);
+        throw new Error(`Failed to upload PDF: ${uploadError.message}`);
+      }
+
+      // Store PDF path in invoice metadata
+      const currentMetadata = invoice.peppol_metadata || {};
+      const { error: updateError } = await supabase
+        .from('invoices')
+        .update({
+          peppol_metadata: {
+            ...currentMetadata,
+            pdf_storage_path: storagePath,
+            pdf_storage_bucket: bucketName,
+            pdf_generated_at: new Date().toISOString()
+          }
+        })
+        .eq('id', invoiceId);
+
+      if (updateError) {
+        console.warn('Warning: Failed to update invoice with PDF path:', updateError);
+        // Don't fail if metadata update fails
+      }
+
+      return {
+        success: true,
+        storagePath: storagePath,
+        bucket: bucketName
+      };
+    } catch (error) {
+      console.error('Error generating and storing invoice PDF:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to generate and store PDF'
+      };
+    }
+  }
 }
 
 export default InvoiceService;

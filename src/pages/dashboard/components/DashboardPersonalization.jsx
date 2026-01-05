@@ -8,6 +8,8 @@ const DashboardPersonalization = ({ isOpen, onClose, onSave }) => {
   const [widgetSettings, setWidgetSettings] = useState({
     metricsCards: true,
     invoiceOverview: true,
+    quoteChart: true,
+    revenueChart: true,
     recentQuotes: true,
     topClients: true,
     taskList: true,
@@ -25,9 +27,26 @@ const DashboardPersonalization = ({ isOpen, onClose, onSave }) => {
 
   const loadWidgetSettings = () => {
     try {
+      const defaultSettings = {
+        metricsCards: true,
+        invoiceOverview: true,
+        quoteChart: true,
+        revenueChart: true,
+        recentQuotes: true,
+        topClients: true,
+        taskList: true,
+        quickActions: true,
+        peppolWidget: true,
+        sponsoredBanner: true,
+        upcomingEvents: true,
+        recentActivity: true
+      };
+      
       const savedSettings = localStorage.getItem('dashboard-widget-settings');
       if (savedSettings) {
-        setWidgetSettings(JSON.parse(savedSettings));
+        const parsed = JSON.parse(savedSettings);
+        // Merge with defaults to ensure new widgets are included
+        setWidgetSettings({ ...defaultSettings, ...parsed });
       }
     } catch (error) {
       console.error('Error loading widget settings:', error);
@@ -64,6 +83,8 @@ const DashboardPersonalization = ({ isOpen, onClose, onSave }) => {
     const defaultSettings = {
       metricsCards: true,
       invoiceOverview: true,
+      quoteChart: true,
+      revenueChart: true,
       recentQuotes: true,
       topClients: true,
       taskList: true,
@@ -90,6 +111,20 @@ const DashboardPersonalization = ({ isOpen, onClose, onSave }) => {
       description: t('dashboard.personalization.widgets.invoiceOverview.description'),
       icon: 'Receipt',
       category: t('dashboard.personalization.widgetCategories.Finance')
+    },
+    {
+      key: 'quoteChart',
+      title: t('dashboard.personalization.widgets.quoteChart.title'),
+      description: t('dashboard.personalization.widgets.quoteChart.description'),
+      icon: 'BarChart',
+      category: t('dashboard.personalization.widgetCategories.Graph')
+    },
+    {
+      key: 'revenueChart',
+      title: t('dashboard.personalization.widgets.revenueChart.title'),
+      description: t('dashboard.personalization.widgets.revenueChart.description'),
+      icon: 'TrendingUp',
+      category: t('dashboard.personalization.widgetCategories.Graph')
     },
     {
       key: 'recentQuotes',

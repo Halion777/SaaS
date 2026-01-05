@@ -1981,6 +1981,31 @@ export async function convertQuoteToInvoice(quote, userId) {
       // Don't fail the whole operation if quote update fails
     }
 
+    // Generate and store PDFs for all created invoices (for automatic follow-ups)
+    try {
+      const { default: InvoiceService } = await import('./invoiceService');
+      const invoicesArray = Array.isArray(createdInvoices) ? createdInvoices : [createdInvoices];
+      for (const invoice of invoicesArray) {
+        if (invoice && invoice.id && invoice.user_id) {
+          // Generate and store PDF in background (don't block invoice creation)
+          InvoiceService.generateAndStoreInvoicePDF(invoice.id, invoice.user_id)
+            .then(result => {
+              if (result.success) {
+                console.log(`PDF stored for invoice ${invoice.invoice_number}: ${result.storagePath}`);
+              } else {
+                console.warn(`Failed to store PDF for invoice ${invoice.invoice_number}:`, result.error);
+              }
+            })
+            .catch(error => {
+              console.warn(`Error storing PDF for invoice ${invoice.invoice_number}:`, error);
+            });
+        }
+      }
+    } catch (pdfError) {
+      console.warn('Warning: Failed to generate PDFs for invoices:', pdfError);
+      // Don't fail the whole operation if PDF generation fails
+    }
+
     // Trigger follow-up creation for all created invoices
     try {
       const { default: InvoiceFollowUpService } = await import('./invoiceFollowUpService');

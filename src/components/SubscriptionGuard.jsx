@@ -16,7 +16,7 @@ import Footer from './Footer';
  * Super admin users are exempt from subscription checks
  */
 const SubscriptionGuard = ({ children }) => {
-  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { user, isAuthenticated, loading: authLoading, logout } = useAuth();
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showExpiredModal, setShowExpiredModal] = useState(false);
@@ -197,9 +197,8 @@ const SubscriptionGuard = ({ children }) => {
               
               <Button
                 variant="outline"
-                onClick={() => {
-                  supabase.auth.signOut();
-                  navigate('/login');
+                onClick={async () => {
+                  await logout();
                 }}
                 className="w-full"
               >

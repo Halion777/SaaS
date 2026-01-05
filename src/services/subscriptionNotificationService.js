@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 import AppSettingsService from './appSettingsService';
+import { formatCurrency } from '../utils/numberFormat';
 
 export class SubscriptionNotificationService {
   
@@ -281,8 +282,8 @@ export class SubscriptionNotificationService {
           user_email: userData.email,
           old_plan_name: oldPlanName,
           new_plan_name: newPlanName,
-          old_amount: oldAmount ? `${oldAmount}` : 'N/A',
-          new_amount: `${newAmount}`,
+          old_amount: oldAmount ? formatCurrency(oldAmount, { showCurrency: false }) : 'N/A',
+          new_amount: formatCurrency(newAmount, { showCurrency: false }),
           billing_interval: billingInterval === 'yearly' ? 'yearly' : 'monthly',
           effective_date: subscriptionData.effectiveDate || new Date().toLocaleDateString('fr-FR'),
           support_email: 'support@haliqo.com',
@@ -342,8 +343,8 @@ export class SubscriptionNotificationService {
           user_email: userData.email,
           old_plan_name: oldPlanName,
           new_plan_name: newPlanName,
-          old_amount: oldAmount ? `${oldAmount}` : 'N/A',
-          new_amount: `${newAmount}`,
+          old_amount: oldAmount ? formatCurrency(oldAmount, { showCurrency: false }) : 'N/A',
+          new_amount: formatCurrency(newAmount, { showCurrency: false }),
           billing_interval: billingInterval === 'yearly' ? 'yearly' : 'monthly',
           effective_date: subscriptionData.effectiveDate || new Date().toLocaleDateString('fr-FR'),
           support_email: 'support@haliqo.com',
@@ -435,7 +436,7 @@ export class SubscriptionNotificationService {
           user_name: userData.full_name || (userData.first_name && userData.last_name ? `${userData.first_name} ${userData.last_name}` : null) || userData.email,
           user_email: userData.email,
           plan_name: planName,
-          amount: `${planAmount}`,
+          amount: formatCurrency(planAmount, { showCurrency: false }),
           billing_interval: billingInterval === 'yearly' ? 'yearly' : 'monthly',
           effective_date: subscriptionData.effectiveDate || new Date().toLocaleDateString('fr-FR'),
           support_email: 'support@haliqo.com',
@@ -482,8 +483,8 @@ export class SubscriptionNotificationService {
           user_email: userData.email,
           new_plan_name: planName,
           plan_name: planName,
-          new_amount: `${planAmount}`,
-          amount: `${planAmount}`,
+          new_amount: formatCurrency(planAmount, { showCurrency: false }),
+          amount: formatCurrency(planAmount, { showCurrency: false }),
           billing_interval: billingInterval === 'yearly' ? 'yearly' : 'monthly',
           effective_date: subscriptionData.effectiveDate || new Date().toLocaleDateString('fr-FR'),
           support_email: 'support@haliqo.com',
@@ -531,8 +532,8 @@ export class SubscriptionNotificationService {
           new_plan_name: planName,
           plan_name: planName,
           trial_end_date: subscriptionData.trial_end ? new Date(subscriptionData.trial_end).toLocaleDateString('fr-FR') : 'Bientôt',
-          new_amount: `${planAmount}`,
-          amount: `${planAmount}`,
+          new_amount: formatCurrency(planAmount, { showCurrency: false }),
+          amount: formatCurrency(planAmount, { showCurrency: false }),
           billing_interval: billingInterval === 'yearly' ? 'yearly' : 'monthly',
           support_email: 'support@haliqo.com',
           company_name: 'Haliqo'

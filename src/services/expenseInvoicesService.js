@@ -69,13 +69,127 @@ export class ExpenseInvoicesService {
 
       if (error) throw error;
 
+      // Validate and sanitize JSONB fields to prevent JSON parsing errors
+      const sanitizedInvoices = (data || []).map(invoice => {
+        // Validate peppol_metadata
+        if (invoice.peppol_metadata) {
+          try {
+            JSON.stringify(invoice.peppol_metadata);
+          } catch (jsonError) {
+            console.warn(`Invalid JSON in peppol_metadata for expense invoice ${invoice.invoice_number || invoice.id}, setting to null:`, jsonError);
+            invoice.peppol_metadata = null;
+          }
+        }
+        
+        // Validate metadata
+        if (invoice.metadata) {
+          try {
+            JSON.stringify(invoice.metadata);
+          } catch (jsonError) {
+            console.warn(`Invalid JSON in metadata for expense invoice ${invoice.invoice_number || invoice.id}, setting to null:`, jsonError);
+            invoice.metadata = null;
+          }
+        }
+        
+        return invoice;
+      });
+
       return {
         success: true,
-        data: data || [],
+        data: sanitizedInvoices,
         total: count || 0
       };
     } catch (error) {
       console.error('Error fetching expense invoices:', error);
+      
+      // If it's a JSON parsing error, try fetching without JSONB columns
+      if (error.message && (error.message.includes('JSON') || error.message.includes('Unterminated string'))) {
+        console.warn('JSON parsing error detected, attempting to fetch expense invoices without JSONB columns...');
+        try {
+          let fallbackQuery = supabase
+            .from(this.tableName)
+            .select(`
+              id,
+              user_id,
+              supplier_name,
+              invoice_number,
+              issue_date,
+              due_date,
+              amount,
+              vat_amount,
+              total_amount,
+              status,
+              category,
+              source,
+              payment_method,
+              notes,
+              file_url,
+              created_at,
+              updated_at
+            `)
+            .order('created_at', { ascending: false });
+          
+          // Reapply filters
+          if (filters.search) {
+            fallbackQuery = fallbackQuery.or(`supplier_name.ilike.%${filters.search}%,invoice_number.ilike.%${filters.search}%`);
+          }
+          if (filters.status) {
+            fallbackQuery = fallbackQuery.eq('status', filters.status);
+          }
+          if (filters.category) {
+            fallbackQuery = fallbackQuery.eq('category', filters.category);
+          }
+          if (filters.source) {
+            fallbackQuery = fallbackQuery.eq('source', filters.source);
+          }
+          if (filters.dateRange) {
+            const today = new Date();
+            let startDate = new Date();
+            switch (filters.dateRange) {
+              case 'today':
+                startDate.setHours(0, 0, 0, 0);
+                break;
+              case 'week':
+                startDate.setDate(today.getDate() - 7);
+                break;
+              case 'month':
+                startDate.setMonth(today.getMonth() - 1);
+                break;
+              case 'quarter':
+                startDate.setMonth(today.getMonth() - 3);
+                break;
+              case 'year':
+                startDate.setFullYear(today.getFullYear() - 1);
+                break;
+            }
+            fallbackQuery = fallbackQuery.gte('issue_date', startDate.toISOString().split('T')[0]);
+          }
+          if (filters.paymentMethod) {
+            fallbackQuery = fallbackQuery.eq('payment_method', filters.paymentMethod);
+          }
+          
+          const { data: fallbackData, error: fallbackError, count: fallbackCount } = await fallbackQuery;
+          
+          if (!fallbackError && fallbackData) {
+            // Set all JSONB fields to null
+            const invoicesWithoutMetadata = (fallbackData || []).map(inv => ({
+              ...inv,
+              peppol_metadata: null,
+              metadata: null
+            }));
+            
+            return {
+              success: true,
+              data: invoicesWithoutMetadata,
+              total: fallbackCount || 0,
+              warning: 'Some invoice metadata could not be loaded due to JSON parsing errors'
+            };
+          }
+        } catch (fallbackError) {
+          console.error('Fallback fetch also failed:', fallbackError);
+        }
+      }
+      
       return {
         success: false,
         error: 'Erreur lors de la récupération des factures de dépenses'

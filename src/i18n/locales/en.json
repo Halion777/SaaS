@@ -2474,6 +2474,7 @@
       "subtitle": "Customize your dashboard by enabling or disabling widgets",
       "widgetCategories": {
         "Analytics": "Analytics",
+        "Graph": "Graphs",
         "Finance": "Finance",
         "Sales": "Sales",
         "Clients": "Clients",
@@ -2533,6 +2534,10 @@
         "quoteChart": {
           "title": "Quote Evolution",
           "description": "Track your quote evolution"
+        },
+        "revenueChart": {
+          "title": "Revenue Evolution",
+          "description": "Track your monthly revenue trends"
         }
       },
       "buttons": {
@@ -2844,7 +2849,31 @@
         "Nov": "Nov",
         "Dec": "Dec"
       },
+      "previousYear": "Previous Year",
+      "nextYear": "Next Year",
       "chartAriaLabel": "Quote Evolution Chart"
+    },
+    "revenueChart": {
+      "title": "Revenue Evolution",
+      "seriesLabel": "Revenue",
+      "revenue": "Revenue",
+      "months": {
+        "Jan": "Jan",
+        "Feb": "Feb",
+        "Mar": "Mar",
+        "Apr": "Apr",
+        "May": "May",
+        "Jun": "Jun",
+        "Jul": "Jul",
+        "Aug": "Aug",
+        "Sep": "Sep",
+        "Oct": "Oct",
+        "Nov": "Nov",
+        "Dec": "Dec"
+      },
+      "previousYear": "Previous Year",
+      "nextYear": "Next Year",
+      "chartAriaLabel": "Revenue Evolution Chart"
     },
     "recentQuotes": {
       "title": "Recent Quotes",
@@ -4465,7 +4494,11 @@
         "sendViaEmail": "Send via Email",
         "sendViaEmailDescription": "Send invoice via email with PDF attachment",
         "sendViaEmailWarning": "This is not the actual invoice. You must send via Peppol to get paid.",
-        "professionalInfo": "Professional clients can receive invoices via Peppol if they have a configured Peppol ID."
+        "professionalInfo": "Professional clients can receive invoices via Peppol if they have a configured Peppol ID.",
+        "checkingReceiver": "Checking receiver...",
+        "checkingReceiverDescription": "Verifying if receiver is registered on Peppol network",
+        "receiverNotOnPeppol": "Receiver is not registered on Peppol network. Please send via email.",
+        "receiverNotOnPeppolInfo": "The receiver is not registered on the Peppol network. Please send the invoice via email. For professional clients, Peppol is the preferred method for invoice delivery."
       },
       "sendEmailModal": {
         "title": "Send Invoice via Email",

@@ -153,6 +153,8 @@ async function processFollowUp(admin: any, followUp: any) {
         description,
         notes,
         quote_id,
+        invoice_type,
+        peppol_metadata,
         quote:quotes(
           id,
           quote_tasks(
@@ -317,7 +319,8 @@ async function processFollowUp(admin: any, followUp: any) {
     const formattedIssueDate = issueDate.toLocaleDateString(dateLocale);
     const formattedDueDate = dueDate.toLocaleDateString(dateLocale);
     const invoiceAmount = parseFloat(invoice.final_amount || invoice.amount || 0);
-    const formattedAmount = new Intl.NumberFormat(dateLocale, { style: 'currency', currency: 'EUR' }).format(invoiceAmount);
+    // Always use fr-FR locale for amount formatting to ensure comma as decimal separator (European format)
+    const formattedAmount = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(invoiceAmount);
 
     // Final variable replacement - use database template with all variables
     const finalSubject = subject
@@ -375,61 +378,41 @@ async function processFollowUp(admin: any, followUp: any) {
     }
 
     // ========================================
-    // 4. GENERATE PDF ATTACHMENT
+    // 4. FETCH PDF ATTACHMENT FROM STORAGE
     // ========================================
+    // PDFs are generated client-side when invoices are created/updated and stored in Supabase Storage
     let pdfAttachment = null;
     try {
-      // Get company profile for PDF generation
-      const { data: companyProfile, error: companyErr } = await admin
-        .from('company_profiles')
-        .select('*')
-        .eq('user_id', invoice.user_id)
-        .eq('is_default', true)
-        .maybeSingle();
-
-      // Prepare invoice data for PDF generation (same structure as frontend)
-      const invoiceDataForPDF = {
-        companyInfo: companyProfile ? {
-          name: companyProfile.company_name,
-          address: companyProfile.address,
-          postalCode: companyProfile.postal_code,
-          city: companyProfile.city,
-          email: companyProfile.email,
-          phone: companyProfile.phone,
-          vatNumber: companyProfile.vat_number,
-          iban: companyProfile.iban,
-          accountName: companyProfile.account_name,
-          bankName: companyProfile.bank_name,
-          logo: companyProfile.logo_url ? { url: companyProfile.logo_url } : null
-        } : {},
-        client: clientData,
-        invoice: {
-          issue_date: invoice.issue_date,
-          due_date: invoice.due_date,
-          amount: invoice.amount,
-          net_amount: invoice.net_amount,
-          tax_amount: invoice.tax_amount,
-          discount_amount: invoice.discount_amount,
-          final_amount: invoice.final_amount,
-          description: invoice.description,
-          title: invoice.title,
-          notes: invoice.notes
-        },
-        quote: invoice.quote || null
-      };
-
-      // Generate PDF using the same HTML template as frontend
-      const pdfBase64 = await generateInvoicePDFServerSide(invoiceDataForPDF, invoice.invoice_number);
+      // Check if PDF is stored in invoice metadata
+      const pdfStoragePath = invoice.peppol_metadata?.pdf_storage_path;
+      const pdfStorageBucket = invoice.peppol_metadata?.pdf_storage_bucket || 'invoice-attachments';
       
-      if (pdfBase64) {
-        pdfAttachment = {
-          filename: `facture-${invoice.invoice_number}.pdf`,
-          content: pdfBase64
-        };
+      if (pdfStoragePath) {
+        // Download PDF from Supabase Storage
+        const { data: pdfData, error: downloadError } = await admin.storage
+          .from(pdfStorageBucket)
+          .download(pdfStoragePath);
+        
+        if (!downloadError && pdfData) {
+          // Convert blob to base64
+          const arrayBuffer = await pdfData.arrayBuffer();
+          const uint8Array = new Uint8Array(arrayBuffer);
+          const pdfBase64 = btoa(String.fromCharCode.apply(null, Array.from(uint8Array)));
+          
+          pdfAttachment = {
+            filename: `facture-${invoice.invoice_number}.pdf`,
+            content: pdfBase64
+          };
+          console.log(`PDF attachment loaded from storage: ${pdfStoragePath}`);
+        } else {
+          console.warn(`PDF not found in storage at ${pdfStorageBucket}/${pdfStoragePath}:`, downloadError);
+        }
+      } else {
+        console.warn(`No PDF storage path found in invoice metadata for invoice ${invoice.invoice_number}`);
       }
     } catch (pdfError) {
-      console.warn('Error generating PDF for follow-up:', pdfError);
-      // Continue without PDF attachment if generation fails
+      console.warn('Error fetching PDF from storage for follow-up:', pdfError);
+      // Continue without PDF attachment if fetch fails
     }
 
     // ========================================

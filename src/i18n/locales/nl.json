@@ -2503,6 +2503,7 @@
       "subtitle": "Pas uw dashboard aan door widgets in of uit te schakelen",
       "widgetCategories": {
         "Analytics": "Analyse",
+        "Graph": "Grafieken",
         "Finance": "Financiën",
         "Sales": "Verkoop",
         "Clients": "Klanten",
@@ -2561,6 +2562,10 @@
         "quoteChart": {
           "title": "Offerte Evolutie",
           "description": "Volg uw offerte evolutie"
+        },
+        "revenueChart": {
+          "title": "Omzet Evolutie",
+          "description": "Volg uw maandelijkse omzettrends"
         }
       },
       "buttons": {
@@ -2888,7 +2893,31 @@
         "Nov": "Nov",
         "Dec": "Dec"
       },
+      "previousYear": "Vorige Jaar",
+      "nextYear": "Volgende Jaar",
       "chartAriaLabel": "Offerte Evolutie Grafiek"
+    },
+    "revenueChart": {
+      "title": "Omzet Evolutie",
+      "seriesLabel": "Omzet",
+      "revenue": "Omzet",
+      "months": {
+        "Jan": "Jan",
+        "Feb": "Feb",
+        "Mar": "Mrt",
+        "Apr": "Apr",
+        "May": "Mei",
+        "Jun": "Jun",
+        "Jul": "Jul",
+        "Aug": "Aug",
+        "Sep": "Sep",
+        "Oct": "Oct",
+        "Nov": "Nov",
+        "Dec": "Dec"
+      },
+      "previousYear": "Vorige Jaar",
+      "nextYear": "Volgende Jaar",
+      "chartAriaLabel": "Omzet Evolutie Grafiek"
     },
     "recentQuotes": {
       "title": "Recente Offertes",
@@ -4499,7 +4528,11 @@
         "sendViaEmail": "Verzenden via E-mail",
         "sendViaEmailDescription": "Factuur verzenden via e-mail met PDF-bijlage",
         "sendViaEmailWarning": "Dit is niet de werkelijke factuur. U moet via Peppol verzenden om betaald te worden.",
-        "professionalInfo": "Professionele klanten kunnen facturen ontvangen via Peppol als ze een geconfigureerde Peppol ID hebben."
+        "professionalInfo": "Professionele klanten kunnen facturen ontvangen via Peppol als ze een geconfigureerde Peppol ID hebben.",
+        "checkingReceiver": "Ontvanger controleren...",
+        "checkingReceiverDescription": "Verifiëren of de ontvanger is geregistreerd op het Peppol-netwerk",
+        "receiverNotOnPeppol": "De ontvanger is niet geregistreerd op het Peppol-netwerk. Verstuur via e-mail.",
+        "receiverNotOnPeppolInfo": "De ontvanger is niet geregistreerd op het Peppol-netwerk. Verstuur de factuur via e-mail. Voor professionele klanten is Peppol de voorkeursmethode voor factuurbezorging."
       },
       "sendEmailModal": {
         "title": "Factuur Verzenden via E-mail",

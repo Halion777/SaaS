@@ -386,6 +386,27 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
       setLoadingSubscription(true);
       const { supabase } = await import('../../services/supabaseClient');
       
+      // Check internet connectivity before calling edge function
+      const { checkInternetConnection } = await import('../../components/InternetConnectionCheck');
+      const isOnline = await checkInternetConnection();
+      
+      if (!isOnline) {
+        console.warn('No internet connection, skipping subscription fetch to avoid false UI');
+        // Use database fallback instead
+        const { data: subscriptionData, error } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('user_id', actualUser.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (!error && subscriptionData) {
+          setSubscription(subscriptionData);
+        }
+        return;
+      }
+      
       // PRIORITY: Fetch live data from Stripe first
       try {
         const { data: stripeData, error: stripeError } = await supabase.functions.invoke('get-subscription', {

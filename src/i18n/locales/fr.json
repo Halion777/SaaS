@@ -2531,6 +2531,7 @@
       "subtitle": "Personnalisez votre tableau de bord en activant ou désactivant les widgets",
       "widgetCategories": {
         "Analytics": "Analyses",
+        "Graph": "Graphiques",
         "Finance": "Finance",
         "Sales": "Ventes",
         "Clients": "Clients",
@@ -2592,6 +2593,10 @@
         "quoteChart": {
           "title": "Évolution des devis",
           "description": "Suivez l'évolution de vos devis"
+        },
+        "revenueChart": {
+          "title": "Évolution du chiffre d'affaires",
+          "description": "Suivez les tendances de votre chiffre d'affaires mensuel"
         }
       },
       "buttons": {
@@ -2919,7 +2924,31 @@
         "Nov": "Nov",
         "Dec": "Déc"
       },
+      "previousYear": "Année précédente",
+      "nextYear": "Année suivante",
       "chartAriaLabel": "Graphique d'évolution des devis"
+    },
+    "revenueChart": {
+      "title": "Évolution du chiffre d'affaires",
+      "seriesLabel": "Chiffre d'affaires",
+      "revenue": "Chiffre d'affaires",
+      "months": {
+        "Jan": "Jan",
+        "Feb": "Fév",
+        "Mar": "Mar",
+        "Apr": "Avr",
+        "May": "Mai",
+        "Jun": "Juin",
+        "Jul": "Juil",
+        "Aug": "Août",
+        "Sep": "Sep",
+        "Oct": "Oct",
+        "Nov": "Nov",
+        "Dec": "Déc"
+      },
+      "previousYear": "Année précédente",
+      "nextYear": "Année suivante",
+      "chartAriaLabel": "Graphique d'évolution du chiffre d'affaires"
     },
     "recentQuotes": {
       "title": "Devis récents",
@@ -4518,7 +4547,11 @@
         "sendViaEmail": "Envoyer par email",
         "sendViaEmailDescription": "Envoi de la facture par email avec PDF en pièce jointe",
         "sendViaEmailWarning": "Ce n'est pas la facture réelle. Vous devez envoyer via Peppol pour être payé.",
-        "professionalInfo": "Les clients professionnels peuvent recevoir des factures via Peppol s'ils ont un ID Peppol configuré."
+        "professionalInfo": "Les clients professionnels peuvent recevoir des factures via Peppol s'ils ont un ID Peppol configuré.",
+        "checkingReceiver": "Vérification du destinataire...",
+        "checkingReceiverDescription": "Vérification si le destinataire est enregistré sur le réseau Peppol",
+        "receiverNotOnPeppol": "Le destinataire n'est pas enregistré sur le réseau Peppol. Veuillez envoyer par email.",
+        "receiverNotOnPeppolInfo": "Le destinataire n'est pas enregistré sur le réseau Peppol. Veuillez envoyer la facture par email. Pour les clients professionnels, Peppol est la méthode préférée pour la livraison des factures."
       },
       "sendEmailModal": {
         "title": "Envoyer la facture par email",

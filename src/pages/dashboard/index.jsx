@@ -7,6 +7,7 @@ import MainSidebar from '../../components/ui/MainSidebar';
 import PermissionGuard from '../../components/PermissionGuard';
 import MetricsCard from './components/MetricsCard';
 import QuoteChart from './components/QuoteChart';
+import RevenueChart from './components/RevenueChart';
 import TaskList from './components/TaskList';
 import RecentQuotes from './components/RecentQuotes';
 import TopClients from './components/TopClients';
@@ -36,6 +37,8 @@ const Dashboard = () => {
   const [widgetSettings, setWidgetSettings] = useState({
     metricsCards: true,
     invoiceOverview: true,
+    quoteChart: true,
+    revenueChart: true,
     recentQuotes: true,
     topClients: true,
     taskList: true,
@@ -184,9 +187,26 @@ const Dashboard = () => {
   useEffect(() => {
     const loadWidgetSettings = () => {
       try {
+        const defaultSettings = {
+          metricsCards: true,
+          invoiceOverview: true,
+          quoteChart: true,
+          revenueChart: true,
+          recentQuotes: true,
+          topClients: true,
+          taskList: true,
+          quickActions: true,
+          peppolWidget: true,
+          sponsoredBanner: true,
+          upcomingEvents: true,
+          recentActivity: true
+        };
+        
         const savedSettings = localStorage.getItem('dashboard-widget-settings');
         if (savedSettings) {
-          setWidgetSettings(JSON.parse(savedSettings));
+          const parsed = JSON.parse(savedSettings);
+          // Merge with defaults to ensure new widgets are included
+          setWidgetSettings({ ...defaultSettings, ...parsed });
         }
       } catch (error) {
         console.error('Error loading widget settings:', error);
@@ -633,9 +653,18 @@ const Dashboard = () => {
             {/* Left Column - Full width on mobile, 2/3 on tablet/desktop */}
             <div className="md:col-span-2 space-y-4 sm:space-y-6">
               {/* Quote Chart */}
-              <div className="dashboard-chart">
-                <QuoteChart quotes={dashboardData.quotes} loading={dashboardData.loading} />
-              </div>
+              {widgetSettings.quoteChart && (
+                <div className="dashboard-chart">
+                  <QuoteChart quotes={dashboardData.quotes} loading={dashboardData.loading} />
+                </div>
+              )}
+              
+              {/* Revenue Chart */}
+              {widgetSettings.revenueChart && (
+                <div className="dashboard-revenue-chart">
+                  <RevenueChart invoices={dashboardData.invoices || []} loading={dashboardData.loading} />
+                </div>
+              )}
               
               {/* Recent Quotes */}
               {widgetSettings.recentQuotes && (

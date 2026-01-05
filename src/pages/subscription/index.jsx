@@ -205,6 +205,17 @@ const SubscriptionManagement = () => {
     try {
       setLoading(true);
       
+      // Check internet connectivity before calling edge function
+      const { checkInternetConnection } = await import('../../components/InternetConnectionCheck');
+      const isOnline = await checkInternetConnection();
+      
+      if (!isOnline) {
+        console.warn('No internet connection, skipping subscription fetch to avoid false UI');
+        setSubscription(null);
+        setLoading(false);
+        return;
+      }
+      
       // Fetch subscription data ONLY from Stripe
       const { data: stripeData, error: stripeError } = await supabase.functions.invoke('get-subscription', {
         body: { userId: user.id }

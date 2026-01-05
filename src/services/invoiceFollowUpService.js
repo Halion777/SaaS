@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient';
 import { generateInvoicePDF } from './pdfService';
 import { loadCompanyInfo } from './companyInfoService';
+import { formatCurrency } from '../utils/numberFormat';
 
 /**
  * Invoice Follow-Up Service
@@ -351,57 +352,19 @@ export class InvoiceFollowUpService {
         // Continue without PDF attachment if generation fails
       }
 
-      // Get template filtered by client language (use overdue template for manual follow-ups)
-      let { data: template, error: templateError } = await supabase
-        .from('email_templates')
-        .select('id, subject, html_content, text_content')
-        .eq('template_type', 'invoice_overdue_reminder')
-        .eq('language', clientLanguage)
-        .eq('is_active', true)
-        .maybeSingle();
-      
-      // If template not found in client language, try French as fallback
-      if (templateError || !template) {
-        if (clientLanguage !== 'fr') {
-          const { data: frenchTemplate, error: frenchError } = await supabase
-            .from('email_templates')
-            .select('id, subject, html_content, text_content')
-            .eq('template_type', 'invoice_overdue_reminder')
-            .eq('language', 'fr')
-            .eq('is_active', true)
-            .maybeSingle();
-          
-          if (!frenchError && frenchTemplate) {
-            template = frenchTemplate;
-            templateError = null;
-          }
-        }
-      }
-      
-      // If still no template, try any active template
-      if (templateError || !template) {
-        const { data: anyTemplate, error: anyError } = await supabase
-        .from('email_templates')
-        .select('id, subject, html_content, text_content')
-        .eq('template_type', 'invoice_overdue_reminder')
-        .eq('is_active', true)
-        .maybeSingle();
-        
-        if (!anyError && anyTemplate) {
-          template = anyTemplate;
-          templateError = null;
-        }
-      }
-
-      if (templateError || !template) {
-        throw new Error('Email template not found');
-      }
-
       // Calculate days overdue
       const today = new Date();
+      today.setHours(0, 0, 0, 0); // Normalize to start of day
       const dueDate = new Date(invoice.due_date);
+      dueDate.setHours(0, 0, 0, 0); // Normalize to start of day
       const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
       const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+      // Intelligently determine template type based on invoice status
+      // If overdue (daysOverdue > 0), use overdue reminder
+      // If not overdue (due soon), use payment reminder
+      const isOverdue = daysOverdue > 0;
+      const templateType = isOverdue ? 'invoice_overdue_reminder' : 'invoice_payment_reminder';
 
       // Get company name for email
       const companyName = companyInfo?.name || 'Votre entreprise';
@@ -411,39 +374,24 @@ export class InvoiceFollowUpService {
       const invoiceDate = invoice.issue_date ? new Date(invoice.issue_date).toLocaleDateString(dateLocale) : new Date().toLocaleDateString(dateLocale);
       const formattedDueDate = dueDate.toLocaleDateString(dateLocale);
       const invoiceAmount = parseFloat(invoice.final_amount || invoice.amount || 0);
-      const formattedAmount = new Intl.NumberFormat(dateLocale, { style: 'currency', currency: 'EUR' }).format(invoiceAmount);
+      // Use formatCurrency utility to ensure comma as decimal separator (European format)
+      const formattedAmount = formatCurrency(invoiceAmount, { showCurrency: true });
 
-      // Replace template variables - use database template directly
-      const subject = template.subject
-        .replace(/{invoice_number}/g, invoice.invoice_number)
-        .replace(/{client_name}/g, client.name || 'Madame, Monsieur')
-        .replace(/{days_overdue}/g, daysOverdue > 0 ? daysOverdue.toString() : '0')
-        .replace(/{days_until_due}/g, daysUntilDue > 0 ? daysUntilDue.toString() : '0')
-        .replace(/{company_name}/g, companyName);
-
-      const text = template.text_content
-        .replace(/{invoice_number}/g, invoice.invoice_number)
-        .replace(/{client_name}/g, client.name || 'Madame, Monsieur')
-        .replace(/{invoice_amount}/g, formattedAmount)
-        .replace(/{issue_date}/g, invoiceDate)
-        .replace(/{due_date}/g, formattedDueDate)
-        .replace(/{days_overdue}/g, daysOverdue > 0 ? daysOverdue.toString() : '0')
-        .replace(/{days_until_due}/g, daysUntilDue > 0 ? daysUntilDue.toString() : '0')
-        .replace(/{invoice_link}/g, `${window.location.origin}/invoice/${invoice.id}`)
-        .replace(/{company_name}/g, companyName);
-
-      const html = template.html_content
-        .replace(/{invoice_number}/g, invoice.invoice_number)
-        .replace(/{client_name}/g, client.name || 'Madame, Monsieur')
-        .replace(/{invoice_amount}/g, formattedAmount)
-        .replace(/{issue_date}/g, invoiceDate)
-        .replace(/{due_date}/g, formattedDueDate)
-        .replace(/{days_overdue}/g, daysOverdue > 0 ? daysOverdue.toString() : '0')
-        .replace(/{days_until_due}/g, daysUntilDue > 0 ? daysUntilDue.toString() : '0')
-        .replace(/{invoice_link}/g, `${window.location.origin}/invoice/${invoice.id}`)
-        .replace(/{company_name}/g, companyName);
+      // Prepare variables object for template rendering (edge function will handle the replacement)
+      const templateVariables = {
+        invoice_number: invoice.invoice_number || '',
+        client_name: client.name || 'Madame, Monsieur',
+        invoice_amount: formattedAmount,
+        issue_date: invoiceDate,
+        due_date: formattedDueDate,
+        days_overdue: daysOverdue > 0 ? daysOverdue.toString() : '0',
+        days_until_due: daysUntilDue > 0 ? daysUntilDue.toString() : '0',
+        invoice_link: `${window.location.origin}/invoice/${invoice.id}`,
+        company_name: companyName
+      };
 
       // Send email via send-emails edge function
+      // The edge function will fetch the template and render it with the variables
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -457,9 +405,10 @@ export class InvoiceFollowUpService {
           emailType: 'templated_email',
           emailData: {
             client_email: client.email,
-          subject: subject,
-          html: html,
-            text: text,
+            client_id: invoice.client_id, // Required for language preference lookup
+            template_type: templateType, // Intelligently selected based on invoice status
+            user_id: invoice.user_id, // Required for template lookup
+            variables: templateVariables, // Pass variables for template rendering
             attachments: pdfBase64 ? [{
               filename: `facture-${invoice.invoice_number}.pdf`,
               content: pdfBase64
@@ -484,8 +433,10 @@ export class InvoiceFollowUpService {
             manual: true,
             invoice_number: invoice.invoice_number,
             client_email: client.email,
-            template_type: 'invoice_overdue_reminder',
+            template_type: templateType, // Log the template type used
             days_overdue: daysOverdue,
+            days_until_due: daysUntilDue,
+            is_overdue: isOverdue,
             timestamp: new Date().toISOString()
           }
         });

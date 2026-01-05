@@ -164,7 +164,7 @@ export const clearSubscriptionCache = () => {
  * Detects network errors and uses cache instead of showing subscription guard
  */
 const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
-  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { user, isAuthenticated, loading: authLoading, logout } = useAuth();
   const { loading: multiUserLoading } = useMultiUser();
   const location = useLocation();
   const navigate = useNavigate();
@@ -371,6 +371,24 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
           if (!isActive || trialExpired || periodEnded) {
             // Database shows expired - verify with Stripe directly (fallback for resubscription)
             try {
+              // Check internet connectivity before calling edge function
+              const { checkInternetConnection } = await import('../components/InternetConnectionCheck');
+              const isOnline = await checkInternetConnection();
+              
+              if (!isOnline) {
+                console.warn('No internet connection, skipping subscription check to avoid false UI');
+                // Use cached data if available, otherwise use database result
+                if (cachedData && cachedData.status === 'active' && !cachedData.subscriptionExpired) {
+                  setSubscriptionStatus('active');
+                  setShowExpiredModal(false);
+                } else {
+                  setShowExpiredModal(true);
+                  setSubscriptionStatus('expired');
+                  setCachedSubscription(user.id, 'expired', false, subscriptionData);
+                }
+                return;
+              }
+              
               const { data: stripeData, error: stripeError } = await supabase.functions.invoke('get-subscription', {
                 body: { userId: user.id }
               });
@@ -426,6 +444,24 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
         } else {
           // No subscription found in database - check Stripe directly (fallback for resubscription)
           try {
+            // Check internet connectivity before calling edge function
+            const { checkInternetConnection } = await import('../components/InternetConnectionCheck');
+            const isOnline = await checkInternetConnection();
+            
+            if (!isOnline) {
+              console.warn('No internet connection, skipping subscription check to avoid false UI');
+              // Use cached data if available
+              if (cachedData && cachedData.status === 'active' && !cachedData.subscriptionExpired) {
+                setSubscriptionStatus('active');
+                setShowExpiredModal(false);
+              } else {
+                // No subscription and no internet - allow access but don't show false subscription UI
+                setSubscriptionStatus(null);
+                setShowExpiredModal(false);
+              }
+              return;
+            }
+            
             const { data: stripeData, error: stripeError } = await supabase.functions.invoke('get-subscription', {
               body: { userId: user.id }
             });
@@ -597,10 +633,9 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
               
               <Button
                 variant="outline"
-                onClick={() => {
+                onClick={async () => {
                   clearSubscriptionCache();
-                  supabase.auth.signOut();
-                  navigate('/login');
+                  await logout();
                 }}
                 className="w-full"
               >
