@@ -8,6 +8,7 @@ import Button from 'components/ui/Button';
 import SuperAdminSidebar from 'components/ui/SuperAdminSidebar';
 import TableLoader from 'components/ui/TableLoader';
 import RevenueChart from 'components/ui/RevenueChart';
+import { formatCurrency, formatNumber } from 'utils/numberFormat';
 
 
 const SuperAdminDashboard = () => {
@@ -770,7 +771,7 @@ const SuperAdminDashboard = () => {
                  <div>
                    <p className="text-sm font-medium text-muted-foreground">Total Users</p>
                    <p className="text-2xl font-bold text-foreground">
-                     {loading ? '...' : systemStats.totalUsers.toLocaleString()}
+                     {loading ? '...' : formatNumber(systemStats.totalUsers, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                    </p>
                  </div>
                  <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -790,7 +791,7 @@ const SuperAdminDashboard = () => {
                  <div>
                    <p className="text-sm font-medium text-muted-foreground">Total Quotes</p>
                    <p className="text-2xl font-bold text-foreground">
-                     {loading ? '...' : systemStats.totalQuotes.toLocaleString()}
+                     {loading ? '...' : formatNumber(systemStats.totalQuotes, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                    </p>
                  </div>
                  <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -810,7 +811,7 @@ const SuperAdminDashboard = () => {
                  <div>
                    <p className="text-sm font-medium text-muted-foreground">Total Leads</p>
                    <p className="text-2xl font-bold text-foreground">
-                     {loading ? '...' : systemStats.totalLeads.toLocaleString()}
+                     {loading ? '...' : formatNumber(systemStats.totalLeads, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                    </p>
                  </div>
                  <div className="h-12 w-12 bg-orange-100 rounded-lg flex items-center justify-center">
@@ -830,7 +831,7 @@ const SuperAdminDashboard = () => {
                  <div>
                    <p className="text-sm font-medium text-muted-foreground">Subscription Revenue</p>
                    <p className="text-2xl font-bold text-foreground">
-                     {loading ? '...' : `€${systemStats.subscriptionRevenue.toLocaleString()}`}
+                     {loading ? '...' : formatCurrency(systemStats.subscriptionRevenue)}
                    </p>
                  </div>
                  <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -850,7 +851,7 @@ const SuperAdminDashboard = () => {
                  <div>
                    <p className="text-sm font-medium text-muted-foreground">Invoice Revenue</p>
                    <p className="text-2xl font-bold text-foreground">
-                     {loading ? '...' : `€${systemStats.invoiceRevenue.toLocaleString()}`}
+                     {loading ? '...' : formatCurrency(systemStats.invoiceRevenue)}
                    </p>
                  </div>
                  <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -895,7 +896,7 @@ const SuperAdminDashboard = () => {
                 height={300}
                 color="#10b981"
                 dataKey="users"
-                valueFormatter={(value) => new Intl.NumberFormat('en-US').format(value)}
+                valueFormatter={(value) => formatNumber(value, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 valueLabel="Users"
               />
             </div>

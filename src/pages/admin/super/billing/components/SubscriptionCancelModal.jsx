@@ -4,6 +4,7 @@ import Button from 'components/ui/Button';
 import Select from 'components/ui/Select';
 import { supabase } from 'services/supabaseClient';
 import SubscriptionNotificationService from 'services/subscriptionNotificationService';
+import { formatCurrency } from 'utils/numberFormat';
 
 const SubscriptionCancelModal = ({ isOpen, onClose, subscription, onUpdate }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -215,12 +216,8 @@ const SubscriptionCancelModal = ({ isOpen, onClose, subscription, onUpdate }) =>
     });
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-EU', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount);
-  };
+  // Using centralized formatCurrency utility from utils/numberFormat.js
+  // which formats with comma as decimal separator (European format)
 
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">

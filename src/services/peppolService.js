@@ -2049,18 +2049,34 @@ export class PeppolService {
       // Solo users may still have companies and need Peppol services
 
       // Check if this participant already exists in our database
+      // Also check if it's the same user (for re-registration after unregistration)
       const { data: existingSettings, error: existingError } = await supabase
         .from('peppol_settings')
-        .select('peppol_id, is_configured')
+        .select('peppol_id, is_configured, user_id, peppol_disabled, is_active')
         .eq('peppol_id', settings.peppolId)
         .maybeSingle(); // Use maybeSingle() instead of single() to handle no rows found
 
       let registrationResult = null;
       
-      if (existingSettings && existingSettings.is_configured) {
-        // Participant already registered in our system, skip Digiteal registration
+      // Check if participant exists and is already registered AND active
+      // If it's the same user but disabled, allow re-registration
+      const isSameUser = existingSettings && existingSettings.user_id === user.id;
+      const isActiveAndConfigured = existingSettings && existingSettings.is_configured && 
+                                     !existingSettings.peppol_disabled && 
+                                     existingSettings.is_active;
+      
+      if (isActiveAndConfigured) {
+        // Participant already registered and active in our system, skip Digiteal registration
         // Participant already exists in database, skipping Digiteal registration
         registrationResult = { success: true, alreadyRegistered: true };
+      } else if (isSameUser && (existingSettings.peppol_disabled || !existingSettings.is_active)) {
+        // Same user re-registering after unregistration - need to re-register with Digiteal
+        // Continue to registration flow below
+        console.log('User re-registering after unregistration - will re-register with Digiteal');
+      } else if (existingSettings && !isSameUser) {
+        // Different user trying to use same Peppol ID - this will be caught by unique constraint
+        // But we should still try to register to get proper error message
+        console.log('Peppol ID exists for different user - will attempt registration');
       } else {
         // For Belgium: register both 0208 and 9925 schemes
         // For other countries: register with the provided scheme
@@ -2185,7 +2201,9 @@ export class PeppolService {
           supported_document_types: ['INVOICE', 'CREDIT_NOTE', 'SELF_BILLING_INVOICE', 'SELF_BILLING_CREDIT_NOTE', 'INVOICE_RESPONSE', 'MLR', 'APPLICATION_RESPONSE'], // All document types enabled automatically
           limited_to_outbound_traffic: settings.limitedToOutboundTraffic || false,
           sandbox_mode: settings.sandboxMode,
-          peppol_disabled: settings.peppolDisabled !== undefined ? settings.peppolDisabled : false, // Preserve disabled state if not provided
+          // Re-enable Peppol if user is re-registering (unless explicitly disabled)
+          peppol_disabled: settings.peppolDisabled !== undefined ? settings.peppolDisabled : false,
+          is_active: true, // Always set to active when registering/re-registering
           is_configured: !!settings.peppolId && !!settings.name && !!settings.email,
           updated_at: new Date().toISOString()
         }, {

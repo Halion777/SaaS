@@ -15,6 +15,7 @@ import SubscriptionEditModal from './components/SubscriptionEditModal';
 import SubscriptionCancelModal from './components/SubscriptionCancelModal';
 import SubscriptionsFilterToolbar from './components/SubscriptionsFilterToolbar';
 import PaymentsFilterToolbar from './components/PaymentsFilterToolbar';
+import { formatCurrency } from 'utils/numberFormat';
 
 const SuperAdminBilling = () => {
   const navigate = useNavigate();
@@ -390,12 +391,8 @@ const SuperAdminBilling = () => {
     });
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-EU', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount);
-  };
+  // Using centralized formatCurrency utility from utils/numberFormat.js
+  // which formats with comma as decimal separator (European format)
 
   // Apply date filters to payments
   const applyDateFilters = () => {

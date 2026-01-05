@@ -1,6 +1,7 @@
 import React from 'react';
 import Icon from 'components/AppIcon';
 import Button from 'components/ui/Button';
+import { formatCurrency } from 'utils/numberFormat';
 
 const SubscriptionViewModal = ({ isOpen, onClose, subscription }) => {
   if (!isOpen || !subscription) return null;
@@ -13,12 +14,8 @@ const SubscriptionViewModal = ({ isOpen, onClose, subscription }) => {
     });
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-EU', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount);
-  };
+  // Using centralized formatCurrency utility from utils/numberFormat.js
+  // which formats with comma as decimal separator (European format)
 
   // Normalize status (trial -> trialing)
   const normalizeStatus = (status) => {

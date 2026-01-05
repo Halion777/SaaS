@@ -37,6 +37,9 @@ const PeppolNetworkPage = () => {
   // Document types valid for participant registration (MLR and APPLICATION_RESPONSE are response types, not registration types)
   const ALL_DOCUMENT_TYPES = ['INVOICE', 'CREDIT_NOTE', 'SELF_BILLING_INVOICE', 'SELF_BILLING_CREDIT_NOTE', 'INVOICE_RESPONSE'];
 
+  // Check environment variable for production mode
+  const isProductionMode = import.meta.env.VITE_PEPPOL_TEST_MODE !== 'true';
+  
   const [peppolSettings, setPeppolSettings] = useState({
     peppolId: '',
     name: '',
@@ -48,7 +51,7 @@ const PeppolNetworkPage = () => {
     language: 'en-US',
     supportedDocumentTypes: ALL_DOCUMENT_TYPES, // All document types enabled by default
     limitedToOutboundTraffic: false,
-    sandboxMode: true,
+    sandboxMode: !isProductionMode, // Default to false in production, true in test
     isConfigured: false,
     peppolDisabled: false
   });
@@ -231,7 +234,8 @@ const PeppolNetworkPage = () => {
             language: loaded.language || prev.language,
             supportedDocumentTypes: loaded.supportedDocumentTypes || prev.supportedDocumentTypes,
             limitedToOutboundTraffic: loaded.limitedToOutboundTraffic !== undefined ? loaded.limitedToOutboundTraffic : prev.limitedToOutboundTraffic,
-            sandboxMode: loaded.sandboxMode !== undefined ? loaded.sandboxMode : prev.sandboxMode,
+            // In production mode, force sandboxMode to false regardless of saved value
+            sandboxMode: isProductionMode ? false : (loaded.sandboxMode !== undefined ? loaded.sandboxMode : prev.sandboxMode),
             isConfigured: loaded.isConfigured || false,
             peppolDisabled: loaded.peppolDisabled || false
           };
@@ -722,12 +726,14 @@ const PeppolNetworkPage = () => {
       }
 
       // Automatically set all document types before saving
+      // In production mode, force sandboxMode to false
       const settingsToSave = {
         ...peppolSettings,
         peppolId: combinedPeppolId, // Ensure combined ID is used
         supportedDocumentTypes: ALL_DOCUMENT_TYPES,
         isBelgium: isBelgium, // Flag to indicate Belgium for dual registration
-        vatNumber: peppolIdentifier // Pass VAT number separately for Belgium dual registration
+        vatNumber: peppolIdentifier, // Pass VAT number separately for Belgium dual registration
+        sandboxMode: isProductionMode ? false : peppolSettings.sandboxMode // Force false in production
       };
       
       // After successful save, update company info VAT number to match if needed
@@ -2016,66 +2022,103 @@ const PeppolNetworkPage = () => {
                             </div>
                           </div>
 
-                          {/* Peppol Configuration */}
-                          <div className="bg-card rounded-lg border border-border p-6 mt-6">
-                            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                              <Icon name="Settings" size={20} />
-                              {t('peppol.setup.configuration.title')}
-                            </h3>
+                          {/* Peppol Configuration - Only show in test mode, hide completely in production */}
+                          {!isProductionMode && (
+                            <div className="bg-card rounded-lg border border-border p-6 mt-6">
+                              <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                                <Icon name="Settings" size={20} />
+                                {t('peppol.setup.configuration.title')}
+                              </h3>
 
-                            <div className="space-y-4">
-
-                              {/* Sandbox Mode Toggle */}
-                              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-muted/20 rounded-lg gap-3 sm:gap-0">
-                                <div>
-                                  <label className="text-xs sm:text-sm font-medium text-foreground">
-                                    {t('peppol.setup.configuration.sandboxMode')}
-                                  </label>
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    {t('peppol.setup.configuration.sandboxModeDescription')}
-                                  </p>
-                                </div>
-                                <button
-                                  onClick={() => handleInputChange('sandboxMode', !peppolSettings.sandboxMode)}
-                                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${peppolSettings.sandboxMode ? 'bg-blue-600' : 'bg-gray-300'
-                                    }`}
-                                  aria-label={peppolSettings.sandboxMode ? t('peppol.setup.configuration.sandboxModeEnabled') : t('peppol.setup.configuration.sandboxModeDisabled')}
-                                >
-                                  <span
-                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm ${peppolSettings.sandboxMode ? 'translate-x-6' : 'translate-x-1'
+                              <div className="space-y-4">
+                                {/* Sandbox Mode Toggle */}
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-muted/20 rounded-lg gap-3 sm:gap-0">
+                                  <div>
+                                    <label className="text-xs sm:text-sm font-medium text-foreground">
+                                      {t('peppol.setup.configuration.sandboxMode')}
+                                    </label>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      {t('peppol.setup.configuration.sandboxModeDescription')}
+                                    </p>
+                                  </div>
+                                  <button
+                                    onClick={() => handleInputChange('sandboxMode', !peppolSettings.sandboxMode)}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${peppolSettings.sandboxMode ? 'bg-blue-600' : 'bg-gray-300'
                                       }`}
-                                  />
-                                </button>
+                                    aria-label={peppolSettings.sandboxMode ? t('peppol.setup.configuration.sandboxModeEnabled') : t('peppol.setup.configuration.sandboxModeDisabled')}
+                                  >
+                                    <span
+                                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm ${peppolSettings.sandboxMode ? 'translate-x-6' : 'translate-x-1'
+                                        }`}
+                                    />
+                                  </button>
+                                </div>
                               </div>
                             </div>
-                          </div>
+                          )}
 
                           {/* Action Buttons - Only show when not configured */}
                           {!peppolSettings.isConfigured && (
-                            <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4 pt-4">
-                              <Button
-                                onClick={handleTestConnection}
-                                disabled={!canEdit || isTesting || !peppolSchemeCode || !peppolIdentifier || !peppolSettings.name || !peppolSettings.email || !peppolSettings.firstName || !peppolSettings.lastName}
-                                variant="outline"
-                                iconName={isTesting ? "Loader2" : "Wifi"}
-                                iconPosition="left"
-                                className="w-full sm:w-auto"
-                                title={!canEdit ? t('permissions.noFullAccess', 'You need full access to perform this action') : ''}
-                              >
-                                {isTesting ? t('peppol.buttons.testing') : t('peppol.buttons.test')}
-                              </Button>
-                              <Button
-                                onClick={handleSaveSettings}
-                                disabled={!canEdit || isSaving || !peppolSchemeCode || !peppolIdentifier || !peppolSettings.name || !peppolSettings.email || !peppolSettings.firstName || !peppolSettings.lastName}
-                                iconName={isSaving ? "Loader2" : "Save"}
-                                iconPosition="left"
-                                className="w-full sm:min-w-[200px]"
-                                title={!canEdit ? t('permissions.noFullAccess', 'You need full access to perform this action') : ''}
-                              >
-                                {isSaving
-                                  ? (peppolSettings.isConfigured ? t('peppol.buttons.updating') : t('peppol.buttons.registering'))
-                                  : (peppolSettings.isConfigured ? t('peppol.buttons.updateAndSave') : t('peppol.buttons.registerAndSave'))}
-                              </Button>
+                            <div className="pt-4 space-y-3">
+                              {/* Test Result Messages - Show near test button */}
+                              {successMessage && (
+                                <div className="bg-success/10 border border-success/20 rounded-lg p-3">
+                                  <div className="flex items-start space-x-2">
+                                    <Icon name="CheckCircle" size={18} className="text-success flex-shrink-0 mt-0.5" />
+                                    <div className="flex-1">
+                                      <p className="text-sm text-success font-medium">{successMessage}</p>
+                                    </div>
+                                    <button
+                                      onClick={() => setSuccessMessage(null)}
+                                      className="text-success hover:text-success/80 transition-colors"
+                                    >
+                                      <Icon name="X" size={16} />
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                              {errorMessage && (
+                                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
+                                  <div className="flex items-start space-x-2">
+                                    <Icon name="AlertCircle" size={18} className="text-destructive flex-shrink-0 mt-0.5" />
+                                    <div className="flex-1">
+                                      <p className="text-sm text-destructive font-medium">{errorMessage}</p>
+                                    </div>
+                                    <button
+                                      onClick={() => setErrorMessage(null)}
+                                      className="text-destructive hover:text-destructive/80 transition-colors"
+                                    >
+                                      <Icon name="X" size={16} />
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4">
+                                <Button
+                                  onClick={handleTestConnection}
+                                  disabled={!canEdit || isTesting || !peppolSchemeCode || !peppolIdentifier || !peppolSettings.name || !peppolSettings.email || !peppolSettings.firstName || !peppolSettings.lastName}
+                                  variant="outline"
+                                  iconName={isTesting ? "Loader2" : "Wifi"}
+                                  iconPosition="left"
+                                  className="w-full sm:w-auto"
+                                  title={!canEdit ? t('permissions.noFullAccess', 'You need full access to perform this action') : ''}
+                                >
+                                  {isTesting ? t('peppol.buttons.testing') : t('peppol.buttons.test')}
+                                </Button>
+                                <Button
+                                  onClick={handleSaveSettings}
+                                  disabled={!canEdit || isSaving || !peppolSchemeCode || !peppolIdentifier || !peppolSettings.name || !peppolSettings.email || !peppolSettings.firstName || !peppolSettings.lastName}
+                                  iconName={isSaving ? "Loader2" : "Save"}
+                                  iconPosition="left"
+                                  className="w-full sm:min-w-[200px]"
+                                  title={!canEdit ? t('permissions.noFullAccess', 'You need full access to perform this action') : ''}
+                                >
+                                  {isSaving
+                                    ? (peppolSettings.isConfigured ? t('peppol.buttons.updating') : t('peppol.buttons.registering'))
+                                    : (peppolSettings.isConfigured ? t('peppol.buttons.updateAndSave') : t('peppol.buttons.registerAndSave'))}
+                                </Button>
+                              </div>
                             </div>
                           )}
                         </div>

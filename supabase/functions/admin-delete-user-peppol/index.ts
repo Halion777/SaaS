@@ -114,133 +114,66 @@ serve(async (req) => {
       );
     }
 
-    // Delete all Peppol-related data for the user (bypassing RLS with service role)
+    // Disable Peppol registration for the user (bypassing RLS with service role)
     // Note: Unregistering from Digiteal is handled in the frontend (super admin panel)
-    // This function only handles database cleanup
+    // This function only disables registration - ALL DATA IS PRESERVED
     const errors = [];
 
-    // 1. Delete from peppol_settings
+    // 1. Disable peppol_settings (mark as disabled and inactive, but keep all data)
     const { error: settingsError } = await supabaseAdmin
       .from('peppol_settings')
-      .delete()
+      .update({
+        peppol_disabled: true,
+        is_active: false,
+        updated_at: new Date().toISOString()
+      })
       .eq('user_id', targetUserId);
 
     if (settingsError) {
-      console.error('Error deleting peppol_settings:', settingsError);
+      console.error('Error disabling peppol_settings:', settingsError);
       errors.push(`peppol_settings: ${settingsError.message}`);
+    } else {
+      console.log(`Peppol settings disabled for user ${targetUserId}`);
     }
 
-    // 2. Delete from peppol_participants
-    const { error: participantsError } = await supabaseAdmin
-      .from('peppol_participants')
-      .delete()
-      .eq('user_id', targetUserId);
+    // 2. Keep peppol_participants (preserve registration history)
+    // No action needed - participants table is kept for historical records
 
-    if (participantsError) {
-      console.error('Error deleting peppol_participants:', participantsError);
-      errors.push(`peppol_participants: ${participantsError.message}`);
-    }
+    // 3. Keep peppol_invoices (preserve tracking records)
+    // No action needed - tracking records are kept for historical purposes
 
-    // 3. Delete from peppol_invoices
-    const { error: invoicesError } = await supabaseAdmin
-      .from('peppol_invoices')
-      .delete()
-      .eq('user_id', targetUserId);
+    // 4. Keep ALL invoice data and Peppol metadata intact
+    // Client invoices (outbound) - NO CHANGES - all Peppol metadata preserved
+    // This ensures historical records remain intact
 
-    if (invoicesError) {
-      console.error('Error deleting peppol_invoices:', invoicesError);
-      errors.push(`peppol_invoices: ${invoicesError.message}`);
-    }
+    // 5. Keep ALL expense_invoices (supplier invoices) - NO DELETION
+    // All Peppol metadata is preserved for historical records
+    // No action needed - expense invoices are kept with all their Peppol data
 
-    // 4. Clean up Peppol fields from invoices table (set to null/false)
-    const { error: updateInvoicesError } = await supabaseAdmin
-      .from('invoices')
-      .update({
-        peppol_enabled: false,
-        peppol_status: null,
-        peppol_message_id: null,
-        peppol_sent_at: null,
-        peppol_delivered_at: null,
-        peppol_error_message: null,
-        receiver_peppol_id: null,
-        ubl_xml: null,
-        peppol_metadata: null
-      })
-      .eq('user_id', targetUserId);
-
-    if (updateInvoicesError) {
-      console.error('Error cleaning up invoices Peppol data:', updateInvoicesError);
-      errors.push(`invoices cleanup: ${updateInvoicesError.message}`);
-    }
-
-    // 5. Delete expense_invoices that were received for the unregistered Peppol ID
-    // First, find invoice numbers from peppol_invoices that have receiver_peppol_id matching the unregistered Peppol ID
-    if (peppolIdentifier) {
-      const { data: peppolInvoices, error: fetchError } = await supabaseAdmin
-        .from('peppol_invoices')
-        .select('invoice_number')
-        .eq('user_id', targetUserId)
-        .eq('direction', 'inbound')
-        .eq('receiver_peppol_id', peppolIdentifier);
-
-      if (!fetchError && peppolInvoices && peppolInvoices.length > 0) {
-        // Get invoice numbers to delete
-        const invoiceNumbers = peppolInvoices.map(pi => pi.invoice_number);
-        
-        // Delete expense_invoices that match these invoice numbers
-        const { error: deleteExpenseInvoicesError } = await supabaseAdmin
-          .from('expense_invoices')
-          .delete()
-          .eq('user_id', targetUserId)
-          .in('invoice_number', invoiceNumbers);
-
-        if (deleteExpenseInvoicesError) {
-          console.error('Error deleting expense_invoices:', deleteExpenseInvoicesError);
-          errors.push(`expense_invoices deletion: ${deleteExpenseInvoicesError.message}`);
-        } else {
-          console.log(`Deleted ${invoiceNumbers.length} expense invoices for Peppol ID: ${peppolIdentifier}`);
-        }
-      }
-    }
-
-    // Also clean up remaining Peppol fields from expense_invoices table (for any that weren't deleted)
-    const { error: updateExpenseInvoicesError } = await supabaseAdmin
-      .from('expense_invoices')
-      .update({
-        peppol_enabled: false,
-        peppol_message_id: null,
-        peppol_received_at: null,
-        sender_peppol_id: null,
-        ubl_xml: null,
-        peppol_metadata: null
-      })
-      .eq('user_id', targetUserId)
-      .eq('peppol_enabled', true); // Only update those that still have peppol_enabled = true
-
-    if (updateExpenseInvoicesError) {
-      console.error('Error cleaning up expense_invoices Peppol data:', updateExpenseInvoicesError);
-      errors.push(`expense_invoices cleanup: ${updateExpenseInvoicesError.message}`);
-    }
-
-    // 6. Clean up Peppol fields from clients table
+    // 6. Disable Peppol capability for clients (but keep Peppol IDs for reference)
+    // Set peppol_enabled to false so they can't receive new Peppol invoices
+    // But keep peppol_id for historical reference
     const { error: updateClientsError } = await supabaseAdmin
       .from('clients')
       .update({
-        peppol_id: null,
         peppol_enabled: false
+        // peppol_id is KEPT for historical reference
       })
-      .eq('user_id', targetUserId);
+      .eq('user_id', targetUserId)
+      .eq('peppol_enabled', true); // Only update clients that have Peppol enabled
 
     if (updateClientsError) {
-      console.error('Error cleaning up clients Peppol data:', updateClientsError);
-      errors.push(`clients cleanup: ${updateClientsError.message}`);
+      console.error('Error disabling clients Peppol capability:', updateClientsError);
+      errors.push(`clients update: ${updateClientsError.message}`);
+    } else {
+      console.log(`Peppol capability disabled for clients of user ${targetUserId}`);
     }
 
     if (errors.length > 0) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: 'Some Peppol data could not be deleted',
+          message: 'Some Peppol settings could not be disabled',
           errors: errors
         }),
         { 
@@ -253,7 +186,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'All Peppol data deleted successfully' 
+        message: 'Peppol registration disabled successfully. All historical data has been preserved.' 
       }),
       { 
         status: 200, 
