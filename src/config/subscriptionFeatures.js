@@ -134,7 +134,7 @@ export const PLAN_FEATURES = {
     [FEATURES.LEAD_GENERATION]: 'limited', // Qualified lead suggestions (BETA)
     [FEATURES.AUTOMATIC_REMINDERS]: 'none', // Not available
     [FEATURES.MULTI_USER]: 'none',        // 1 user only
-    [FEATURES.ADVANCED_ANALYTICS]: 'limited', // Basic statistics only
+    [FEATURES.ADVANCED_ANALYTICS]: 'full', // Full analytics access
     [FEATURES.AI_FEATURES]: 'full',       // AI-powered smart quotes, automatic suggestions
     [FEATURES.SIGNATURE_PREDICTIONS]: 'none',
     [FEATURES.PRICE_OPTIMIZATION]: 'none',
@@ -237,8 +237,8 @@ export const FEATURE_INFO = {
   },
   [FEATURES.ADVANCED_ANALYTICS]: {
     icon: 'BarChart2',
-    starterLimit: 'Basic statistics',
-    proLimit: 'Detailed statistics & reporting'
+    starterLimit: 'Full analytics access',
+    proLimit: 'Full analytics access'
   },
   [FEATURES.AI_FEATURES]: {
     icon: 'Cpu',
