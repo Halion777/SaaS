@@ -43,7 +43,12 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: false,
     
     // Use standard implicit flow
-    flowType: 'implicit'
+    flowType: 'implicit',
+    
+    // Allow multiple concurrent sessions per user
+    // Note: This is also controlled by Supabase project settings
+    // In Supabase Dashboard > Authentication > Settings, ensure "Single Session" is disabled
+    // to allow multiple devices/browsers to be logged in simultaneously
   }
 });
 

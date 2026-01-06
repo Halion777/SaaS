@@ -233,10 +233,29 @@ export const AuthProvider = ({ children }) => {
         } else if (event === 'SIGNED_OUT') {
           // Don't clear state if we're on login page (might be showing error)
           const isLoginPage = window.location.pathname === '/login';
+          
           if (!isLoginPage) {
-          setUser(null);
-          setSession(null);
-          setIsProfileSelected(false);
+            // Before clearing state, try to refresh the session in case it was invalidated
+            // due to concurrent login (Supabase should allow multiple sessions)
+            // Note: This handler is async, so we need to handle it properly
+            supabase.auth.getSession().then(({ data: sessionData }) => {
+              if (sessionData?.session) {
+                // Session still valid - restore it (might have been a false SIGNED_OUT event)
+                // This can happen if Supabase temporarily invalidates a session
+                setUser(sessionData.session.user);
+                setSession(sessionData.session);
+              } else {
+                // Session truly invalid - clear state
+                setUser(null);
+                setSession(null);
+                setIsProfileSelected(false);
+              }
+            }).catch(() => {
+              // Error getting session - clear state
+              setUser(null);
+              setSession(null);
+              setIsProfileSelected(false);
+            });
           }
         } else if (event === 'TOKEN_REFRESHED' && session) {
           setUser(prevUser => {

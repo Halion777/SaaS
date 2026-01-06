@@ -45,8 +45,8 @@ const generateStripeId = (prefix) => {
 
 export async function signIn(email, password) {
   try {
-    // Clear any existing session data before login
-    sessionManager.clearAllAuthData();
+    // Don't clear existing session data before login - this allows multiple concurrent sessions
+    // Each device/browser maintains its own session independently
 
     // Check if this is a special user before attempting login
     const validateEmailFormat = (em) => {
