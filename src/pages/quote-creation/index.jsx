@@ -2934,10 +2934,35 @@ const QuoteCreation = () => {
         // Use balanceAmount (totalWithVAT - deposit) for final_amount to show the amount client needs to pay
         const finalAmount = balanceAmount;
 
+        // Determine initial status: "accepted" if client signature exists (new or existing), "sent" otherwise
+        let hasClientSignature = !!(sendData.signatureData?.signature);
+        
+        // Also check if quote already has a signature in the database
+        if (!hasClientSignature && editingQuoteId) {
+          try {
+            const { data: existingSignatures, error: sigError } = await supabase
+              .from('quote_signatures')
+              .select('id')
+              .eq('quote_id', editingQuoteId)
+              .eq('signature_type', 'client')
+              .limit(1);
+            
+            if (!sigError && existingSignatures && existingSignatures.length > 0) {
+              hasClientSignature = true;
+            }
+          } catch (sigCheckError) {
+            console.warn('Error checking for existing signature:', sigCheckError);
+          }
+        }
+        
+        const initialStatus = hasClientSignature ? 'accepted' : 'sent';
+        const acceptedAt = hasClientSignature ? new Date().toISOString() : null;
+
         const quoteData = {
           title: projectInfo.description || 'Nouveau devis',
           description: projectInfo.description || '',
-          status: 'sent', // Change status to sent
+          status: initialStatus, // Set to "accepted" if signature exists, "sent" otherwise
+          accepted_at: acceptedAt,
           // Preserve the existing quote number when editing
           quote_number: projectInfo.quoteNumber,
           project_categories: projectInfo.categories || [],
@@ -3103,6 +3128,11 @@ const QuoteCreation = () => {
 
 
 
+      // Determine initial status: "accepted" if client signature exists, "sent" otherwise
+      const hasClientSignature = !!(sendData.signatureData?.signature);
+      const initialStatus = hasClientSignature ? 'accepted' : 'sent';
+      const acceptedAt = hasClientSignature ? new Date().toISOString() : null;
+
       const quoteData = {
 
         user_id: user?.id,
@@ -3112,7 +3142,8 @@ const QuoteCreation = () => {
         client_id: selectedClient?.value || selectedClient?.id,
 
         quote_number: finalQuoteNumber,
-        status: 'sent',
+        status: initialStatus,
+        accepted_at: acceptedAt,
 
         title: projectInfo.description || '',
         description: projectInfo.description || '',
@@ -3207,7 +3238,7 @@ const QuoteCreation = () => {
 
               artisan_user_id: user.id,
 
-              status: 'sent'
+              status: initialStatus // Use same status as quote (accepted if signature exists, sent otherwise)
 
             });
 
@@ -3630,7 +3661,8 @@ const QuoteCreation = () => {
 
       }
 
-
+      // Note: Quote status is already set to "accepted" during creation if client signature exists
+      // No need to update status here - it was set correctly during quote creation
 
       // Handle temporary files: move from temp folder to quote folder and create database records
 

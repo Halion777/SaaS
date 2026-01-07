@@ -7,11 +7,14 @@ import Pagination from '../../../components/ui/Pagination';
 import SortableHeader from '../../../components/ui/SortableHeader';
 import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../../utils/numberFormat';
+import { generatePublicShareLink, getShareLinkInfo } from '../../../services/shareService';
 
-const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuoteAction, onQuoteSelect, viewMode = 'table', setViewMode = () => {}, searchTerm = '', setSearchTerm = () => {}, canEdit = true, canDelete = true, convertingQuoteId = null }) => {
+const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuoteAction, onQuoteSelect, viewMode = 'table', setViewMode = () => {}, searchTerm = '', setSearchTerm = () => {}, canEdit = true, canDelete = true, convertingQuoteId = null, markingAsSentQuoteId = null, userId = null }) => {
   const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [copiedLinkId, setCopiedLinkId] = useState(null);
+  const [copyingLinkId, setCopyingLinkId] = useState(null);
   const { t } = useTranslation();
 
   // Auto-switch to card view on smaller screens
@@ -74,6 +77,55 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
       key,
       direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
     }));
+  };
+
+  // Handle copying quote link
+  const handleCopyQuoteLink = async (quote, e) => {
+    e.stopPropagation(); // Prevent card/row click
+    
+    if (!userId) {
+      return;
+    }
+
+    setCopyingLinkId(quote.id);
+    
+    try {
+      let shareLink = null;
+      
+      // Check if quote already has a share token in the quote object
+      if (quote.share_token) {
+        shareLink = `${window.location.origin}/quote-share/${quote.share_token}`;
+      } else {
+        // Check if share token exists in database
+        const shareInfo = await getShareLinkInfo(quote.id);
+        
+        if (shareInfo.success && shareInfo.data?.share_token) {
+          shareLink = `${window.location.origin}/quote-share/${shareInfo.data.share_token}`;
+        } else {
+          // Generate new share link
+          const result = await generatePublicShareLink(quote.id, userId);
+          if (result.success && result.data) {
+            shareLink = result.data;
+          } else {
+            throw new Error(result.error || 'Failed to generate link');
+          }
+        }
+      }
+
+      // Copy to clipboard
+      if (shareLink) {
+        await navigator.clipboard.writeText(shareLink);
+        // Show done icon for 5 seconds
+        setCopiedLinkId(quote.id);
+        setTimeout(() => {
+          setCopiedLinkId(null);
+        }, 5000);
+      }
+    } catch (error) {
+      console.error('Error copying quote link:', error);
+    } finally {
+      setCopyingLinkId(null);
+    }
   };
 
   const getStatusBadge = (quote) => {
@@ -315,6 +367,27 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
               </td>
               <td className="p-3 md:p-4" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-end space-x-1">
+                  {/* Copy link icon */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => handleCopyQuoteLink(quote, e)}
+                    title={copiedLinkId === quote.id ? t('quotesManagement.linkCopy.success', 'Link copied!') : t('quotesManagement.table.actions.copyLink', 'Copy quote link')}
+                    className={`h-8 w-8 ${
+                      copiedLinkId === quote.id 
+                        ? 'text-green-600 hover:text-green-700 hover:bg-green-50' 
+                        : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                    }`}
+                    disabled={copyingLinkId === quote.id}
+                  >
+                    {copyingLinkId === quote.id ? (
+                      <Icon name="Loader2" size={16} className="animate-spin" />
+                    ) : copiedLinkId === quote.id ? (
+                      <Icon name="CheckCircle" size={16} />
+                    ) : (
+                      <Icon name="Link" size={16} />
+                    )}
+                  </Button>
                   {quote.status === 'draft' && !quote.isDraftPlaceholder && (
                     <Button
                       variant="ghost"
@@ -322,9 +395,13 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                       onClick={() => onQuoteAction('markAsSent', quote)}
                       title={!canEdit ? t('permissions.noFullAccess') : t('quotesManagement.table.actions.markAsSent')}
                       className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
-                      disabled={!canEdit}
+                      disabled={!canEdit || markingAsSentQuoteId === quote.id}
                     >
-                      <Icon name="Check" size={16} />
+                      {markingAsSentQuoteId === quote.id ? (
+                        <Icon name="Loader2" size={16} className="animate-spin" />
+                      ) : (
+                        <Icon name="Check" size={16} />
+                      )}
                     </Button>
                   )}
                   {/* Hide edit button for accepted, rejected, or converted quotes */}
@@ -448,6 +525,27 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
           </div>
           
           <div className="flex items-center justify-end space-x-1" onClick={(e) => e.stopPropagation()}>
+            {/* Copy link icon */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => handleCopyQuoteLink(quote, e)}
+              title={copiedLinkId === quote.id ? t('quotesManagement.linkCopy.success', 'Link copied!') : t('quotesManagement.table.actions.copyLink', 'Copy quote link')}
+              className={`h-7 w-7 ${
+                copiedLinkId === quote.id 
+                  ? 'text-green-600 hover:text-green-700 hover:bg-green-50' 
+                  : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+              }`}
+              disabled={copyingLinkId === quote.id}
+            >
+              {copyingLinkId === quote.id ? (
+                <Icon name="Loader2" size={14} className="animate-spin" />
+              ) : copiedLinkId === quote.id ? (
+                <Icon name="CheckCircle" size={14} />
+              ) : (
+                <Icon name="Link" size={14} />
+              )}
+            </Button>
             {quote.status === 'draft' && !quote.isDraftPlaceholder && (
               <Button
                 variant="ghost"
@@ -455,9 +553,13 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
                 onClick={() => onQuoteAction('markAsSent', quote)}
                 title={!canEdit ? t('permissions.noFullAccess') : t('quotesManagement.table.actions.markAsSent')}
                 className="h-7 w-7 text-green-600 hover:text-green-700 hover:bg-green-50"
-                disabled={!canEdit}
+                disabled={!canEdit || markingAsSentQuoteId === quote.id}
               >
-                <Icon name="Check" size={14} />
+                {markingAsSentQuoteId === quote.id ? (
+                  <Icon name="Loader2" size={14} className="animate-spin" />
+                ) : (
+                  <Icon name="Check" size={14} />
+                )}
               </Button>
             )}
             {/* Hide edit button for accepted, rejected, or converted quotes */}
@@ -510,8 +612,8 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
 
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden shadow-sm">
-      {/* Search Bar */}
-      <div className="p-3 md:p-4 border-b border-border">
+        {/* Search Bar */}
+        <div className="p-3 md:p-4 border-b border-border">
         <div className="relative">
           <Icon name="Search" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
           <Input

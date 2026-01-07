@@ -72,6 +72,7 @@ const QuotesManagement = () => {
   });
   const [tableLoading, setTableLoading] = useState(false);
   const [convertingQuoteId, setConvertingQuoteId] = useState(null);
+  const [markingAsSentQuoteId, setMarkingAsSentQuoteId] = useState(null);
   // const [showAIPanel, setShowAIPanel] = useState(false);
   const [sidebarOffset, setSidebarOffset] = useState(288);
   const [isMobile, setIsMobile] = useState(false);
@@ -943,24 +944,61 @@ const QuotesManagement = () => {
     }
 
     try {
-      // Update quote status to 'sent' - this will trigger the database trigger
-      const { data: updatedQuote, error } = await updateQuoteStatus(quote.id, 'sent');
+      setMarkingAsSentQuoteId(quote.id);
+      
+      // Check if quote has a client signature
+      let hasClientSignature = false;
+      try {
+        const { data: signatures, error: sigError } = await supabase
+          .from('quote_signatures')
+          .select('id')
+          .eq('quote_id', quote.id)
+          .eq('signature_type', 'client')
+          .limit(1);
+        
+        if (!sigError && signatures && signatures.length > 0) {
+          hasClientSignature = true;
+        }
+      } catch (sigCheckError) {
+        console.warn('Error checking for client signature:', sigCheckError);
+      }
+      
+      // Determine status: "accepted" if signature exists, "sent" otherwise
+      const targetStatus = hasClientSignature ? 'accepted' : 'sent';
+      const acceptedAt = hasClientSignature ? new Date().toISOString() : null;
+      
+      // Update quote status - use 'accepted' if signature exists, 'sent' otherwise
+      const updateData = {
+        status: targetStatus
+      };
+      
+      if (acceptedAt) {
+        updateData.accepted_at = acceptedAt;
+      }
+      
+      const { data: updatedQuote, error } = await supabase
+        .from('quotes')
+        .update(updateData)
+        .eq('id', quote.id)
+        .select()
+        .single();
       
       if (error) {
         console.error('Error updating quote status:', error);
         return;
       }
 
-      // Update the local state
+      // Update the local state with the correct status
+      const newStatus = hasClientSignature ? 'accepted' : 'sent';
       setQuotes(prevQuotes => 
         prevQuotes.map(q => 
-          q.id === quote.id ? { ...q, status: 'sent' } : q
+          q.id === quote.id ? { ...q, status: newStatus, accepted_at: acceptedAt } : q
         )
       );
       
       setFilteredQuotes(prevFilteredQuotes => 
         prevFilteredQuotes.map(q => 
-          q.id === quote.id ? { ...q, status: 'sent' } : q
+          q.id === quote.id ? { ...q, status: newStatus, accepted_at: acceptedAt } : q
         )
       );
 
@@ -1042,6 +1080,8 @@ const QuotesManagement = () => {
    
     } catch (error) {
       console.error('Error marking quote as sent:', error);
+    } finally {
+      setMarkingAsSentQuoteId(null);
     }
   };
 
@@ -1577,9 +1617,11 @@ const QuotesManagement = () => {
                 setViewMode={setViewMode}
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
+                userId={user?.id}
                 canEdit={canEdit}
                 canDelete={canDelete}
                 convertingQuoteId={convertingQuoteId}
+                markingAsSentQuoteId={markingAsSentQuoteId}
               />
             )}
             </div>

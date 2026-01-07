@@ -2107,7 +2107,8 @@
         "markAsSent": "Mark as sent",
         "edit": "Edit",
         "convertToInvoice": "Convert to invoice",
-        "delete": "Delete quote"
+        "delete": "Delete quote",
+        "copyLink": "Copy quote link"
       }
     },
     "bulkActions": {
@@ -2141,6 +2142,13 @@
     },
     "rejectionReason": {
       "label": "Reason"
+    },
+    "linkCopy": {
+      "success": "Link copied!",
+      "error": {
+        "noUser": "Unable to copy link",
+        "failed": "Failed to copy link"
+      }
     }
   },
   "followUpManagement": {
@@ -4359,7 +4367,8 @@
           "peppolStatus": "Peppol Status",
           "issueDate": "Issue Date",
           "dueDate": "Due Date",
-          "actions": "Actions"
+          "actions": "Actions",
+          "type": "Type"
         },
         "quote": "Quote",
         "issue": "Issue",

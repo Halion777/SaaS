@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { getQuoteByShareToken } from '../../services/shareService';
 import { getPublicUrl } from '../../services/storageService';
 import ClientQuoteService from '../../services/clientQuoteService';
+import { supabase } from '../../services/supabaseClient';
 import Button from '../../components/ui/Button';
 import Icon from '../../components/AppIcon';
 import ElectronicSignatureModal from '../quote-creation/components/ElectronicSignatureModal';
@@ -83,6 +84,36 @@ const PublicQuoteShareViewer = () => {
             });
             // Close signature modal if it was open and there's already a signature
             setShowSignatureModal(false);
+            
+            // If quote has signature but status is not accepted, auto-accept it
+            if (q.status !== 'accepted' && q.status !== 'rejected' && q.status !== 'converted_to_invoice') {
+              try {
+                // Just update the status - signature is already saved
+                const { error: updateError } = await supabase
+                  .from('quotes')
+                  .update({
+                    status: 'accepted',
+                    accepted_at: existingClientSignature.signed_at || new Date().toISOString()
+                  })
+                  .eq('id', q.id);
+                
+                if (!updateError) {
+                  setQuoteStatus('accepted');
+                  // Reload quote to get updated status
+                  const res = await getQuoteByShareToken(token);
+                  if (res?.success) {
+                    setQuote(res.data);
+                  }
+                } else {
+                  console.error('Error auto-accepting quote with signature:', updateError);
+                }
+              } catch (autoAcceptError) {
+                console.error('Error auto-accepting quote with signature:', autoAcceptError);
+              }
+            } else if (q.status === 'accepted') {
+              // Ensure status is set correctly
+              setQuoteStatus('accepted');
+            }
           }
         }
       } catch (e) {
@@ -378,7 +409,8 @@ const PublicQuoteShareViewer = () => {
             </div>
             
             {/* Action Buttons - Mobile */}
-            {(quoteStatus === 'sent' || quoteStatus === 'viewed') && !isViewOnly && (
+            {/* Hide accept/reject buttons if quote already has signature (already accepted) */}
+            {(quoteStatus === 'sent' || quoteStatus === 'viewed') && !isViewOnly && !clientSignature && (
               <div className="flex flex-col space-y-3">
                 {!acceptLoading && (
                   <Button
@@ -395,14 +427,10 @@ const PublicQuoteShareViewer = () => {
                   <Button
                     onClick={handleAcceptQuote}
                     disabled={acceptLoading}
-                    className={`w-full px-6 py-3 shadow-lg hover:shadow-xl transition-all ${
-                      clientSignature 
-                        ? 'bg-green-700 hover:bg-green-800 text-white' 
-                        : 'bg-green-600 hover:bg-green-700 text-white'
-                    }`}
+                    className="w-full px-6 py-3 shadow-lg hover:shadow-xl transition-all bg-green-600 hover:bg-green-700 text-white"
                   >
                     <Icon name="CheckCircle" size={18} className="mr-2" />
-                    {acceptLoading ? t('quoteShare.actions.processing') : clientSignature ? t('quoteShare.actions.confirmAcceptance') : t('quoteShare.actions.accept')}
+                    {acceptLoading ? t('quoteShare.actions.processing') : t('quoteShare.actions.accept')}
                   </Button>
                 )}
               </div>
@@ -434,7 +462,8 @@ const PublicQuoteShareViewer = () => {
             </div>
 
             {/* Right Side - Action Buttons */}
-            {(quoteStatus === 'sent' || quoteStatus === 'viewed') && !isViewOnly && (
+            {/* Hide accept/reject buttons if quote already has signature (already accepted) */}
+            {(quoteStatus === 'sent' || quoteStatus === 'viewed') && !isViewOnly && !clientSignature && (
               <div className="flex items-center space-x-4">
                 {!acceptLoading && (
                   <Button
@@ -451,14 +480,10 @@ const PublicQuoteShareViewer = () => {
                   <Button
                     onClick={handleAcceptQuote}
                     disabled={acceptLoading}
-                    className={`px-8 py-3 shadow-lg hover:shadow-xl transition-all text-base font-medium ${
-                      clientSignature 
-                        ? 'bg-green-700 hover:bg-green-800 text-white' 
-                        : 'bg-green-600 hover:bg-green-700 text-white'
-                    }`}
+                    className="px-8 py-3 shadow-lg hover:shadow-xl transition-all text-base font-medium bg-green-600 hover:bg-green-700 text-white"
                   >
                     <Icon name="CheckCircle" size={20} className="mr-2" />
-                    {acceptLoading ? t('quoteShare.actions.processing') : clientSignature ? t('quoteShare.actions.confirmAcceptance') : t('quoteShare.actions.accept')}
+                    {acceptLoading ? t('quoteShare.actions.processing') : t('quoteShare.actions.accept')}
                   </Button>
                 )}
               </div>

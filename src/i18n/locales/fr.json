@@ -1925,7 +1925,8 @@
         "markAsSent": "Marquer comme envoyé",
         "edit": "Modifier",
         "convertToInvoice": "Convertir en facture",
-        "delete": "Supprimer le devis"
+        "delete": "Supprimer le devis",
+        "copyLink": "Copier le lien du devis"
       }
     },
     "errors": {
@@ -1976,6 +1977,13 @@
     },
     "rejectionReason": {
       "label": "Raison"
+    },
+    "linkCopy": {
+      "success": "Lien copié !",
+      "error": {
+        "noUser": "Impossible de copier le lien",
+        "failed": "Échec de la copie du lien"
+      }
     }
   },
   "followUpManagement": {
@@ -4406,13 +4414,14 @@
         "invoicesCount_plural": "{{count}} factures",
         "headers": {
           "invoiceNumber": "N° Facture",
-          "client": "Client",
+          "client": "Fournisseur",
           "amount": "Montant",
           "status": "Statut",
           "peppolStatus": "Statut Peppol",
           "issueDate": "Date émission",
           "dueDate": "Date échéance",
-          "actions": "Actions"
+          "actions": "Actions",
+          "type": "Type"
         },
         "quote": "Devis",
         "issue": "Émission",
@@ -4427,6 +4436,10 @@
       "empty": {
         "noInvoicesFound": "Aucune facture trouvée",
         "description": "Commencez par créer votre première facture ou ajustez vos filtres."
+      },
+      "invoiceType": {
+        "deposit": "Acompte",
+        "final": "Solde"
       },
       "bulkActions": {
         "selectedInvoices": "{{count}} facture sélectionnée",

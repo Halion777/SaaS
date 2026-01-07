@@ -2133,7 +2133,8 @@
         "markAsSent": "Markeren als verzonden",
         "edit": "Bewerken",
         "convertToInvoice": "Converteren naar factuur",
-        "delete": "Offerte verwijderen"
+        "delete": "Offerte verwijderen",
+        "copyLink": "Offertelink kopiëren"
       }
     },
     "errors": {
@@ -2171,6 +2172,13 @@
     },
     "rejectionReason": {
       "label": "Reden"
+    },
+    "linkCopy": {
+      "success": "Link gekopieerd!",
+      "error": {
+        "noUser": "Kan link niet kopiëren",
+        "failed": "Link kopiëren mislukt"
+      }
     }
   },
   "followUpManagement": {
@@ -4288,6 +4296,10 @@
       "unknownClient": "Onbekende klant",
       "paymentMethod": {
         "toBeDefined": "Nog te bepalen"
+      },
+      "invoiceType": {
+        "deposit": "Aanbetaling",
+        "final": "Eindfactuur"
       },
       "summary": {
         "totalRevenue": "Totaal Omzet",
