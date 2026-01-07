@@ -988,6 +988,22 @@ const QuotesManagement = () => {
         return;
       }
 
+      // If this is a lead quote, also update the lead_quotes table status
+      try {
+        const { error: leadQuoteError } = await supabase
+          .from('lead_quotes')
+          .update({ status: targetStatus })
+          .eq('quote_id', quote.id);
+        
+        if (leadQuoteError) {
+          console.warn('Error updating lead quote status:', leadQuoteError);
+          // Don't fail the operation if lead quote update fails
+        }
+      } catch (leadQuoteUpdateError) {
+        console.warn('Error updating lead quote status:', leadQuoteUpdateError);
+        // Don't fail the operation if lead quote update fails
+      }
+
       // Update the local state with the correct status
       const newStatus = hasClientSignature ? 'accepted' : 'sent';
       setQuotes(prevQuotes => 

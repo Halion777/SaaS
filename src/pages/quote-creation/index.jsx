@@ -638,7 +638,7 @@ const QuoteCreation = () => {
             .select('lead_id')
             .eq('quote_id', quoteId)
             .eq('artisan_user_id', user.id)
-            .single();
+            .maybeSingle();
 
           if (!leadQuoteError && leadQuote?.lead_id) {
             setLeadId(leadQuote.lead_id);
@@ -1979,7 +1979,29 @@ const QuoteCreation = () => {
 
         };
 
-
+        // If quote was expired but new valid_until date is in the future, revert status to draft
+        if (quoteData.valid_until) {
+          try {
+            const { data: currentQuote } = await supabase
+              .from('quotes')
+              .select('status')
+              .eq('id', editingQuoteId)
+              .single();
+            
+            if (currentQuote?.status === 'expired') {
+              const newValidUntil = new Date(quoteData.valid_until);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              
+              // If new date is in the future, revert status to draft
+              if (newValidUntil >= today) {
+                quoteData.status = 'draft';
+              }
+            }
+          } catch (statusCheckError) {
+            console.warn('Error checking quote status for expiration revert:', statusCheckError);
+          }
+        }
 
         // Update the quote in the backend
 
@@ -2072,6 +2094,7 @@ const QuoteCreation = () => {
         description: projectInfo.description || '',
         project_categories: projectInfo.categories || [],
         custom_category: projectInfo.customCategory || '',
+        deadline: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : null,
         start_date: new Date().toISOString().split('T')[0],
         total_amount: totalAmount,
         tax_amount: taxAmount,
@@ -2152,6 +2175,7 @@ const QuoteCreation = () => {
           description: projectInfo.description || '',
           project_categories: projectInfo.categories || [],
           custom_category: projectInfo.customCategory || '',
+          deadline: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : null,
           total_amount: totalAmount,
           tax_amount: taxAmount,
           discount_amount: discountAmount,
@@ -2187,6 +2211,40 @@ const QuoteCreation = () => {
             order_index: index
           }))
         };
+
+        // If quote was expired but new valid_until date is in the future, revert status to draft
+        if (updateData.valid_until) {
+          // Check current status from database to ensure we have the latest status
+          try {
+            const { data: currentQuote } = await supabase
+              .from('quotes')
+              .select('status')
+              .eq('id', existingQuote.id)
+              .single();
+            
+            if (currentQuote?.status === 'expired') {
+              const newValidUntil = new Date(updateData.valid_until);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              
+              // If new date is in the future, revert status to draft
+              if (newValidUntil >= today) {
+                updateData.status = 'draft';
+              }
+            }
+          } catch (statusCheckError) {
+            // Fallback to checking existingQuote.status if database check fails
+            if (existingQuote.status === 'expired' && updateData.valid_until) {
+              const newValidUntil = new Date(updateData.valid_until);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              
+              if (newValidUntil >= today) {
+                updateData.status = 'draft';
+              }
+            }
+          }
+        }
 
         const { data: updatedQuote, error: updateError } = await updateQuote(existingQuote.id, updateData);
 
@@ -3026,7 +3084,29 @@ const QuoteCreation = () => {
 
         };
 
-
+        // If quote was expired but new valid_until date is in the future, revert status to draft
+        if (quoteData.valid_until) {
+          try {
+            const { data: currentQuote } = await supabase
+              .from('quotes')
+              .select('status')
+              .eq('id', editingQuoteId)
+              .single();
+            
+            if (currentQuote?.status === 'expired') {
+              const newValidUntil = new Date(quoteData.valid_until);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              
+              // If new date is in the future, revert status to draft
+              if (newValidUntil >= today) {
+                quoteData.status = 'draft';
+              }
+            }
+          } catch (statusCheckError) {
+            console.warn('Error checking quote status for expiration revert:', statusCheckError);
+          }
+        }
 
         // Update the quote in the backend
 
