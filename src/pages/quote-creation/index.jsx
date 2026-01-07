@@ -358,6 +358,13 @@ const QuoteCreation = () => {
 
       setEditingQuoteId(null);
 
+      // Set leadId state immediately so it's available throughout the component
+      setLeadId(leadId);
+      // Also store in localStorage as backup in case state is lost
+      if (leadId && user?.id) {
+        localStorage.setItem(`current-lead-id-${user.id}`, leadId);
+      }
+
       loadLeadData(leadId);
 
       // Clear any previous draft row binding for new quote from lead
@@ -567,8 +574,11 @@ const QuoteCreation = () => {
 
 
       // Store the lead ID for later use
-
       setLeadId(leadId);
+      // Also store in localStorage as backup in case state is lost
+      if (leadId) {
+        localStorage.setItem(`current-lead-id-${user.id}`, leadId);
+      }
 
 
 
@@ -3213,6 +3223,10 @@ const QuoteCreation = () => {
       const initialStatus = hasClientSignature ? 'accepted' : 'sent';
       const acceptedAt = hasClientSignature ? new Date().toISOString() : null;
 
+      // Check localStorage as backup in case state was lost
+      const leadIdFromStorage = localStorage.getItem(`current-lead-id-${user.id}`);
+      const effectiveLeadId = leadId || leadIdFromStorage;
+
       const quoteData = {
 
         user_id: user?.id,
@@ -3245,6 +3259,9 @@ const QuoteCreation = () => {
         valid_until: projectInfo.deadline ? new Date(projectInfo.deadline).toISOString().split('T')[0] : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).split('T')[0],
 
         terms_conditions: sendData.financialConfig?.defaultConditions?.text || '',
+
+        // Include leadId if this quote is from a lead
+        lead_id: effectiveLeadId || null,
 
         tasks: tasks.map((task, index) => ({
 
@@ -3298,52 +3315,62 @@ const QuoteCreation = () => {
 
       const quoteId = createdQuote.id;
 
-
-
-      // If this quote was created from a lead, create a lead quote record
-
-      if (leadId) {
-
+      // If this quote was created from a lead, create a lead quote record and update lead count
+      if (effectiveLeadId) {
         try {
-
-          const { error: leadQuoteError } = await supabase
-
+          // Check if a quote has already been sent to this lead by this user
+          const { data: existingLeadQuotes, error: checkError } = await supabase
             .from('lead_quotes')
-
-            .insert({
-
-              lead_id: leadId,
-
-              quote_id: quoteId,
-
-              artisan_user_id: user.id,
-
-              status: initialStatus // Use same status as quote (accepted if signature exists, sent otherwise)
-
-            });
-
-
-
-          if (leadQuoteError) {
-
-            console.error('Error creating lead quote record:', leadQuoteError);
-
-            // Continue with quote creation even if lead quote record fails
-
-          } else {
-
-            console.log('Lead quote record created successfully');
-
+            .select('id, status, quote_id')
+            .eq('lead_id', effectiveLeadId)
+            .eq('artisan_user_id', user.id);
+          
+          if (checkError) {
+            console.warn('Error checking existing lead quotes:', checkError);
+          } else if (existingLeadQuotes && existingLeadQuotes.length > 0) {
+            // Check if any existing quote was already sent (not draft or auto-draft)
+            const sentQuotes = existingLeadQuotes.filter(lq => 
+              lq.status && 
+              lq.status !== 'draft' && 
+              lq.status !== 'auto-saved' &&
+              lq.status !== 'Auto-Sauvegardé'
+            );
+            
+            if (sentQuotes.length > 0) {
+              alert('Vous avez déjà envoyé un devis pour ce lead. Vous ne pouvez pas envoyer plusieurs devis pour le même lead.');
+              setIsSaving(false);
+              return;
+            }
           }
 
+          // Create lead quote record
+          const leadQuoteData = {
+            lead_id: effectiveLeadId,
+            quote_id: quoteId,
+            artisan_user_id: user.id,
+            artisan_profile_id: currentProfile?.id || null,
+            quote_amount: createdQuote.final_amount || createdQuote.total_amount || 0,
+            quote_currency: 'EUR',
+            status: initialStatus
+          };
+
+          const { data: insertedLeadQuote, error: leadQuoteError } = await supabase
+            .from('lead_quotes')
+            .insert(leadQuoteData)
+            .select()
+            .single();
+
+          if (leadQuoteError) {
+            console.error('Error creating lead quote record:', leadQuoteError);
+            if (leadQuoteError.code === '23505') {
+              alert('Erreur: Un devis existe déjà pour ce lead. Veuillez vérifier la base de données.');
+            } else {
+              alert(`Erreur lors de la création du lien lead-quote: ${leadQuoteError.message}`);
+            }
+          }
         } catch (error) {
-
           console.error('Error creating lead quote record:', error);
-
-          // Continue with quote creation even if lead quote record fails
-
         }
-
       }
 
 

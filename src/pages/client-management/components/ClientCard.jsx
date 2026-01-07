@@ -173,14 +173,16 @@ const ClientCard = ({ client, onSelect, onDelete, onStatusToggle, getStatusColor
       {client.preferences && client.preferences.length > 0 && (
         <div className="mt-3 pt-3 border-t border-border">
           <div className="flex flex-wrap gap-1">
-            {client.preferences.map((pref, index) => (
-              <span
-                key={index}
-                className="px-2 py-1 text-xs bg-primary/10 text-primary rounded-full"
-              >
-                {pref}
-              </span>
-            ))}
+            {client.preferences
+              .filter(pref => pref !== 'language_preference' && pref !== 'languagePreference')
+              .map((pref, index) => (
+                <span
+                  key={index}
+                  className="px-2 py-1 text-xs bg-primary/10 text-primary rounded-full"
+                >
+                  {pref}
+                </span>
+              ))}
           </div>
         </div>
       )}

@@ -410,12 +410,19 @@ export class LeadManagementService {
           if (leadDetails.success && leadDetails.data) {
             const leadData = leadDetails.data;
             
-            // Get artisan profile data
-            const { data: profileData } = await supabase
-              .from('company_profiles')
-              .select('company_name, name')
-              .eq('id', profileId)
-              .single();
+            // Get artisan profile data (optional - may not exist)
+            let profileData = null;
+            if (profileId) {
+              const { data: profile, error: profileError } = await supabase
+                .from('company_profiles')
+                .select('company_name')
+                .eq('id', profileId)
+                .maybeSingle();
+              
+              if (!profileError && profile) {
+                profileData = profile;
+              }
+            }
 
             // Send email notification using new template system
             await EmailService.sendQuoteSentEmail(

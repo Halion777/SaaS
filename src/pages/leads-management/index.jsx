@@ -665,8 +665,16 @@ const LeadsManagementPage = () => {
                     variant="outline"
                     size="sm"
                     className="text-red-600 border-red-200 hover:bg-red-50 w-full sm:w-auto"
-                    disabled={!canEdit || !isProPlan}
-                    title={!canEdit ? t('permissions.noFullAccess') : (!isProPlan ? t('limitedAccess.banner.message', { feature: t('leadsManagement.leadsTab.leadCard.reportSpam') }, 'Upgrade to Pro to report spam') : '')}
+                    disabled={!canEdit || !isProPlan || !lead.can_send_quote}
+                    title={
+                      !canEdit 
+                        ? t('permissions.noFullAccess') 
+                        : !isProPlan 
+                          ? t('limitedAccess.banner.message', { feature: t('leadsManagement.leadsTab.leadCard.reportSpam') }, 'Upgrade to Pro to report spam')
+                          : !lead.can_send_quote
+                            ? t('leadsManagement.leadsTab.leadCard.cannotReportSpamAfterQuote', 'Cannot report spam after sending a quote')
+                            : ''
+                    }
                   >
                     <Icon name="AlertTriangle" className="w-4 h-4 mr-1" />
                     <span className="hidden sm:inline">{t('leadsManagement.leadsTab.leadCard.reportSpam')}</span>
@@ -687,7 +695,9 @@ const LeadsManagementPage = () => {
                     </Button>
                   ) : (
                     <span className="text-xs sm:text-sm text-muted-foreground px-3 sm:px-4 py-2 bg-muted/50 rounded-lg border text-center">
-                      {lead.quote_status === 'max_reached' ? t('leadsManagement.leadsTab.leadCard.maxQuotesReached') : t('leadsManagement.leadsTab.leadCard.alreadyProcessed')}
+                      {lead.quotes_sent_count >= 3 
+                        ? t('leadsManagement.leadsTab.leadCard.maxQuotesReached', 'Max quotes reached') 
+                        : t('leadsManagement.leadsTab.leadCard.alreadyProcessed', 'Quote already sent')}
                     </span>
                   )}
                 </div>

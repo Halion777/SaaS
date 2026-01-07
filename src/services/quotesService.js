@@ -535,12 +535,19 @@ export async function createQuote(quoteData) {
           .single();
         
         if (leadData) {
-          // Get artisan profile data
-          const { data: profileData } = await supabase
-            .from('company_profiles')
-            .select('company_name, name')
-            .eq('id', quoteData.profile_id)
-            .single();
+          // Get artisan profile data (optional - may not exist)
+          let profileData = null;
+          if (quoteData.profile_id) {
+            const { data: profile, error: profileError } = await supabase
+              .from('company_profiles')
+              .select('company_name')
+              .eq('id', quoteData.profile_id)
+              .maybeSingle();
+            
+            if (!profileError && profile) {
+              profileData = profile;
+            }
+          }
 
           // Send email notification using new template system
           const emailResult = await EmailService.sendQuoteSentEmail(
@@ -557,17 +564,7 @@ export async function createQuote(quoteData) {
           
                      // Follow-ups are now created by edge functions, not database triggers
           // The followups-scheduler edge function will handle this automatically
-          
-          // Update lead status to indicate quote was sent
-          try {
-            await supabase.rpc('update_lead_status_on_quote_sent', {
-              lead_uuid: quoteData.lead_id,
-              artisan_user_uuid: quoteData.user_id
-            });
-          } catch (statusError) {
-            console.error('Failed to update lead status:', statusError);
-            // Don't fail the quote creation if status update fails
-          }
+          // Lead quote records are created directly in the quote creation flow
         }
       } catch (emailError) {
         console.error('Failed to send quote notification email:', emailError);
