@@ -33,7 +33,7 @@ import { supabase } from '../../services/supabaseClient';
 
 import EmailService from '../../services/emailService';
 
-import { generatePublicShareLink } from '../../services/shareService';
+import { generatePublicShareLink, getShareLinkInfo } from '../../services/shareService';
 
 import { getPublicUrl } from '../../services/storageService';
 import { calculateQuoteTotals } from '../../utils/quotePriceCalculator';
@@ -3930,40 +3930,28 @@ const QuoteCreation = () => {
         try {
 
           // Ensure the quote has a share token before sending email
-
-          let shareToken = createdQuote.share_token;
-
-          if (!shareToken) {
-
+          // Always check the database first to ensure we use the existing token if it exists
+          let shareToken = null;
+          
+          // First, check if a share token already exists in the database
+          const shareInfo = await getShareLinkInfo(createdQuote.id);
+          
+          if (shareInfo.success && shareInfo.data?.share_token) {
+            // Token exists in database, use it
+            shareToken = shareInfo.data.share_token;
+            // Update the createdQuote object with the existing share token
+            createdQuote.share_token = shareToken;
+          } else {
+            // No token exists, generate a new one
             const shareResult = await generatePublicShareLink(createdQuote.id, user?.id);
 
             if (shareResult?.success) {
 
-              shareToken = shareResult.data?.share_token || shareResult.token;
+              shareToken = shareResult.token; // Use token directly from result
 
               // Update the createdQuote object with the new share token
 
               createdQuote.share_token = shareToken;
-
-
-
-              // Update the quote in database with the share token
-
-              const { error: updateError } = await supabase
-
-                .from('quotes')
-
-                .update({ share_token: shareToken })
-
-                .eq('id', createdQuote.id);
-
-
-
-              if (updateError) {
-
-                console.warn('Failed to update quote with share token:', updateError);
-
-              }
 
             } else {
 
