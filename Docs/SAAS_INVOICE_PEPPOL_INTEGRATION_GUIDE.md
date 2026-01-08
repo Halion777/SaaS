@@ -1003,6 +1003,7 @@ When sending an invoice:
   - If on Peppol: Shows both Peppol and Email options (Peppol auto-selected)
   - If not on Peppol: Shows Email option with warning
   - Validates receiver supports INVOICE document type before sending
+  - **Receiver Peppol disabled check:** If client has `peppol_enabled = false` in database, prevents sending via Peppol and shows error (only applies to clients in our database, external receivers skip this check)
 - **Individual clients (`individual`):** Directly opens Email modal (no Peppol option)
 
 ### Invoice Types Support
@@ -1019,6 +1020,8 @@ When sending an invoice:
 ### Peppol Network Features
 - **Receiver capability checking:** Automatically checks if receiver is registered on Peppol
 - **Document type validation:** Validates receiver supports INVOICE document type
+- **Receiver Peppol disabled check:** Frontend prevents sending if client has `peppol_enabled = false` (only for clients in database)
+- **Unregister participant:** When super admin unregisters a user, automatically sets `peppol_disabled = true` in `peppol_settings` and `peppol_enabled = false` in all their `clients`
 - **Retry logic:** Automatic retry on failed sends (up to 3 attempts)
 - **Status tracking:** Real-time status updates via webhooks
 - **PDF attachments:** Extracts and stores PDF attachments from received invoices

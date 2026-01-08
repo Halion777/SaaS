@@ -76,6 +76,14 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
         // Continue without company info - we'll use Peppol settings for most fields
       }
 
+      // Check if receiver has Peppol disabled (only for clients in our database)
+      // External receivers (not in clients table) don't have peppol_enabled field, so we skip this check
+      if (invoice.client && invoice.client.peppol_enabled === false) {
+        setError(t('invoicesManagement.sendPeppolModal.errors.receiverPeppolDisabled'));
+        setIsLoading(false);
+        return; // Don't allow sending if receiver has Peppol disabled
+      }
+
       // Use client's Peppol ID from client table if available
       if (invoice.client?.peppol_id) {
         setClientPeppolId(invoice.client.peppol_id);
@@ -113,9 +121,16 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
       return;
     }
 
-    // Check if Peppol is disabled
+    // Check if sender's Peppol is disabled
     if (peppolSettings.peppolDisabled) {
       setError(t('invoicesManagement.sendPeppolModal.errors.peppolDisabled'));
+      return;
+    }
+
+    // Check if receiver has Peppol disabled (only for clients in our database)
+    // External receivers (not in clients table) don't have peppol_enabled field, so we skip this check
+    if (invoice.client && invoice.client.peppol_enabled === false) {
+      setError(t('invoicesManagement.sendPeppolModal.errors.receiverPeppolDisabled'));
       return;
     }
 

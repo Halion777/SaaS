@@ -4625,6 +4625,7 @@
           "clientPeppolIdRequired": "Selecteer een Peppol ID voor de klant",
           "configMissing": "Peppol-configuratie ontbreekt. Configureer Peppol voordat u facturen verzendt.",
           "peppolDisabled": "Peppol-functionaliteit is momenteel uitgeschakeld. Schakel deze in de Peppol-instellingen in om facturen te verzenden.",
+          "receiverPeppolDisabled": "Deze klant heeft Peppol uitgeschakeld. U kunt geen facturen via Peppol naar deze klant verzenden. Gebruik in plaats daarvan e-maillevering.",
           "updateError": "Factuur verzonden maar fout bij bijwerken",
           "sendError": "Fout bij verzenden",
           "invalidPeppolId": "Dit Peppol ID bestaat niet in het Peppol-netwerk. Controleer het ID en probeer het opnieuw.",

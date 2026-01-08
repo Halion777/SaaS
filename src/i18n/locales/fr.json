@@ -4645,6 +4645,7 @@
           "clientPeppolIdRequired": "Veuillez sélectionner un ID Peppol pour le client",
           "configMissing": "Configuration Peppol manquante. Veuillez configurer Peppol avant d'envoyer des factures.",
           "peppolDisabled": "La fonctionnalité Peppol est actuellement désactivée. Veuillez l'activer dans les paramètres Peppol pour envoyer des factures.",
+          "receiverPeppolDisabled": "Ce client a Peppol désactivé. Vous ne pouvez pas envoyer de factures via Peppol à ce client. Veuillez utiliser la livraison par e-mail à la place.",
           "updateError": "Facture envoyée mais erreur lors de la mise à jour",
           "sendError": "Erreur lors de l'envoi",
           "invalidPeppolId": "Cet ID Peppol n'existe pas dans le réseau Peppol. Veuillez vérifier l'ID et réessayer.",
