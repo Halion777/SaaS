@@ -506,38 +506,6 @@ CREATE TABLE public.peppol_settings (
   CONSTRAINT peppol_settings_pkey PRIMARY KEY (id),
   CONSTRAINT peppol_settings_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
-CREATE TABLE public.predefined_materials (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  category character varying,
-  name character varying NOT NULL,
-  description text,
-  default_unit character varying,
-  default_price numeric,
-  icon_name character varying,
-  is_active boolean DEFAULT true,
-  is_global boolean DEFAULT false,
-  created_at timestamp with time zone DEFAULT now(),
-  updated_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT predefined_materials_pkey PRIMARY KEY (id),
-  CONSTRAINT predefined_materials_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
-);
-CREATE TABLE public.predefined_tasks (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  category character varying,
-  title character varying NOT NULL,
-  description text,
-  default_duration numeric,
-  default_price numeric,
-  icon_name character varying,
-  is_active boolean DEFAULT true,
-  is_global boolean DEFAULT false,
-  created_at timestamp with time zone DEFAULT now(),
-  updated_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT predefined_tasks_pkey PRIMARY KEY (id),
-  CONSTRAINT predefined_tasks_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
-);
 CREATE TABLE public.quote_access_logs (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   quote_id uuid NOT NULL,
@@ -808,7 +776,3 @@ CREATE TABLE public.users (
   CONSTRAINT users_pkey PRIMARY KEY (id),
   CONSTRAINT users_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
 );
-
-
-
--------
