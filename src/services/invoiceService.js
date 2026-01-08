@@ -621,6 +621,8 @@ export class InvoiceService {
       let uploadData = null;
       let uploadError = null;
       
+      console.log(`📄 Uploading PDF for invoice ${invoice.invoice_number} to ${bucketName}/${storagePath}...`);
+      
       ({ data: uploadData, error: uploadError } = await supabase.storage
         .from(bucketName)
         .upload(storagePath, pdfBuffer, {
@@ -629,8 +631,8 @@ export class InvoiceService {
         }));
 
       // If bucket doesn't exist, try alternative bucket
-      if (uploadError && uploadError.message?.includes('Bucket not found')) {
-        console.warn(`Bucket '${bucketName}' not found, trying 'expense-invoice-attachments'`);
+      if (uploadError && (uploadError.message?.includes('Bucket not found') || uploadError.message?.includes('not found'))) {
+        console.warn(`⚠️ Bucket '${bucketName}' not found or not accessible, trying 'expense-invoice-attachments'`);
         bucketName = 'expense-invoice-attachments';
         ({ data: uploadData, error: uploadError } = await supabase.storage
           .from(bucketName)
@@ -641,9 +643,11 @@ export class InvoiceService {
       }
 
       if (uploadError) {
-        console.warn('Error uploading PDF to storage:', uploadError);
+        console.error(`❌ Error uploading PDF to storage (bucket: ${bucketName}, path: ${storagePath}):`, uploadError);
         throw new Error(`Failed to upload PDF: ${uploadError.message}`);
       }
+
+      console.log(`✅ PDF uploaded successfully to ${bucketName}/${storagePath}`);
 
       // Store PDF path in invoice metadata
       const currentMetadata = invoice.peppol_metadata || {};
@@ -660,8 +664,10 @@ export class InvoiceService {
         .eq('id', invoiceId);
 
       if (updateError) {
-        console.warn('Warning: Failed to update invoice with PDF path:', updateError);
-        // Don't fail if metadata update fails
+        console.error(`❌ Warning: Failed to update invoice ${invoice.invoice_number} with PDF path:`, updateError);
+        // Don't fail if metadata update fails, but log it
+      } else {
+        console.log(`✅ Invoice metadata updated with PDF path: ${storagePath} in bucket ${bucketName}`);
       }
 
       return {

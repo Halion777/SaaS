@@ -311,6 +311,25 @@ async function processFollowUp(admin: any, followUp: any) {
     const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
     const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     
+    // For approaching deadline follow-ups, only send if it's 3 days or less before due date
+    // This prevents sending reminders too early (e.g., 5 days, 4 days before)
+    if (followUp.meta?.follow_up_type === 'approaching_deadline' && daysUntilDue > 3) {
+      // Too early to send, reschedule for 3 days before due date
+      const rescheduledDate = new Date(dueDate);
+      rescheduledDate.setDate(rescheduledDate.getDate() - 3);
+      
+      await admin
+        .from('invoice_follow_ups')
+        .update({
+          scheduled_at: rescheduledDate.toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', followUp.id);
+      
+      console.log(`Rescheduled approaching deadline follow-up ${followUp.id} for 3 days before due date (${daysUntilDue} days remaining is too early)`);
+      return { success: false, error: 'Too early to send approaching deadline reminder' };
+    }
+    
     const siteUrl = Deno.env.get('SITE_URL') || 'https://www.haliqo.com';
     const invoiceLink = `${siteUrl}/invoice/${invoice.id}`;
 
@@ -380,7 +399,7 @@ async function processFollowUp(admin: any, followUp: any) {
     // ========================================
     // 4. FETCH PDF ATTACHMENT FROM STORAGE
     // ========================================
-    // PDFs are generated client-side when invoices are created/updated and stored in Supabase Storage
+    // PDFs are generated when invoices are created and stored in Supabase Storage
     let pdfAttachment = null;
     try {
       // Check if PDF is stored in invoice metadata
@@ -403,15 +422,15 @@ async function processFollowUp(admin: any, followUp: any) {
             filename: `facture-${invoice.invoice_number}.pdf`,
             content: pdfBase64
           };
-          console.log(`PDF attachment loaded from storage: ${pdfStoragePath}`);
+          console.log(`✅ PDF attachment loaded from storage: ${pdfStorageBucket}/${pdfStoragePath}`);
         } else {
-          console.warn(`PDF not found in storage at ${pdfStorageBucket}/${pdfStoragePath}:`, downloadError);
+          console.warn(`⚠️ PDF not found at ${pdfStorageBucket}/${pdfStoragePath}:`, downloadError?.message || 'File not found');
         }
       } else {
-        console.warn(`No PDF storage path found in invoice metadata for invoice ${invoice.invoice_number}`);
+        console.warn(`⚠️ No PDF storage path found in invoice metadata for invoice ${invoice.invoice_number}. Invoice may need PDF generation.`);
       }
     } catch (pdfError) {
-      console.warn('Error fetching PDF from storage for follow-up:', pdfError);
+      console.error('❌ Error fetching PDF from storage for follow-up:', pdfError);
       // Continue without PDF attachment if fetch fails
     }
 
@@ -443,11 +462,30 @@ async function processFollowUp(admin: any, followUp: any) {
     // Update follow-up status and increment attempts
     const newAttempts = (followUp.attempts || 0) + 1;
     const maxAttempts = followUp.max_attempts || 3;
+    const isOverdue = followUp.meta?.follow_up_type === 'overdue';
     console.log(`Incrementing attempts for follow-up ${followUp.id}: ${followUp.attempts || 0} → ${newAttempts}/${maxAttempts}`);
     
-    // Check if we need to reschedule for next attempt within same stage
-    if (newAttempts < maxAttempts) {
-      // Reschedule for next attempt (1 day delay between attempts)
+    // For overdue follow-ups: Only 1 attempt per stage (no rescheduling within stage)
+    // For approaching deadline: Allow multiple attempts (3 attempts with 1 day delay)
+    if (isOverdue) {
+      // Overdue follow-ups: Mark as sent immediately (1 attempt per stage)
+      // Scheduler will progress to next stage on next run
+      const { error: updateError } = await admin
+        .from('invoice_follow_ups')
+        .update({ 
+          status: 'sent',
+          attempts: newAttempts,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', followUp.id);
+      
+      if (updateError) {
+        console.error('Error updating follow-up status:', updateError);
+      } else {
+        console.log(`✅ Overdue follow-up ${followUp.id} sent (${newAttempts}/${maxAttempts}), scheduler will progress to next stage`);
+      }
+    } else if (newAttempts < maxAttempts) {
+      // Approaching deadline: Reschedule for next attempt (1 day delay between attempts)
       const nextScheduledAt = new Date();
       nextScheduledAt.setDate(nextScheduledAt.getDate() + 1);
       
@@ -464,10 +502,10 @@ async function processFollowUp(admin: any, followUp: any) {
       if (updateError) {
         console.error('Error updating follow-up status:', updateError);
       } else {
-        console.log(`✅ Rescheduled follow-up ${followUp.id} for next attempt (${newAttempts + 1}/${maxAttempts})`);
+        console.log(`✅ Rescheduled approaching deadline follow-up ${followUp.id} for next attempt (${newAttempts + 1}/${maxAttempts})`);
       }
     } else {
-      // Max attempts reached, mark as sent - scheduler will handle stage progression
+      // Max attempts reached (for approaching deadline), mark as sent - scheduler will handle stage progression
       const { error: updateError } = await admin
         .from('invoice_follow_ups')
         .update({ 

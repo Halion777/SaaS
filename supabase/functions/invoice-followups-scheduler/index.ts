@@ -75,7 +75,8 @@ serve(async (req) => {
         stage_1_delay: 1,                   // 1 day after due date
         stage_2_delay: 3,                   // 3 days after due date
         stage_3_delay: 7,                   // 7 days after due date
-        max_attempts_per_stage: 3,
+        max_attempts_per_stage: 3,          // For approaching deadline (3 attempts)
+        max_attempts_per_overdue_stage: 1, // For overdue stages (1 attempt per stage)
         approaching_template: 'invoice_payment_reminder',
         overdue_template: 'invoice_overdue_reminder'
       };
@@ -165,7 +166,8 @@ serve(async (req) => {
       stage_1_delay: 1,                   // 1 day after due date
       stage_2_delay: 3,                   // 3 days after due date
       stage_3_delay: 7,                   // 7 days after due date
-      max_attempts_per_stage: 3,
+      max_attempts_per_stage: 3,          // For approaching deadline (3 attempts)
+      max_attempts_per_overdue_stage: 1, // For overdue stages (1 attempt per stage)
       approaching_template: 'invoice_payment_reminder',
       overdue_template: 'invoice_overdue_reminder'
     };
@@ -255,13 +257,12 @@ async function createInitialFollowUpForInvoice(admin: any, invoice: any, rules: 
   const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   
   if (daysUntilDue > rules.approaching_deadline_days) {
-    // Too early, schedule for approaching deadline
-    // createApproachingDeadlineFollowUp will check for existing and skip if found
-    const scheduledDate = new Date(dueDate);
-    scheduledDate.setDate(scheduledDate.getDate() - rules.approaching_deadline_days);
-    await createApproachingDeadlineFollowUp(admin, invoice, rules, scheduledDate);
+    // Too early (more than 3 days before), don't create follow-up yet
+    // The daily scheduler will create it when it's exactly 3 days before
+    console.log(`Invoice ${invoice.invoice_number} is ${daysUntilDue} days before due date, too early to create approaching deadline follow-up`);
+    return;
   } else if (daysUntilDue > 0) {
-    // Approaching deadline, create now
+    // Approaching deadline (1-3 days before), create now
     // createApproachingDeadlineFollowUp will check for existing and skip if found
     await createApproachingDeadlineFollowUp(admin, invoice, rules);
   } else {
@@ -421,17 +422,17 @@ async function createApproachingDeadlineFollowUp(admin: any, invoice: any, rules
         template_text: text,
         template_html: html,
         template_id: template.id,
-        attempts: 0,
-        max_attempts: rules.max_attempts_per_stage,
-        channel: 'email',
-        automated: true,
-        meta: {
-          follow_up_type: 'approaching_deadline',
+          attempts: 0,
+          max_attempts: rules.max_attempts_per_stage, // 3 attempts for approaching deadline
+          channel: 'email',
           automated: true,
-          priority: 'medium',
-          template_type: rules.approaching_template,
-          days_until_due: daysUntilDue
-        }
+          meta: {
+            follow_up_type: 'approaching_deadline',
+            automated: true,
+            priority: 'medium',
+            template_type: rules.approaching_template,
+            days_until_due: daysUntilDue
+          }
       });
     
     if (followUpError) {
@@ -592,6 +593,7 @@ async function createOverdueFollowUp(admin: any, invoice: any, rules: any) {
           template_text: text,
           template_html: html,
           template_id: template.id,
+          max_attempts: rules.max_attempts_per_overdue_stage, // 1 attempt per overdue stage
           updated_at: new Date().toISOString(),
           meta: {
             ...existingFollowUp.meta,
@@ -621,7 +623,7 @@ async function createOverdueFollowUp(admin: any, invoice: any, rules: any) {
           template_html: html,
           template_id: template.id,
           attempts: 0,
-          max_attempts: rules.max_attempts_per_stage,
+          max_attempts: rules.max_attempts_per_overdue_stage, // 1 attempt per overdue stage
           channel: 'email',
           automated: true,
           meta: {
@@ -743,12 +745,17 @@ async function progressFollowUpStages(admin: any, rules: any) {
           const nextScheduledAt = new Date();
           nextScheduledAt.setDate(nextScheduledAt.getDate() + delayDays);
           
+          // Determine max_attempts based on follow-up type
+          const isOverdue = followUp.meta?.follow_up_type === 'overdue';
+          const newMaxAttempts = isOverdue ? rules.max_attempts_per_overdue_stage : rules.max_attempts_per_stage;
+          
           const { error: updateError } = await admin
             .from('invoice_follow_ups')
             .update({
               stage: nextStage,
               status: `stage_${followUp.stage}_completed`,
               attempts: 0,
+              max_attempts: newMaxAttempts, // Set max_attempts for new stage
               scheduled_at: nextScheduledAt.toISOString(),
               updated_at: new Date().toISOString(),
               meta: {

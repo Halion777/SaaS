@@ -164,11 +164,13 @@ CREATE TABLE public.invoice_events (
 ```javascript
 const globalRules = {
   max_stages: 3,                              // Maximum overdue stages
-  approaching_deadline_days: 3,                // Days before due date to send reminder
+  approaching_deadline_days: 3,                // Days before due date to send reminder (only creates if <= 3 days)
   stage_1_delay: 1,                            // Days after due date for stage 1
   stage_2_delay: 3,                            // Days after stage 1 for stage 2
   stage_3_delay: 7,                            // Days after stage 2 for stage 3
-  max_attempts_per_stage: 3,                  // Max attempts per stage
+  max_attempts_per_stage: 1,                  // Max attempts per stage for overdue (1 email per stage)
+  max_attempts_per_overdue_stage: 1,          // Overdue stages: 1 email per stage
+  approaching_max_attempts: 3,               // Approaching deadline: 3 attempts (3 emails)
   approaching_template: 'invoice_payment_reminder',
   overdue_template: 'invoice_overdue_reminder'
 };
@@ -177,12 +179,13 @@ const globalRules = {
 ### Follow-Up Types
 
 #### 1. Approaching Deadline (Stage 0)
-- **Trigger**: 3 days before invoice due date
+- **Trigger**: Only when 3 days or fewer before invoice due date (not created if > 3 days)
 - **Template**: `invoice_payment_reminder`
 - **Priority**: Medium
 - **Stage**: 0 (stored as stage 1 in database, but type is `approaching_deadline`)
-- **Max Attempts**: 3
+- **Max Attempts**: 3 (3 emails total: Day -3, Day -2, Day -1)
 - **Delay Between Attempts**: 1 day
+- **Rescheduling**: If follow-up is due but `days_until_due > 3`, it's rescheduled for exactly 3 days before due date
 
 #### 2. Overdue (Stages 1, 2, 3)
 - **Trigger**: After invoice due date passes
@@ -191,11 +194,11 @@ const globalRules = {
   - Stage 1: Medium (if < 7 days overdue) or High (if ≥ 7 days overdue)
   - Stage 2+: Always High
 - **Stages**:
-  - **Stage 1**: 1 day after due date
-  - **Stage 2**: 3 days after stage 1 completes
-  - **Stage 3**: 7 days after stage 2 completes
-- **Max Attempts per Stage**: 3
-- **Delay Between Attempts**: 1 day
+  - **Stage 1**: 1 day after due date (1 email)
+  - **Stage 2**: 3 days after stage 1 completes (1 email)
+  - **Stage 3**: 7 days after stage 2 completes (1 email)
+- **Max Attempts per Stage**: 1 (1 email per stage, total 3 overdue emails)
+- **No Rescheduling**: Overdue follow-ups are sent once per stage, then progress to next stage
 
 ### Stop Conditions
 
@@ -264,15 +267,22 @@ Follow-ups are created when:
 2. Gets client email
 3. Replaces template variables with real-time data
 4. Creates email_outbox record
-5. Sends email via Resend API
-6. Updates follow-up status:
-   - If `attempts < max_attempts`: Reschedules for 1 day later (status = `scheduled`)
-   - If `attempts >= max_attempts`: Sets status = `sent` (scheduler will progress stage)
-7. Logs event to `invoice_events`
+5. **Fetches PDF attachment from Supabase Storage**:
+   - Reads `invoice.peppol_metadata.pdf_storage_path` and `pdf_storage_bucket`
+   - Downloads PDF from storage bucket
+   - Converts to base64 and attaches to email
+   - If PDF not found, logs warning and continues without attachment
+6. Sends email via Resend API with PDF attachment (if available)
+7. Updates follow-up status:
+   - **Approaching deadline**: If `attempts < max_attempts`: Reschedules for 1 day later (status = `scheduled`)
+   - **Approaching deadline**: If `attempts >= max_attempts`: Sets status = `sent` (scheduler marks as `stage_0_completed`)
+   - **Overdue**: After sending 1 email, sets status = `sent` (scheduler progresses to next stage)
+8. Logs event to `invoice_events`
 
 **Rescheduling Logic**:
-- If attempts < max_attempts: Reschedule for 1 day later
-- If attempts >= max_attempts: Mark as `sent` for scheduler to progress stage
+- **Approaching deadline**: If attempts < 3: Reschedule for 1 day later
+- **Approaching deadline**: If `days_until_due > 3` at send time: Reschedule for exactly 3 days before due date
+- **Overdue**: No rescheduling - sent once per stage, then scheduler progresses to next stage
 
 ---
 
@@ -308,7 +318,17 @@ Follow-ups are created when:
 
 #### `quotesService.js`
 - `convertQuoteToInvoice()`:
-  - After invoice creation → Calls `triggerFollowUpCreation()`
+  - After invoice creation → **Generates and stores PDF synchronously** (waits for completion)
+  - PDF stored in Supabase Storage bucket `invoice-attachments` at path `invoice-pdfs/{userId}/{invoiceNumber}.pdf`
+  - PDF path stored in `invoice.peppol_metadata.pdf_storage_path` and `pdf_storage_bucket`
+  - After PDF generation → Calls `triggerFollowUpCreation()`
+
+#### `invoiceService.js`
+- `generateAndStoreInvoicePDF(invoiceId, userId)`:
+  - Generates invoice PDF using client-side PDF generation
+  - Uploads PDF to Supabase Storage bucket `invoice-attachments`
+  - Updates invoice metadata with PDF storage path and bucket
+  - Returns success/failure status with storage path
 
 ---
 
@@ -387,8 +407,11 @@ Templates are selected based on:
 7. Send email via Resend API
    ↓
 8. Update follow-up:
-   ├─ attempts < max_attempts → Reschedule for 1 day later
-   └─ attempts >= max_attempts → Status = 'sent'
+   ├─ Approaching deadline:
+   │  ├─ attempts < 3 → Reschedule for 1 day later
+   │  └─ attempts >= 3 → Status = 'sent'
+   └─ Overdue:
+      └─ After 1 email → Status = 'sent' (no rescheduling)
    ↓
 9. Scheduler (daily): Progress stages
    ├─ If status = 'sent' and attempts >= max_attempts:
@@ -401,24 +424,25 @@ Templates are selected based on:
 ### Stage Progression
 
 **Stage 0 (Approaching Deadline)**:
-- Created 3 days before due date
-- Max 3 attempts, 1 day delay between attempts
+- Created only when 3 days or fewer before due date
+- Max 3 attempts (3 emails: Day -3, Day -2, Day -1), 1 day delay between attempts
+- If rescheduled and `days_until_due > 3`, rescheduled for exactly 3 days before due date
 - After max attempts → Status = `stage_0_completed`
 
 **Stage 1 (Overdue - First Reminder)**:
 - Created 1 day after due date
-- Max 3 attempts, 1 day delay between attempts
-- After max attempts → Progress to Stage 2
+- Max 1 attempt (1 email only)
+- After sending → Status = `sent`, scheduler progresses to Stage 2
 
 **Stage 2 (Overdue - Second Reminder)**:
 - Created 3 days after Stage 1 completes
-- Max 3 attempts, 1 day delay between attempts
-- After max attempts → Progress to Stage 3
+- Max 1 attempt (1 email only)
+- After sending → Status = `sent`, scheduler progresses to Stage 3
 
 **Stage 3 (Overdue - Final Reminder)**:
 - Created 7 days after Stage 2 completes
-- Max 3 attempts, 1 day delay between attempts
-- After max attempts → Status = `all_stages_completed`
+- Max 1 attempt (1 email only)
+- After sending → Status = `all_stages_completed`
 
 ---
 
@@ -563,12 +587,33 @@ Run in order:
 
 ---
 
+## PDF Attachment System
+
+### PDF Generation
+- **When**: PDFs are generated **synchronously** when invoices are created from quotes
+- **Storage**: Supabase Storage bucket `invoice-attachments`
+- **Path Format**: `invoice-pdfs/{userId}/{invoiceNumber}.pdf`
+- **Metadata**: PDF path stored in `invoice.peppol_metadata.pdf_storage_path` and `pdf_storage_bucket`
+
+### PDF Attachment in Follow-Ups
+- **Dispatcher** automatically fetches PDF from storage when sending follow-up emails
+- **Path**: Uses `invoice.peppol_metadata.pdf_storage_path` and `pdf_storage_bucket`
+- **Fallback**: If PDF not found, email is sent without attachment (warning logged)
+- **Filename**: `facture-{invoice_number}.pdf`
+
+### Important Notes
+- PDFs must be generated **before** follow-ups are sent (synchronous generation ensures this)
+- If PDF generation fails, invoice creation still succeeds, but follow-ups will be sent without PDF attachment
+- PDF generation errors are logged but don't block invoice creation
+
+---
+
 ## Summary
 
 The Invoice Follow-Up System provides automated payment reminders for invoices with:
-- **Approaching deadline reminders** (3 days before due date)
-- **3-stage progressive follow-ups** for overdue invoices
-- **Multiple attempts per stage** (3 attempts with 1 day delay)
+- **Approaching deadline reminders** (3 days before due date, 3 emails total: Day -3, -2, -1)
+- **3-stage progressive follow-ups** for overdue invoices (1 email per stage, total 3 overdue emails)
+- **PDF attachments** automatically included in all follow-up emails
 - **Automatic cleanup** when invoices are paid/cancelled
 - **Manual follow-up support** from UI
 - **Comprehensive event tracking** for audit and analytics
