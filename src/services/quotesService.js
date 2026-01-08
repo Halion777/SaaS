@@ -2,6 +2,7 @@ import { supabase } from './supabaseClient';
 import EmailService from './emailService';
 import QuoteTrackingService from './quoteTrackingService';
 import { calculateQuoteTotalsFromDB } from '../utils/quotePriceCalculator';
+import { generateShareToken } from './shareService';
 
 // Helper to ensure DB varchar limits are respected
 function truncateString(value, max) {
@@ -358,8 +359,8 @@ export async function createQuote(quoteData) {
     }
     
     
-    // Generate unique share token for the quote
-    const shareToken = `qt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Generate unique share token for the quote using the same format as shareService
+    const shareToken = generateShareToken();
     // First, create the quote
     
     const quoteInsertData = {

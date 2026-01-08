@@ -25,6 +25,7 @@ const Select = React.forwardRef(({
     onValueChange,
     onOpenChange,
     searchable, // Extract searchable to prevent it from being passed to DOM
+    searchPlaceholder, // Custom placeholder for search input
     usePortal = false, // Use portal to render dropdown outside of parent overflow containers
     maxHeight, // Optional max height override for dropdown
     ...props
@@ -140,6 +141,7 @@ const Select = React.forwardRef(({
     }, [isOpen, usePortal]);
 
     // Handle keyboard input for filtering when dropdown is open
+    // BUT: Don't intercept if user is typing in the search input
     useEffect(() => {
         if (!isOpen) {
             setKeyboardFilter("");
@@ -147,7 +149,12 @@ const Select = React.forwardRef(({
         }
 
         const handleKeyDown = (event) => {
-            // Only handle letter keys (a-z, A-Z)
+            // Don't intercept if user is typing in the search input
+            if (searchable && searchInputRef.current && (document.activeElement === searchInputRef.current || searchInputRef.current.contains(event.target))) {
+                return; // Let the input handle the keydown
+            }
+            
+            // Only handle letter keys (a-z, A-Z) when NOT in search input
             if (event.key.length === 1 && /[a-zA-Z]/.test(event.key)) {
                 event.preventDefault();
                 event.stopPropagation();
@@ -175,7 +182,7 @@ const Select = React.forwardRef(({
                 clearTimeout(keyboardFilterTimeoutRef.current);
             }
         };
-    }, [isOpen, keyboardFilter]);
+    }, [isOpen, keyboardFilter, searchable]);
 
     // Get selected option(s) for display
     const getSelectedDisplay = () => {
@@ -236,9 +243,16 @@ const Select = React.forwardRef(({
             
             // Focus search input when opening if searchable
             if (newIsOpen && searchable && searchInputRef.current) {
-                setTimeout(() => {
-                    searchInputRef.current?.focus();
-                }, 100);
+                // Use requestAnimationFrame to ensure the input is rendered before focusing
+                requestAnimationFrame(() => {
+                    setTimeout(() => {
+                        if (searchInputRef.current) {
+                            searchInputRef.current.focus();
+                            // Also ensure the input is selectable
+                            searchInputRef.current.select();
+                        }
+                    }, 50);
+                });
             }
         }
     };
@@ -387,7 +401,13 @@ const Select = React.forwardRef(({
                     )}
                     onClick={handleToggle}
                     onKeyDown={(e) => {
-                        // Allow keyboard filtering when dropdown is open
+                        // Don't intercept keyboard filtering if searchable and search input is focused
+                        if (searchable && searchInputRef.current && document.activeElement === searchInputRef.current) {
+                            // Let the search input handle it
+                            return;
+                        }
+                        
+                        // Allow keyboard filtering when dropdown is open (only if not in search input)
                         if (isOpen && e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
                             e.preventDefault();
                             e.stopPropagation();
@@ -533,29 +553,59 @@ const Select = React.forwardRef(({
                         >
                             {/* Search input for searchable selects */}
                             {searchable && (
-                                <div className="p-2 border-b border-border sticky top-0 bg-popover z-10">
+                                <div 
+                                    className="p-2 border-b border-border sticky top-0 bg-popover z-10"
+                                    onClick={(e) => e.stopPropagation()}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    onTouchStart={(e) => e.stopPropagation()}
+                                >
                                     <input
                                         ref={searchInputRef}
                                         type="text"
                                         value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        placeholder="Search country code..."
+                                        onChange={(e) => {
+                                            e.stopPropagation();
+                                            setSearchQuery(e.target.value);
+                                        }}
+                                        onInput={(e) => e.stopPropagation()}
+                                        placeholder={searchPlaceholder || "Search..."}
                                         className="w-full h-9 px-3 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0"
-                                        onClick={(e) => e.stopPropagation()}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            e.currentTarget.focus();
+                                        }}
+                                        onFocus={(e) => e.stopPropagation()}
+                                        onMouseDown={(e) => {
+                                            e.stopPropagation();
+                                            e.currentTarget.focus();
+                                        }}
+                                        onTouchStart={(e) => {
+                                            e.stopPropagation();
+                                            e.currentTarget.focus();
+                                        }}
                                         onKeyDown={(e) => {
-                                            // Prevent closing dropdown on Enter
+                                            // Only prevent default for Enter key to prevent closing dropdown
                                             if (e.key === 'Enter') {
                                                 e.preventDefault();
                                                 e.stopPropagation();
                                             }
+                                            // Allow all other keys to work normally
                                         }}
+                                        autoComplete="off"
                                     />
                                 </div>
                             )}
-                            <div className={cn("py-1 overflow-y-auto overflow-x-hidden scrollbar-hide", !maxHeight && "max-h-60")} style={maxHeight && maxHeight !== 'none' ? { maxHeight: typeof maxHeight === 'string' ? maxHeight : `${maxHeight}px` } : undefined}>
+                            <div 
+                                className={cn("py-1 overflow-y-auto overflow-x-hidden scrollbar-hide", !maxHeight && "max-h-60")} 
+                                style={{
+                                    ...(maxHeight && maxHeight !== 'none' ? { maxHeight: typeof maxHeight === 'string' ? maxHeight : `${maxHeight}px` } : {}),
+                                    WebkitOverflowScrolling: 'touch', // Smooth scrolling on iOS
+                                    touchAction: 'pan-y' // Allow vertical panning (scrolling) on touch devices
+                                }}
+                            >
                                 {filteredOptions.length === 0 ? (
                                     <div className="px-3 py-2 text-sm text-muted-foreground">
-                                        {searchable && searchQuery ? `No results for "${searchQuery}"` : keyboardFilter ? `No country codes starting with "${keyboardFilter.toUpperCase()}"` : 'No options available'}
+                                        {searchable && searchQuery ? `No results for "${searchQuery}"` : keyboardFilter ? `No options starting with "${keyboardFilter.toUpperCase()}"` : 'No options available'}
                                     </div>
                                 ) : (
                                     filteredOptions.map((option) => (

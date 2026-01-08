@@ -1,5 +1,8 @@
 import { supabase } from './supabaseClient';
 
+// Use the same BASE_URL as emailService for consistency
+const BASE_URL = import.meta.env.SITE_URL || window.location.origin;
+
 /**
  * Generate a public share link for a quote
  * @param {string} quoteId - Quote ID
@@ -12,21 +15,50 @@ export const generatePublicShareLink = async (quoteId, userId) => {
       return { success: false, error: 'Quote ID and User ID are required' };
     }
 
-    // Generate a unique share token
-    const shareToken = generateShareToken();
-    
-    // Update quotes table directly
-    const { error: updateError } = await supabase
+    // First, check if a share token already exists for this quote
+    const { data: existingQuote, error: fetchError } = await supabase
       .from('quotes')
-      .update({ share_token: shareToken, is_public: true })
-      .eq('id', quoteId);
+      .select('share_token, is_public')
+      .eq('id', quoteId)
+      .single();
 
-    if (updateError) {
-      return { success: false, error: 'Failed to create share link' };
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      // PGRST116 = no rows found, which is fine - we'll create a new token
+      // Other errors should be returned
+      return { success: false, error: 'Failed to check existing share link' };
     }
 
-    // Generate the public URL
-    const publicUrl = `${window.location.origin}/quote-share/${shareToken}`;
+    // If a share token already exists, reuse it
+    let shareToken = existingQuote?.share_token;
+    
+    if (!shareToken) {
+      // Generate a new unique share token only if one doesn't exist
+      shareToken = generateShareToken();
+      
+      // Update quotes table with the new token
+      const { error: updateError } = await supabase
+        .from('quotes')
+        .update({ share_token: shareToken, is_public: true })
+        .eq('id', quoteId);
+
+      if (updateError) {
+        return { success: false, error: 'Failed to create share link' };
+      }
+    } else {
+      // Token exists, just ensure is_public is true
+      const { error: updateError } = await supabase
+        .from('quotes')
+        .update({ is_public: true })
+        .eq('id', quoteId);
+
+      if (updateError) {
+        console.warn('Failed to update is_public flag:', updateError);
+        // Don't fail if this update fails, token already exists
+      }
+    }
+
+    // Generate the public URL using BASE_URL for consistency with email service
+    const publicUrl = `${BASE_URL}/quote-share/${shareToken}`;
     
     return { 
       success: true, 
@@ -213,9 +245,9 @@ export const generateViewOnlyToken = async (quoteId) => {
 
 /**
  * Generate a unique share token
- * @returns {string} Unique share token
+ * @returns {string} Unique share token (32 characters)
  */
-const generateShareToken = () => {
+export const generateShareToken = () => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let result = '';
   for (let i = 0; i < 32; i++) {

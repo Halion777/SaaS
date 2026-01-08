@@ -1279,6 +1279,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
               label={t('quoteCreation.clientSelection.selectExisting')}
               placeholder={t('quoteCreation.clientSelection.searchPlaceholder')}
               searchable
+              searchPlaceholder={t('quoteCreation.clientSelection.searchPlaceholder', 'Rechercher des clients...')}
               clearable
               options={existingClients}
               value={selectedClient?.value || ''}
@@ -1293,6 +1294,7 @@ const ClientSelection = ({ selectedClient, projectInfo, onClientSelect, onProjec
                 }
               }}
               description={t('quoteCreation.clientSelection.searchDescription', 'Tapez pour rechercher parmi vos clients existants')}
+              maxHeight="300px"
             />
             )}
             

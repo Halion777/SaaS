@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 import QuoteTrackingService from './quoteTrackingService';
+import { generateShareToken } from './shareService';
 
 // Enhanced follow-up service with automated relance based on tracking data
 
@@ -135,16 +136,6 @@ export async function createFollowUpForQuote(quoteId, stage, userId = null) {
     console.error('Error creating follow-up for quote:', error);
     throw error;
   }
-}
-
-// Helper function to generate a share token
-function generateShareToken() {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < 32; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
 }
 
 export async function enqueueEmail({ follow_up_id, user_id, to_email, subject, html, text, provider = 'resend' }) {

@@ -9,6 +9,9 @@ import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../../utils/numberFormat';
 import { generatePublicShareLink, getShareLinkInfo } from '../../../services/shareService';
 
+// Use the same BASE_URL as emailService for consistency
+const BASE_URL = import.meta.env.SITE_URL || window.location.origin;
+
 const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuoteAction, onQuoteSelect, viewMode = 'table', setViewMode = () => {}, searchTerm = '', setSearchTerm = () => {}, canEdit = true, canDelete = true, convertingQuoteId = null, markingAsSentQuoteId = null, userId = null }) => {
   const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
   const [currentPage, setCurrentPage] = useState(1);
@@ -94,13 +97,13 @@ const QuotesTable = ({ quotes, selectedQuotes, onSelectQuote, onSelectAll, onQuo
       
       // Check if quote already has a share token in the quote object
       if (quote.share_token) {
-        shareLink = `${window.location.origin}/quote-share/${quote.share_token}`;
+        shareLink = `${BASE_URL}/quote-share/${quote.share_token}`;
       } else {
         // Check if share token exists in database
         const shareInfo = await getShareLinkInfo(quote.id);
         
         if (shareInfo.success && shareInfo.data?.share_token) {
-          shareLink = `${window.location.origin}/quote-share/${shareInfo.data.share_token}`;
+          shareLink = `${BASE_URL}/quote-share/${shareInfo.data.share_token}`;
         } else {
           // Generate new share link
           const result = await generatePublicShareLink(quote.id, userId);
