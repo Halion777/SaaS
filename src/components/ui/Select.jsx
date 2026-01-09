@@ -245,7 +245,7 @@ const Select = React.forwardRef(({
             if (newIsOpen && searchable && searchInputRef.current) {
                 // Use requestAnimationFrame to ensure the input is rendered before focusing
                 requestAnimationFrame(() => {
-                    setTimeout(() => {
+                setTimeout(() => {
                         if (searchInputRef.current) {
                             searchInputRef.current.focus();
                             // Also ensure the input is selectable

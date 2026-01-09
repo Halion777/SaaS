@@ -34,15 +34,15 @@ export const generatePublicShareLink = async (quoteId, userId) => {
     if (!shareToken) {
       // Generate a new unique share token only if one doesn't exist
       shareToken = generateShareToken();
-      
+    
       // Update quotes table with the new token
-      const { error: updateError } = await supabase
-        .from('quotes')
-        .update({ share_token: shareToken, is_public: true })
-        .eq('id', quoteId);
+    const { error: updateError } = await supabase
+      .from('quotes')
+      .update({ share_token: shareToken, is_public: true })
+      .eq('id', quoteId);
 
-      if (updateError) {
-        return { success: false, error: 'Failed to create share link' };
+    if (updateError) {
+      return { success: false, error: 'Failed to create share link' };
       }
     } else {
       // Token exists, just ensure is_public is true
