@@ -187,6 +187,19 @@ const Footer = () => {
               {/* Footer links removed - pages not implemented yet */}
             </div>
           </div>
+          <div className="mt-4 text-center">
+            <span className="text-xs text-gray-500">
+              Designed & Developed by{' '}
+              <a 
+                href="https://abdulhameed.dev" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-gray-400 hover:text-white transition-colors underline"
+              >
+                abdulhameed.dev
+              </a>
+            </span>
+          </div>
         </div>
       </div>
     </footer>
