@@ -142,8 +142,11 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
       const finalDueDate = dueDate || invoice.due_date || invoice.dueDate;
       const dueDateFormatted = finalDueDate ? new Date(finalDueDate).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : i18n.language === 'nl' ? 'nl-NL' : 'en-US') : '';
       
+      // Check if due date was modified (need to regenerate PDF if changed)
+      const dueDateWasModified = dueDate && dueDate !== invoice.due_date && dueDate !== invoice.dueDate;
+      
       // Update invoice's due_date in database if due date was modified
-      if (dueDate && dueDate !== invoice.due_date && dueDate !== invoice.dueDate) {
+      if (dueDateWasModified) {
         await supabase
           .from('invoices')
           .update({ due_date: dueDate })
@@ -172,8 +175,8 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
           issue_date: invoice.issue_date,
           due_date: finalDueDate || invoice.due_date, // Use modified due date for final invoices
           amount: invoice.amount,
-          net_amount: invoice.net_amount,
-          tax_amount: invoice.tax_amount,
+          net_amount: invoice.netAmount || invoice.net_amount, // Handle both camelCase and snake_case
+          tax_amount: invoice.taxAmount || invoice.tax_amount, // Handle both camelCase and snake_case
           final_amount: invoice.final_amount,
           description: invoice.description,
           title: invoice.title,
@@ -185,68 +188,102 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
         depositInvoiceStatus: invoice.depositInvoiceStatus || null // Can be passed from parent if available
       };
 
-      // Generate PDF blob (hide bank info for professional clients, but show it if from invalid Peppol ID flow or Peppol failed/not sent)
-      // Show warning in email attachments for professional clients
-      const hideBankInfo = isProfessionalClient && !fromInvalidPeppolId && !shouldShowEmailWarning;
-      const showWarning = isProfessionalClient; // Show warning for professional clients in emails
-      const pdfBlob = await generateInvoicePDF(invoiceData, invoiceNumber, null, i18n.language, hideBankInfo, invoiceType, showWarning);
+      // Check if PDF already exists in storage (from automatic conversion)
+      // Reuse existing PDF instead of regenerating to avoid duplicate uploads
+      // BUT: If due date was modified, we must regenerate PDF to reflect the new due date
+      let pdfBase64 = null;
+      let pdfStorageInfo = {};
+      let uploadError = null;
+      let uploadData = null;
       
-      // Convert PDF blob to base64 for email attachment
-      const pdfBase64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64String = reader.result.split(',')[1]; // Remove data:application/pdf;base64, prefix
-          resolve(base64String);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(pdfBlob);
-      });
-
-      // Store PDF to Supabase Storage for follow-up emails
-      // Generate storage path: invoice-pdfs/{userId}/{invoiceNumber}.pdf
-      const sanitizedInvoiceNumber = invoiceNumber.replace(/[^a-zA-Z0-9_-]/g, '_');
-      const storagePath = `invoice-pdfs/${user?.id}/${sanitizedInvoiceNumber}.pdf`;
-      const bucketName = 'invoice-attachments';
+      const existingPdfPath = invoice.peppol_metadata?.pdf_storage_path;
+      const existingPdfBucket = invoice.peppol_metadata?.pdf_storage_bucket || 'invoice-attachments';
       
-      // Convert base64 to Uint8Array for storage
-      const pdfBuffer = Uint8Array.from(atob(pdfBase64), c => c.charCodeAt(0));
+      // Only reuse existing PDF if it exists AND due date was NOT modified
+      if (existingPdfPath && existingPdfBucket && !dueDateWasModified) {
+        // PDF already exists - download it from storage
+        try {
+          const { data: pdfData, error: downloadError } = await supabase.storage
+            .from(existingPdfBucket)
+            .download(existingPdfPath);
+          
+          if (!downloadError && pdfData) {
+            // Convert blob to base64
+            pdfBase64 = await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                const base64String = reader.result.split(',')[1]; // Remove data:application/pdf;base64, prefix
+                resolve(base64String);
+              };
+              reader.onerror = reject;
+              reader.readAsDataURL(pdfData);
+            });
+            
+            // Use existing storage info
+            pdfStorageInfo = {
+              pdf_storage_path: existingPdfPath,
+              pdf_storage_bucket: existingPdfBucket,
+              pdf_generated_at: invoice.peppol_metadata?.pdf_generated_at || new Date().toISOString()
+            };
+          } else {
+            console.warn(`⚠️ Failed to download existing PDF for invoice ${invoiceNumber}, will regenerate:`, downloadError?.message);
+            // Fall through to regenerate PDF
+          }
+        } catch (downloadErr) {
+          console.warn(`⚠️ Error downloading existing PDF for invoice ${invoiceNumber}, will regenerate:`, downloadErr.message);
+          // Fall through to regenerate PDF
+        }
+      }
       
-      // Upload to Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from(bucketName)
-        .upload(storagePath, pdfBuffer, {
-          contentType: 'application/pdf',
-          upsert: true // Overwrite if exists
+      // If PDF doesn't exist or download failed, generate and upload it
+      if (!pdfBase64) {
+        // Generate PDF blob - use same template as download button (always show bank info)
+        // Show warning in email attachments for professional clients (reference document only)
+        const hideBankInfo = false; // Always show bank info, same as download button
+        const showWarning = isProfessionalClient; // Show warning for professional clients in emails
+        // Use client's language preference (from state), fallback to user's language if not available
+        const pdfLanguage = clientLanguage || invoice.client?.language_preference?.split('-')[0] || i18n.language.split('-')[0] || 'fr';
+        const pdfBlob = await generateInvoicePDF(invoiceData, invoiceNumber, null, pdfLanguage, hideBankInfo, invoiceType, showWarning);
+        
+        // Convert PDF blob to base64 for email attachment
+        pdfBase64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const base64String = reader.result.split(',')[1]; // Remove data:application/pdf;base64, prefix
+            resolve(base64String);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(pdfBlob);
         });
 
-      // Store PDF path in invoice metadata (even if upload failed, continue with email send)
-      if (!uploadError && uploadData) {
+        // Store PDF to Supabase Storage for follow-up emails
+        // Generate storage path: invoice-pdfs/{userId}/{invoiceNumber}.pdf
+        const sanitizedInvoiceNumber = invoiceNumber.replace(/[^a-zA-Z0-9_-]/g, '_');
+        const storagePath = `invoice-pdfs/${user?.id}/${sanitizedInvoiceNumber}.pdf`;
+        const bucketName = 'invoice-attachments';
+        
         // Convert base64 to Uint8Array for storage
         const pdfBuffer = Uint8Array.from(atob(pdfBase64), c => c.charCodeAt(0));
         
         // Upload to Supabase Storage
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const uploadResult = await supabase.storage
           .from(bucketName)
           .upload(storagePath, pdfBuffer, {
             contentType: 'application/pdf',
             upsert: true // Overwrite if exists
           });
-
-        // Store PDF path in invoice metadata (even if upload failed, continue with email send)
-        if (!uploadError && uploadData) {
-          const currentMetadata = invoice.peppol_metadata || {};
-          await supabase
-            .from('invoices')
-            .update({
-              peppol_metadata: {
-                ...currentMetadata,
-                pdf_storage_path: storagePath,
-                pdf_storage_bucket: bucketName,
-                pdf_generated_at: new Date().toISOString()
-              }
-            })
-            .eq('id', invoice.id);
-        } else if (uploadError) {
+        
+        uploadData = uploadResult.data;
+        uploadError = uploadResult.error;
+        
+        // Prepare PDF storage info for metadata update (will be combined with email_sent_at after email send)
+        pdfStorageInfo = (!uploadError && uploadData) ? {
+          pdf_storage_path: storagePath,
+          pdf_storage_bucket: bucketName,
+          pdf_generated_at: new Date().toISOString()
+        } : {};
+        
+        if (uploadError) {
           // Log warning but continue with email send
           console.warn(`⚠️ Failed to store PDF for invoice ${invoiceNumber}:`, uploadError.message);
         }
@@ -347,31 +384,43 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
         });
       }
 
-      if (result.success) {
-        // Update invoice to mark as sent via email
-        // Add email_sent_at to peppol_metadata to track when invoice was sent via email
-        const currentMetadata = invoice.peppol_metadata || {};
-        const { error: updateError } = await supabase
+      // Update invoice metadata (combine PDF storage info and email_sent_at in single update)
+      // Store PDF info even if email failed, but only add email_sent_at if email succeeded
+      // This reduces database calls from 2 separate updates to 1 combined update
+      const currentMetadata = invoice.peppol_metadata || {};
+      const metadataUpdate = {
+        ...currentMetadata,
+        ...pdfStorageInfo, // Add PDF storage info if available
+        ...(result.success ? { email_sent_at: new Date().toISOString() } : {}) // Add email_sent_at only if email succeeded
+      };
+      
+      // Only update if we have PDF storage info or email was sent (to avoid unnecessary updates)
+      let updateError = null;
+      if (Object.keys(pdfStorageInfo).length > 0 || result.success) {
+        const { error } = await supabase
           .from('invoices')
           .update({
             updated_at: new Date().toISOString(),
-            peppol_metadata: {
-              ...currentMetadata,
-              email_sent_at: new Date().toISOString()
-            }
+            peppol_metadata: metadataUpdate
           })
           .eq('id', invoice.id);
 
+        updateError = error;
         if (updateError) {
-          // Error updating invoice
-          setError(t('invoicesManagement.sendEmailModal.errors.updateError') + ': ' + updateError.message);
-        } else {
-          overlay.hide();
-          if (onSuccess) {
-            onSuccess();
-          }
-          onClose();
+          console.warn(`⚠️ Failed to update invoice metadata for ${invoiceNumber}:`, updateError.message);
         }
+      }
+
+      if (result.success) {
+        if (updateError) {
+          // Error updating invoice metadata (but email was sent successfully)
+          console.warn(`⚠️ Email sent but failed to update invoice metadata:`, updateError.message);
+        }
+        overlay.hide();
+        if (onSuccess) {
+          onSuccess();
+        }
+        onClose();
       } else {
         overlay.hide();
         setError(result.error || t('invoicesManagement.sendEmailModal.errors.sendError'));

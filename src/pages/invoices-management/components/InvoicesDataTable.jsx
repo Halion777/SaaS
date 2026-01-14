@@ -436,10 +436,10 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                     </div>
 
                     {/* Peppol/Email Status */}
-                    <div className="mb-3">
+                          <div className="mb-3">
                       <div className="text-xs text-muted-foreground mb-1">{t('invoicesManagement.table.headers.peppolEmailStatus', 'Peppol/Email Status')}</div>
                       {getPeppolStatusBadge(getInvoiceSendStatus(invoice))}
-                    </div>
+                          </div>
 
                     {/* Dates */}
                     <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground mb-3">
@@ -563,10 +563,10 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
             </div>
 
             {/* Peppol/Email Status */}
-            <div className="mb-3">
+                  <div className="mb-3">
               <div className="text-xs text-muted-foreground mb-1">{t('invoicesManagement.table.headers.peppolEmailStatus', 'Peppol/Email Status')}</div>
               {getPeppolStatusBadge(getInvoiceSendStatus(invoice))}
-            </div>
+                  </div>
 
             {/* Dates */}
             <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground mb-3">

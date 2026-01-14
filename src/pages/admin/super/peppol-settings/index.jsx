@@ -237,7 +237,7 @@ const Peppol = () => {
       // Helper function to check if participant data is complete
       const isParticipantDataComplete = (participant) => {
         if (!participant || typeof participant !== 'object') return false;
-        
+              
         // Check if we have essential fields
         const hasName = participant.name || participant.businessName || participant.companyName;
         const hasCountry = participant.countryCode || participant.country;
@@ -264,14 +264,14 @@ const Peppol = () => {
         for (let attempt = 0; attempt < maxRetries; attempt++) {
           try {
             const { data, error } = await supabase.functions.invoke('peppol-webhook-config', {
-              body: {
-                endpoint: endpoint,
-                username: settings.apiUsername,
-                password: settings.apiPassword,
+                   body: {
+                     endpoint: endpoint,
+                     username: settings.apiUsername,
+                     password: settings.apiPassword,
                 action: action,
                 peppolIdentifier: peppolIdentifier
-              }
-            });
+                   }
+                 });
 
             // Check if error exists and extract status
             const errorStatus = error?.status || (error && typeof error === 'object' && 'status' in error ? error.status : null);
@@ -316,19 +316,19 @@ const Peppol = () => {
       // Helper function to merge participant data from different sources
       const mergeParticipantData = (identifier, basicDetails, publicDetails, fallbackData = {}) => {
         return {
-          peppolIdentifier: identifier,
-          id: identifier,
-          // From authenticated endpoint
+                   peppolIdentifier: identifier,
+                   id: identifier,
+                   // From authenticated endpoint
           name: basicDetails?.name || publicDetails?.businessCard?.businessEntities?.[0]?.names?.[0]?.name || fallbackData.name || 'N/A',
-          registrationDate: basicDetails?.registrationDate || publicDetails?.businessCard?.businessEntities?.[0]?.registrationDate || null,
-          contactPerson: basicDetails?.contactPerson || null,
-          // From public endpoint
+                   registrationDate: basicDetails?.registrationDate || publicDetails?.businessCard?.businessEntities?.[0]?.registrationDate || null,
+                   contactPerson: basicDetails?.contactPerson || null,
+                   // From public endpoint
           countryCode: publicDetails?.businessCard?.businessEntities?.[0]?.countryCode || fallbackData.countryCode || 'N/A',
-          supportedDocumentTypes: publicDetails?.supportedDocumentTypes 
-            ? publicDetails.supportedDocumentTypes.map(dt => dt.type || dt)
+                   supportedDocumentTypes: publicDetails?.supportedDocumentTypes 
+                     ? publicDetails.supportedDocumentTypes.map(dt => dt.type || dt)
             : (fallbackData.supportedDocumentTypes || []),
-          smpHostName: publicDetails?.smpHostName || null
-        };
+                   smpHostName: publicDetails?.smpHostName || null
+                 };
       };
 
       // Process each participant sequentially with delays to avoid rate limiting
@@ -393,7 +393,7 @@ const Peppol = () => {
                 detailedParticipants.push(mergedData);
               } else {
                 // If both failed with non-404 errors, use fallback
-                console.warn(`Failed to fetch details for ${identifier}:`, { basicError, publicError });
+                 console.warn(`Failed to fetch details for ${identifier}:`, { basicError, publicError });
                 detailedParticipants.push({
                   peppolIdentifier: identifier || 'N/A',
                   id: identifier || 'N/A',
@@ -403,21 +403,21 @@ const Peppol = () => {
                 });
               }
               continue;
-            }
-            
-            // Fallback to basic info from participant object
+               }
+              
+              // Fallback to basic info from participant object
             detailedParticipants.push({
-              peppolIdentifier: identifier || 'N/A',
-              id: identifier || 'N/A',
-              name: participant.name || participant.businessName || participant.companyName || 'N/A',
-              countryCode: participant.countryCode || participant.country || 'N/A',
-              supportedDocumentTypes: participant.supportedDocumentTypes || participant.documentTypes || []
+                peppolIdentifier: identifier || 'N/A',
+                id: identifier || 'N/A',
+                name: participant.name || participant.businessName || participant.companyName || 'N/A',
+                countryCode: participant.countryCode || participant.country || 'N/A',
+                supportedDocumentTypes: participant.supportedDocumentTypes || participant.documentTypes || []
             });
             continue;
-          }
+            }
 
-          // If participant is a string (just identifier), fetch details from both endpoints
-          if (typeof participant === 'string') {
+            // If participant is a string (just identifier), fetch details from both endpoints
+            if (typeof participant === 'string') {
             // Fetch from both endpoints in parallel (but with retry logic and caching)
             const [basicResult, publicResult] = await Promise.all([
               fetchWithRetry('get-participant-details', participant),
@@ -429,7 +429,7 @@ const Peppol = () => {
             const basicError = basicResult.error;
             const publicError = publicResult.error;
 
-            // Merge data from both endpoints
+              // Merge data from both endpoints
             const mergedData = mergeParticipantData(participant, basicDetails, publicDetails);
 
             // Return merged data if we got data from at least one endpoint
@@ -450,29 +450,29 @@ const Peppol = () => {
               });
             }
             continue;
-          }
+            }
 
-          // Unknown format
+            // Unknown format
           detailedParticipants.push({
-            peppolIdentifier: 'N/A',
-            id: 'N/A',
-            name: 'N/A',
-            countryCode: 'N/A',
-            supportedDocumentTypes: []
+              peppolIdentifier: 'N/A',
+              id: 'N/A',
+              name: 'N/A',
+              countryCode: 'N/A',
+              supportedDocumentTypes: []
           });
-        } catch (err) {
-          console.warn(`Error processing participant:`, err, participant);
-          const identifier = typeof participant === 'string' 
-            ? participant 
-            : (participant?.peppolIdentifier || participant?.id || 'N/A');
+          } catch (err) {
+            console.warn(`Error processing participant:`, err, participant);
+            const identifier = typeof participant === 'string' 
+              ? participant 
+              : (participant?.peppolIdentifier || participant?.id || 'N/A');
           detailedParticipants.push({
-            peppolIdentifier: identifier,
-            id: identifier,
-            name: 'N/A',
-            countryCode: 'N/A',
-            supportedDocumentTypes: []
+              peppolIdentifier: identifier,
+              id: identifier,
+              name: 'N/A',
+              countryCode: 'N/A',
+              supportedDocumentTypes: []
           });
-        }
+          }
       }
 
       setParticipants(detailedParticipants);

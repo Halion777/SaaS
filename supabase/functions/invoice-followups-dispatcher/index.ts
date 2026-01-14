@@ -155,6 +155,8 @@ async function processFollowUp(admin: any, followUp: any) {
         quote_id,
         invoice_type,
         peppol_metadata,
+        peppol_enabled,
+        peppol_status,
         quote:quotes(
           id,
           quote_tasks(
@@ -400,8 +402,9 @@ async function processFollowUp(admin: any, followUp: any) {
     // 4. FETCH PDF ATTACHMENT FROM STORAGE
     // ========================================
     // PDFs are generated when invoices are created and stored in Supabase Storage
-    // For email invoices (not Peppol), PDFs are stored in standard path format
-    // For Peppol invoices, PDFs are stored in peppol_metadata
+    // For email invoices (not Peppol), PDFs are stored in invoice-attachments bucket
+    // For Peppol invoices, PDFs may be stored in expense-invoice-attachments bucket (from webhook)
+    // Also check invoice-attachments for clients with Peppol enabled but sent via email
     let pdfAttachment = null;
     try {
       let pdfStoragePath = null;
@@ -419,8 +422,8 @@ async function processFollowUp(admin: any, followUp: any) {
         pdfStorageBucket = 'invoice-attachments';
       }
       
+      // Try to download PDF from primary storage location
       if (pdfStoragePath) {
-        // Try to download PDF from Supabase Storage
         const { data: pdfData, error: downloadError } = await admin.storage
           .from(pdfStorageBucket)
           .download(pdfStoragePath);
@@ -437,7 +440,35 @@ async function processFollowUp(admin: any, followUp: any) {
           };
           console.log(`✅ PDF attachment loaded from storage: ${pdfStorageBucket}/${pdfStoragePath}`);
         } else {
-          console.warn(`⚠️ PDF not found at ${pdfStorageBucket}/${pdfStoragePath}:`, downloadError?.message || 'File not found');
+          // If not found in primary location and this is a Peppol invoice, try expense-invoice-attachments bucket
+          const isPeppolInvoice = invoice.peppol_enabled || invoice.peppol_status === 'sent';
+          if (isPeppolInvoice && pdfStorageBucket === 'invoice-attachments') {
+            // Try expense-invoice-attachments bucket for Peppol invoices
+            // Path format: expense-invoice-pdfs/{userId}/{invoiceNumber}_{filename}.pdf
+            const sanitizedInvoiceNumber = invoice.invoice_number.replace(/[^a-zA-Z0-9_-]/g, '_');
+            const peppolPdfPath = `expense-invoice-pdfs/${invoice.user_id}/${sanitizedInvoiceNumber}_invoice.pdf`;
+            
+            const { data: peppolPdfData, error: peppolDownloadError } = await admin.storage
+              .from('expense-invoice-attachments')
+              .download(peppolPdfPath);
+            
+            if (!peppolDownloadError && peppolPdfData) {
+              // Convert blob to base64
+              const arrayBuffer = await peppolPdfData.arrayBuffer();
+              const uint8Array = new Uint8Array(arrayBuffer);
+              const pdfBase64 = btoa(String.fromCharCode.apply(null, Array.from(uint8Array)));
+              
+              pdfAttachment = {
+                filename: `facture-${invoice.invoice_number}.pdf`,
+                content: pdfBase64
+              };
+              console.log(`✅ PDF attachment loaded from expense-invoice-attachments: ${peppolPdfPath}`);
+            } else {
+              console.warn(`⚠️ PDF not found at ${pdfStorageBucket}/${pdfStoragePath} or expense-invoice-attachments/${peppolPdfPath}:`, downloadError?.message || peppolDownloadError?.message || 'File not found');
+            }
+          } else {
+            console.warn(`⚠️ PDF not found at ${pdfStorageBucket}/${pdfStoragePath}:`, downloadError?.message || 'File not found');
+          }
         }
       } else {
         console.warn(`⚠️ No PDF storage path available for invoice ${invoice.invoice_number}. Invoice may need PDF generation.`);

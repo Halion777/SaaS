@@ -527,6 +527,7 @@ export class InvoiceService {
           notes,
           invoice_type,
           quote_id,
+          peppol_metadata,
           quote:quotes(
             id,
             quote_tasks(
@@ -537,6 +538,17 @@ export class InvoiceService {
               unit,
               unit_price,
               total_price
+            ),
+            quote_materials(
+              id,
+              quote_task_id,
+              name,
+              description,
+              quantity,
+              unit,
+              unit_price,
+              total_price,
+              order_index
             )
           ),
           client:clients(
@@ -549,7 +561,8 @@ export class InvoiceService {
             postal_code,
             country,
             vat_number,
-            client_type
+            client_type,
+            language_preference
           )
         `)
         .eq('id', invoiceId)
@@ -565,7 +578,22 @@ export class InvoiceService {
         throw new Error('Company information not found');
       }
 
-      // Prepare invoice data for PDF generation
+      // Check if deposit invoice is paid for the same quote (for final invoices)
+      let depositInvoiceStatus = null;
+      if (invoice.invoice_type === 'final' && invoice.quote_id) {
+        // Fetch deposit invoice status from database
+        const { data: depositInvoice } = await supabase
+          .from('invoices')
+          .select('status')
+          .eq('user_id', userId)
+          .eq('quote_id', invoice.quote_id)
+          .eq('invoice_type', 'deposit')
+          .maybeSingle();
+        
+        depositInvoiceStatus = depositInvoice?.status || null;
+      }
+
+      // Prepare invoice data for PDF generation (matching download button structure)
       const invoiceDataForPDF = {
         companyInfo: companyInfo,
         client: invoice.client || {},
@@ -580,18 +608,24 @@ export class InvoiceService {
           description: invoice.description,
           title: invoice.title,
           notes: invoice.notes,
-          invoice_type: invoice.invoice_type || 'final'
+          invoice_type: invoice.invoice_type || 'final',
+          peppol_metadata: invoice.peppol_metadata || null
         },
-        quote: invoice.quote || null
+        quote: invoice.quote || null,
+        depositInvoiceStatus: depositInvoiceStatus // Pass deposit invoice status for PDF generation
       };
 
       // Generate PDF blob
       const isProfessionalClient = invoice.client?.client_type === 'company' || invoice.client?.client_type === 'professional';
+      // Use client's language preference, fallback to 'fr' if not available
+      const clientLanguage = invoice.client?.language_preference 
+        ? invoice.client.language_preference.split('-')[0] || 'fr' 
+        : 'fr';
       const pdfBlob = await generateInvoicePDF(
         invoiceDataForPDF,
         invoice.invoice_number,
         null,
-        'fr',
+        clientLanguage,
         false,
         invoice.invoice_type || 'final',
         isProfessionalClient
