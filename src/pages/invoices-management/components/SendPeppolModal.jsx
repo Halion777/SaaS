@@ -461,6 +461,48 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
         reader.readAsDataURL(pdfBlob);
       });
 
+      // Store/update PDF in Supabase Storage if due date was modified or PDF doesn't exist
+      // This ensures follow-up emails use the correct PDF with updated due date
+      let pdfStorageInfo = {};
+      const existingPdfPath = invoice.peppol_metadata?.pdf_storage_path;
+      const existingPdfBucket = invoice.peppol_metadata?.pdf_storage_bucket || 'invoice-attachments';
+      
+      // If due date was modified or PDF doesn't exist, store/update the PDF
+      if (dueDateWasModified || !existingPdfPath) {
+        const sanitizedInvoiceNumber = invoiceNumber.replace(/[^a-zA-Z0-9_-]/g, '_');
+        const storagePath = `invoice-pdfs/${user?.id}/${sanitizedInvoiceNumber}.pdf`;
+        const bucketName = 'invoice-attachments';
+        
+        // Convert PDF blob to Uint8Array for storage
+        const pdfBuffer = Uint8Array.from(atob(pdfBase64), c => c.charCodeAt(0));
+        
+        // Upload to Supabase Storage (upsert to overwrite if exists)
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from(bucketName)
+          .upload(storagePath, pdfBuffer, {
+            contentType: 'application/pdf',
+            upsert: true // Overwrite if exists
+          });
+        
+        if (!uploadError && uploadData) {
+          pdfStorageInfo = {
+            pdf_storage_path: storagePath,
+            pdf_storage_bucket: bucketName,
+            pdf_generated_at: new Date().toISOString()
+          };
+        } else if (uploadError) {
+          // Log warning but continue with Peppol send
+          console.warn(`⚠️ Failed to store PDF for invoice ${invoiceNumber}:`, uploadError.message);
+        }
+      } else {
+        // Reuse existing PDF storage info
+        pdfStorageInfo = {
+          pdf_storage_path: existingPdfPath,
+          pdf_storage_bucket: existingPdfBucket,
+          pdf_generated_at: invoice.peppol_metadata?.pdf_generated_at || new Date().toISOString()
+        };
+      }
+
       // Add PDF base64 to peppolInvoiceData for UBL generation
       peppolInvoiceData.pdfBase64 = pdfBase64;
 
@@ -484,19 +526,40 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
           return;
         }
 
-        // Store PDF in Supabase Storage AFTER successful Peppol send
-        // The PDF generated for Peppol doesn't have warning (unlike automatic conversion which includes warning for professional clients)
-        // This ensures follow-up emails use the correct PDF without warning
+        // After successful Peppol send, regenerate PDF WITHOUT warning and update storage
+        // This ensures follow-up emails use PDF without warning (even for professional clients)
+        // Also handles due date changes if they occurred
         let pdfStorageInfo = {};
         const sanitizedInvoiceNumber = invoiceNumber.replace(/[^a-zA-Z0-9_-]/g, '_');
         const storagePath = `invoice-pdfs/${user?.id}/${sanitizedInvoiceNumber}.pdf`;
         const bucketName = 'invoice-attachments';
         
-        // Convert PDF blob to Uint8Array for storage
-        const pdfBuffer = Uint8Array.from(atob(pdfBase64), c => c.charCodeAt(0));
+        // Regenerate PDF WITHOUT warning (even for professional clients) for storage
+        const pdfBlobForStorage = await generateInvoicePDF(
+          invoiceDataForPDF,
+          invoiceNumber,
+          null,
+          i18n.language,
+          false, // Don't hide bank info
+          invoiceType,
+          false // NO warning - invoice was sent via Peppol successfully
+        );
+        
+        // Convert PDF blob to base64
+        const pdfBase64ForStorage = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const base64String = reader.result.split(',')[1];
+            resolve(base64String);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(pdfBlobForStorage);
+        });
+        
+        // Convert base64 to Uint8Array for storage
+        const pdfBuffer = Uint8Array.from(atob(pdfBase64ForStorage), c => c.charCodeAt(0));
         
         // Upload to Supabase Storage (upsert to overwrite if exists)
-        // Always update PDF in storage after successful Peppol send to ensure it matches what was sent (no warning)
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from(bucketName)
           .upload(storagePath, pdfBuffer, {
@@ -516,7 +579,7 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
         }
 
         // Update invoice with Peppol status and UBL XML
-        // Also update PDF storage info (PDF without warning that was sent via Peppol)
+        // Also update PDF storage info (PDF without warning)
         const currentMetadata = invoice.peppol_metadata || {};
         const metadataUpdate = {
           ...currentMetadata,
