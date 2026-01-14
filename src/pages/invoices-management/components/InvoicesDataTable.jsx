@@ -98,13 +98,34 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
     );
   };
 
+  // Get combined Peppol/Email status for an invoice
+  const getInvoiceSendStatus = (invoice) => {
+    // Check Peppol status first (for professional clients)
+    if (invoice.peppolStatus && invoice.peppolStatus !== 'not_sent') {
+      // Convert 'sent' to 'peppolSent' to distinguish from email
+      if (invoice.peppolStatus === 'sent') {
+        return 'peppolSent';
+      }
+      return invoice.peppolStatus; // 'sending', 'peppolSent', 'delivered', 'failed'
+    }
+    
+    // Check email status (for individual clients)
+    if (invoice.peppol_metadata?.email_sent_at) {
+      return 'emailSent';
+    }
+    
+    // Default: not sent
+    return 'not_sent';
+  };
+
   const getPeppolStatusBadge = (status) => {
     const statusConfig = {
       not_sent: { label: t('invoicesManagement.peppolStatus.notSent'), color: 'bg-gray-100 text-gray-700 border border-gray-300', icon: 'Clock' },
       sending: { label: t('invoicesManagement.peppolStatus.sending'), color: 'bg-warning text-warning-foreground', icon: 'Loader2' },
-      sent: { label: t('invoicesManagement.peppolStatus.sent'), color: 'bg-primary text-primary-foreground', icon: 'Send' },
+      peppolSent: { label: t('invoicesManagement.peppolStatus.peppolSent'), color: 'bg-primary text-primary-foreground', icon: 'Send' },
       delivered: { label: t('invoicesManagement.peppolStatus.delivered'), color: 'bg-success text-success-foreground', icon: 'CheckCircle' },
-      failed: { label: t('invoicesManagement.peppolStatus.failed'), color: 'bg-error text-error-foreground', icon: 'AlertCircle' }
+      failed: { label: t('invoicesManagement.peppolStatus.failed'), color: 'bg-error text-error-foreground', icon: 'AlertCircle' },
+      emailSent: { label: t('invoicesManagement.peppolStatus.emailSent'), color: 'bg-primary text-primary-foreground', icon: 'Mail' }
     };
     const config = statusConfig[status] || statusConfig.not_sent;
     return (
@@ -409,20 +430,11 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                       </div>
                     </div>
 
-                    {/* Peppol Status */}
-                    {(() => {
-                      const clientType = invoice.client?.client_type || invoice.client?.type;
-                      const isProfessional = clientType === 'company' || clientType === 'professionnel';
-                      if (isProfessional) {
-                        return (
-                          <div className="mb-3">
-                            <div className="text-xs text-muted-foreground mb-1">{t('invoicesManagement.table.headers.peppolStatus', 'Peppol Status')}</div>
-                            {getPeppolStatusBadge(invoice.peppolStatus || 'not_sent')}
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()}
+                    {/* Peppol/Email Status */}
+                    <div className="mb-3">
+                      <div className="text-xs text-muted-foreground mb-1">{t('invoicesManagement.table.headers.peppolEmailStatus', 'Peppol/Email Status')}</div>
+                      {getPeppolStatusBadge(getInvoiceSendStatus(invoice))}
+                    </div>
 
                     {/* Dates */}
                     <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground mb-3">
@@ -545,20 +557,11 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
               </div>
             </div>
 
-            {/* Peppol Status */}
-            {(() => {
-              const clientType = invoice.client?.client_type || invoice.client?.type;
-              const isProfessional = clientType === 'company' || clientType === 'professionnel';
-              if (isProfessional) {
-                return (
-                  <div className="mb-3">
-                    <div className="text-xs text-muted-foreground mb-1">{t('invoicesManagement.table.headers.peppolStatus', 'Peppol Status')}</div>
-                    {getPeppolStatusBadge(invoice.peppolStatus || 'not_sent')}
-                  </div>
-                );
-              }
-              return null;
-            })()}
+            {/* Peppol/Email Status */}
+            <div className="mb-3">
+              <div className="text-xs text-muted-foreground mb-1">{t('invoicesManagement.table.headers.peppolEmailStatus', 'Peppol/Email Status')}</div>
+              {getPeppolStatusBadge(getInvoiceSendStatus(invoice))}
+            </div>
 
             {/* Dates */}
             <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground mb-3">
@@ -725,7 +728,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                 {t('invoicesManagement.table.headers.status')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                {t('invoicesManagement.table.headers.peppolStatus', 'Peppol Status')}
+                {t('invoicesManagement.table.headers.peppolEmailStatus', 'Peppol/Email Status')}
               </th>
               <SortableHeaderComponent label={t('invoicesManagement.table.headers.issueDate')} sortKey="issueDate" />
               <SortableHeaderComponent label={t('invoicesManagement.table.headers.dueDate')} sortKey="dueDate" />
@@ -790,18 +793,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {(() => {
-                            const clientType = invoice.client?.client_type || invoice.client?.type;
-                            const isProfessional = clientType === 'company' || clientType === 'professionnel';
-                            if (isProfessional) {
-                              return getPeppolStatusBadge(invoice.peppolStatus || 'not_sent');
-                            }
-                            return (
-                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-50 text-gray-500 border border-gray-200">
-                                {t('invoicesManagement.peppolStatus.notApplicable', 'N/A')}
-                              </span>
-                            );
-                          })()}
+                          {getPeppolStatusBadge(getInvoiceSendStatus(invoice))}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                           {formatDate(invoice.issueDate)}
@@ -903,21 +895,8 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {/* Show Peppol status (read-only) for professional clients */}
-                    {(() => {
-                      const clientType = invoice.client?.client_type || invoice.client?.type;
-                      const isProfessional = clientType === 'company' || clientType === 'professionnel';
-                      if (isProfessional) {
-                        // Show Peppol status (read-only badge, cannot be modified by user)
-                        return getPeppolStatusBadge(invoice.peppolStatus || 'not_sent');
-                      }
-                      // Individual clients don't use Peppol
-                      return (
-                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-50 text-gray-500 border border-gray-200">
-                          {t('invoicesManagement.peppolStatus.notApplicable', 'N/A')}
-                        </span>
-                      );
-                    })()}
+                    {/* Show Peppol/Email status for all clients */}
+                    {getPeppolStatusBadge(getInvoiceSendStatus(invoice))}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                     {formatDate(invoice.issueDate)}

@@ -1989,9 +1989,7 @@ export async function convertQuoteToInvoice(quote, userId) {
           try {
             // Wait for PDF generation to complete (synchronous)
             const result = await InvoiceService.generateAndStoreInvoicePDF(invoice.id, invoice.user_id);
-            if (result.success) {
-              console.log(`✅ PDF stored for invoice ${invoice.invoice_number}: ${result.storagePath} in bucket ${result.bucket}`);
-            } else {
+            if (!result.success) {
               console.error(`❌ Failed to store PDF for invoice ${invoice.invoice_number}:`, result.error);
             }
           } catch (error) {

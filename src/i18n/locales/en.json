@@ -4281,6 +4281,8 @@
         "notSent": "Not sent",
         "sending": "Sending",
         "sent": "Sent",
+        "peppolSent": "Peppol Sent",
+        "emailSent": "Email Sent",
         "delivered": "Delivered",
         "failed": "Failed",
         "notApplicable": "N/A"

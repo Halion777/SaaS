@@ -152,101 +152,75 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
       const clientName = invoice.client?.name || invoice.clientName || t('invoicesManagement.sendEmailModal.client');
       const companyName = companyInfo?.name || t('invoicesManagement.sendEmailModal.yourCompany');
       
-      // Check if PDF already exists in storage to avoid unnecessary regeneration
+      // Note: For PDF generation, deposit invoice status check would need all invoices
+      // This is handled in the PDF service via invoiceData.depositInvoiceStatus if provided
+      // Generate invoice PDF
+      const invoiceData = {
+        companyInfo,
+        client: invoice.client || {
+          name: invoice.clientName,
+          email: invoice.clientEmail,
+          phone: invoice.client?.phone,
+          address: invoice.client?.address,
+          postal_code: invoice.client?.postal_code,
+          city: invoice.client?.city,
+          country: invoice.client?.country,
+          vat_number: invoice.client?.vat_number,
+          client_type: invoice.client?.client_type
+        },
+        invoice: {
+          issue_date: invoice.issue_date,
+          due_date: finalDueDate || invoice.due_date, // Use modified due date for final invoices
+          amount: invoice.amount,
+          net_amount: invoice.net_amount,
+          tax_amount: invoice.tax_amount,
+          final_amount: invoice.final_amount,
+          description: invoice.description,
+          title: invoice.title,
+          notes: invoice.notes,
+          invoice_type: invoice.invoice_type || invoice.invoiceType || 'final',
+          peppol_metadata: invoice.peppol_metadata || null
+        },
+        quote: invoice.quote || null,
+        depositInvoiceStatus: invoice.depositInvoiceStatus || null // Can be passed from parent if available
+      };
+
+      // Generate PDF blob (hide bank info for professional clients, but show it if from invalid Peppol ID flow or Peppol failed/not sent)
+      // Show warning in email attachments for professional clients
+      const hideBankInfo = isProfessionalClient && !fromInvalidPeppolId && !shouldShowEmailWarning;
+      const showWarning = isProfessionalClient; // Show warning for professional clients in emails
+      const pdfBlob = await generateInvoicePDF(invoiceData, invoiceNumber, null, i18n.language, hideBankInfo, invoiceType, showWarning);
+      
+      // Convert PDF blob to base64 for email attachment
+      const pdfBase64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64String = reader.result.split(',')[1]; // Remove data:application/pdf;base64, prefix
+          resolve(base64String);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(pdfBlob);
+      });
+
+      // Store PDF to Supabase Storage for follow-up emails
+      // Generate storage path: invoice-pdfs/{userId}/{invoiceNumber}.pdf
       const sanitizedInvoiceNumber = invoiceNumber.replace(/[^a-zA-Z0-9_-]/g, '_');
       const storagePath = `invoice-pdfs/${user?.id}/${sanitizedInvoiceNumber}.pdf`;
       const bucketName = 'invoice-attachments';
       
-      let pdfBase64 = null;
-      let pdfNeedsRegeneration = true;
-
-      // Check if PDF exists in metadata
-      if (invoice.peppol_metadata?.pdf_storage_path && invoice.peppol_metadata?.pdf_storage_bucket) {
-        const { data: existingPdf, error: checkError } = await supabase.storage
-          .from(invoice.peppol_metadata.pdf_storage_bucket)
-          .download(invoice.peppol_metadata.pdf_storage_path);
-
-        if (!checkError && existingPdf) {
-          // PDF exists, convert to base64
-          const arrayBuffer = await existingPdf.arrayBuffer();
-          const uint8Array = new Uint8Array(arrayBuffer);
-          pdfBase64 = btoa(String.fromCharCode.apply(null, Array.from(uint8Array)));
-          pdfNeedsRegeneration = false;
-          console.log(`✅ Reusing existing PDF for invoice ${invoiceNumber}`);
-        }
-      }
-
-      // If not found in metadata, check standard path
-      if (pdfNeedsRegeneration) {
-        const { data: existingPdfAtPath, error: checkPathError } = await supabase.storage
-          .from(bucketName)
-          .download(storagePath);
-
-        if (!checkPathError && existingPdfAtPath) {
-          // PDF exists at standard path, convert to base64
-          const arrayBuffer = await existingPdfAtPath.arrayBuffer();
-          const uint8Array = new Uint8Array(arrayBuffer);
-          pdfBase64 = btoa(String.fromCharCode.apply(null, Array.from(uint8Array)));
-          pdfNeedsRegeneration = false;
-          console.log(`✅ Reusing existing PDF for invoice ${invoiceNumber} from standard path`);
-        }
-      }
-
-      // Only generate PDF if it doesn't exist
-      if (pdfNeedsRegeneration) {
-        // Note: For PDF generation, deposit invoice status check would need all invoices
-        // This is handled in the PDF service via invoiceData.depositInvoiceStatus if provided
-        // Generate invoice PDF
-        const invoiceData = {
-          companyInfo,
-          client: invoice.client || {
-            name: invoice.clientName,
-            email: invoice.clientEmail,
-            phone: invoice.client?.phone,
-            address: invoice.client?.address,
-            postal_code: invoice.client?.postal_code,
-            city: invoice.client?.city,
-            country: invoice.client?.country,
-            vat_number: invoice.client?.vat_number,
-            client_type: invoice.client?.client_type
-          },
-          invoice: {
-            issue_date: invoice.issue_date,
-            due_date: finalDueDate || invoice.due_date, // Use modified due date for final invoices
-            amount: invoice.amount,
-            net_amount: invoice.net_amount,
-            tax_amount: invoice.tax_amount,
-            final_amount: invoice.final_amount,
-            description: invoice.description,
-            title: invoice.title,
-            notes: invoice.notes,
-            invoice_type: invoice.invoice_type || invoice.invoiceType || 'final',
-            peppol_metadata: invoice.peppol_metadata || null
-          },
-          quote: invoice.quote || null,
-          depositInvoiceStatus: invoice.depositInvoiceStatus || null // Can be passed from parent if available
-        };
-
-        // Generate PDF blob (hide bank info for professional clients, but show it if from invalid Peppol ID flow or Peppol failed/not sent)
-        // Show warning in email attachments for professional clients
-        const hideBankInfo = isProfessionalClient && !fromInvalidPeppolId && !shouldShowEmailWarning;
-        const showWarning = isProfessionalClient; // Show warning for professional clients in emails
-        const pdfBlob = await generateInvoicePDF(invoiceData, invoiceNumber, null, i18n.language, hideBankInfo, invoiceType, showWarning);
-        
-        // Convert PDF blob to base64 for email attachment
-        pdfBase64 = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            const base64String = reader.result.split(',')[1]; // Remove data:application/pdf;base64, prefix
-            resolve(base64String);
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(pdfBlob);
+      // Convert base64 to Uint8Array for storage
+      const pdfBuffer = Uint8Array.from(atob(pdfBase64), c => c.charCodeAt(0));
+      
+      // Upload to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from(bucketName)
+        .upload(storagePath, pdfBuffer, {
+          contentType: 'application/pdf',
+          upsert: true // Overwrite if exists
         });
-      }
 
-      // Store PDF to Supabase Storage for follow-up emails (only if we regenerated it or it wasn't stored before)
-      if (pdfNeedsRegeneration || !invoice.peppol_metadata?.pdf_storage_path) {
+      // Store PDF path in invoice metadata (even if upload failed, continue with email send)
+      if (!uploadError && uploadData) {
         // Convert base64 to Uint8Array for storage
         const pdfBuffer = Uint8Array.from(atob(pdfBase64), c => c.charCodeAt(0));
         
@@ -375,12 +349,16 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
 
       if (result.success) {
         // Update invoice to mark as sent via email
-        // Note: We only update updated_at since sent_at and sent_via_email columns don't exist
-        // The updated_at will be automatically updated by the database trigger
+        // Add email_sent_at to peppol_metadata to track when invoice was sent via email
+        const currentMetadata = invoice.peppol_metadata || {};
         const { error: updateError } = await supabase
           .from('invoices')
           .update({
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            peppol_metadata: {
+              ...currentMetadata,
+              email_sent_at: new Date().toISOString()
+            }
           })
           .eq('id', invoice.id);
 

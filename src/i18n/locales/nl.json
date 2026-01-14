@@ -4319,6 +4319,8 @@
         "notSent": "Niet verzonden",
         "sending": "Verzenden",
         "sent": "Verzonden",
+        "peppolSent": "Peppol Verzonden",
+        "emailSent": "E-mail Verzonden",
         "delivered": "Afgeleverd",
         "failed": "Mislukt",
         "notApplicable": "N/A"

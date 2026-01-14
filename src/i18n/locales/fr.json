@@ -4334,6 +4334,8 @@
         "notSent": "Non envoyée",
         "sending": "Envoi en cours",
         "sent": "Envoyée",
+        "peppolSent": "Peppol envoyée",
+        "emailSent": "Email envoyé",
         "delivered": "Livrée",
         "failed": "Échouée",
         "notApplicable": "N/A"

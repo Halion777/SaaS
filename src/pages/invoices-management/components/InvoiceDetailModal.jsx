@@ -46,13 +46,34 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose, allInvoices = [] }) => {
     );
   };
 
+  // Get combined Peppol/Email status for an invoice
+  const getInvoiceSendStatus = (invoice) => {
+    // Check Peppol status first (for professional clients)
+    if (invoice.peppolStatus && invoice.peppolStatus !== 'not_sent') {
+      // Convert 'sent' to 'peppolSent' to distinguish from email
+      if (invoice.peppolStatus === 'sent') {
+        return 'peppolSent';
+      }
+      return invoice.peppolStatus; // 'sending', 'peppolSent', 'delivered', 'failed'
+    }
+    
+    // Check email status (for individual clients)
+    if (invoice.peppol_metadata?.email_sent_at) {
+      return 'emailSent';
+    }
+    
+    // Default: not sent
+    return 'not_sent';
+  };
+
   const getPeppolStatusBadge = (status) => {
     const statusConfig = {
       not_sent: { label: t('invoicesManagement.peppolStatus.notSent'), color: 'bg-gray-100 text-gray-700 border border-gray-300', icon: 'Clock' },
       sending: { label: t('invoicesManagement.peppolStatus.sending'), color: 'bg-warning text-warning-foreground', icon: 'Loader2' },
-      sent: { label: t('invoicesManagement.peppolStatus.sent'), color: 'bg-primary text-primary-foreground', icon: 'Send' },
+      peppolSent: { label: t('invoicesManagement.peppolStatus.peppolSent'), color: 'bg-primary text-primary-foreground', icon: 'Send' },
       delivered: { label: t('invoicesManagement.peppolStatus.delivered'), color: 'bg-success text-success-foreground', icon: 'CheckCircle' },
-      failed: { label: t('invoicesManagement.peppolStatus.failed'), color: 'bg-error text-error-foreground', icon: 'AlertCircle' }
+      failed: { label: t('invoicesManagement.peppolStatus.failed'), color: 'bg-error text-error-foreground', icon: 'AlertCircle' },
+      emailSent: { label: t('invoicesManagement.peppolStatus.emailSent'), color: 'bg-primary text-primary-foreground', icon: 'Mail' }
     };
     const config = statusConfig[status] || statusConfig.not_sent;
     return (
@@ -469,8 +490,8 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose, allInvoices = [] }) => {
                   <h3 className="text-lg font-semibold text-foreground mb-4">{t('invoicesManagement.modal.peppolInfo.title')}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">{t('invoicesManagement.modal.peppolInfo.status')}</label>
-                      <div className="mt-1">{getPeppolStatusBadge(invoice.peppolStatus)}</div>
+                      <label className="text-sm font-medium text-muted-foreground">{t('invoicesManagement.modal.peppolInfo.status', 'Peppol/Email Status')}</label>
+                      <div className="mt-1">{getPeppolStatusBadge(getInvoiceSendStatus(invoice))}</div>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">{t('invoicesManagement.modal.peppolInfo.clientId')}</label>
