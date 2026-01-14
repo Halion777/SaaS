@@ -4323,6 +4323,7 @@
         "emailSent": "E-mail Verzonden",
         "delivered": "Afgeleverd",
         "failed": "Mislukt",
+        "peppolFailed": "Peppol Mislukt",
         "notApplicable": "N/A"
       },
       "filter": {

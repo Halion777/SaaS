@@ -54,7 +54,11 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose, allInvoices = [] }) => {
       if (invoice.peppolStatus === 'sent') {
         return 'peppolSent';
       }
-      return invoice.peppolStatus; // 'sending', 'peppolSent', 'delivered', 'failed'
+      // Convert 'failed' to 'peppolFailed' to distinguish from email
+      if (invoice.peppolStatus === 'failed') {
+        return 'peppolFailed';
+      }
+      return invoice.peppolStatus; // 'sending', 'peppolSent', 'delivered', 'peppolFailed'
     }
     
     // Check email status (for individual clients)
@@ -73,6 +77,7 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose, allInvoices = [] }) => {
       peppolSent: { label: t('invoicesManagement.peppolStatus.peppolSent'), color: 'bg-primary text-primary-foreground', icon: 'Send' },
       delivered: { label: t('invoicesManagement.peppolStatus.delivered'), color: 'bg-success text-success-foreground', icon: 'CheckCircle' },
       failed: { label: t('invoicesManagement.peppolStatus.failed'), color: 'bg-error text-error-foreground', icon: 'AlertCircle' },
+      peppolFailed: { label: t('invoicesManagement.peppolStatus.peppolFailed'), color: 'bg-error text-error-foreground', icon: 'AlertCircle' },
       emailSent: { label: t('invoicesManagement.peppolStatus.emailSent'), color: 'bg-primary text-primary-foreground', icon: 'Mail' }
     };
     const config = statusConfig[status] || statusConfig.not_sent;

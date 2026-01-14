@@ -4338,6 +4338,7 @@
         "emailSent": "Email envoyé",
         "delivered": "Livrée",
         "failed": "Échouée",
+        "peppolFailed": "Peppol échouée",
         "notApplicable": "N/A"
       },
       "filter": {
