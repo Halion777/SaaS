@@ -2078,20 +2078,28 @@ export class PeppolService {
       const isActiveAndConfigured = existingSettings && existingSettings.is_configured && 
                                      !existingSettings.peppol_disabled && 
                                      existingSettings.is_active;
+      const isReRegistering = isSameUser && (existingSettings.peppol_disabled || !existingSettings.is_active);
       
       if (isActiveAndConfigured) {
         // Participant already registered and active in our system, skip Digiteal registration
         // Participant already exists in database, skipping Digiteal registration
         registrationResult = { success: true, alreadyRegistered: true };
-      } else if (isSameUser && (existingSettings.peppol_disabled || !existingSettings.is_active)) {
-        // Same user re-registering after unregistration - need to re-register with Digiteal
-        // Continue to registration flow below
-        console.log('User re-registering after unregistration - will re-register with Digiteal');
       } else if (existingSettings && !isSameUser) {
         // Different user trying to use same Peppol ID - this will be caught by unique constraint
         // But we should still try to register to get proper error message
         console.log('Peppol ID exists for different user - will attempt registration');
-      } else {
+        // Continue to registration flow below
+      }
+      
+      // Register with Digiteal if:
+      // 1. No existing settings (new registration)
+      // 2. Re-registering after unregistration (isReRegistering = true)
+      // 3. Different user trying to use same ID (will fail but gives proper error)
+      if (!isActiveAndConfigured) {
+        if (isReRegistering) {
+          console.log('User re-registering after unregistration - will re-register with Digiteal');
+        }
+        
         // For Belgium: register both 0208 and 9925 schemes
         // For other countries: register with the provided scheme
         const isBelgium = settings.countryCode?.toUpperCase() === 'BE';
@@ -2146,6 +2154,7 @@ export class PeppolService {
               // Note: We don't fail if 0208 registration fails, as 9925 is the primary (saved ID)
             } catch (error) {
               // Secondary registration failed, but continuing with primary
+              console.warn('Secondary 0208 registration failed during re-registration:', error);
             }
           }
         } else {
@@ -2215,8 +2224,9 @@ export class PeppolService {
           supported_document_types: ['INVOICE', 'CREDIT_NOTE', 'SELF_BILLING_INVOICE', 'SELF_BILLING_CREDIT_NOTE', 'INVOICE_RESPONSE', 'MLR', 'APPLICATION_RESPONSE'], // All document types enabled automatically
           limited_to_outbound_traffic: settings.limitedToOutboundTraffic || false,
           sandbox_mode: settings.sandboxMode,
-          // Re-enable Peppol if user is re-registering (unless explicitly disabled)
-          peppol_disabled: settings.peppolDisabled !== undefined ? settings.peppolDisabled : false,
+          // Re-enable Peppol if user is re-registering - always set to false when re-registering
+          // Otherwise use the value from settings (for new registrations, default to false)
+          peppol_disabled: isReRegistering ? false : (settings.peppolDisabled !== undefined ? settings.peppolDisabled : false),
           is_active: true, // Always set to active when registering/re-registering
           is_configured: !!settings.peppolId && !!settings.name && !!settings.email,
           updated_at: new Date().toISOString()
@@ -2240,7 +2250,7 @@ export class PeppolService {
 
       // Determine success message based on registration result
       let successMessage = 'Settings saved successfully';
-      if (registrationResult.alreadyRegistered) {
+      if (registrationResult && registrationResult.alreadyRegistered) {
         // Use the actual error message from API if available, otherwise use default
         const apiMessage = registrationResult.error || 'This participant is already registered in Digiteal.';
         successMessage = `Settings saved successfully. ${apiMessage}`;

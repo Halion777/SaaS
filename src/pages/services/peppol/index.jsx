@@ -236,7 +236,8 @@ const PeppolNetworkPage = () => {
             limitedToOutboundTraffic: loaded.limitedToOutboundTraffic !== undefined ? loaded.limitedToOutboundTraffic : prev.limitedToOutboundTraffic,
             // In production mode, force sandboxMode to false regardless of saved value
             sandboxMode: isProductionMode ? false : (loaded.sandboxMode !== undefined ? loaded.sandboxMode : prev.sandboxMode),
-            isConfigured: loaded.isConfigured || false,
+            // If Peppol is disabled, treat as not configured so user can re-register
+            isConfigured: (loaded.isConfigured && !loaded.peppolDisabled) || false,
             peppolDisabled: loaded.peppolDisabled || false
           };
         });
@@ -764,18 +765,14 @@ const PeppolNetworkPage = () => {
       }
       
       if (result.success) {
-        // Update local settings from result instead of reloading
-        setPeppolSettings(prev => ({
-          ...prev,
-          isConfigured: result.data?.isConfigured || true,
-          ...result.data
-        }));
+        // Reload settings from database to ensure we have the latest state
+        await loadPeppolSettings();
         setSuccessMessage(result.message || t('peppol.messages.success.settingsSaved'));
         // Clear success message after 5 seconds
         setTimeout(() => setSuccessMessage(null), 5000);
       } else {
-        // Check if participant is already registered
-        if (result.alreadyRegistered) {
+        // Check if result exists and if participant is already registered
+        if (result && result.alreadyRegistered) {
           // Show different message based on where it's registered
           const message = result.registeredWithDigiteal
             ? t('peppol.messages.success.alreadyRegisteredDigiteal')
@@ -784,7 +781,7 @@ const PeppolNetworkPage = () => {
           setTimeout(() => setSuccessMessage(null), 5000);
         } else {
           // Show the actual error message from API (concise)
-          const errorMsg = result.error || t('peppol.messages.errors.saveError');
+          const errorMsg = (result && result.error) || t('peppol.messages.errors.saveError');
           // Extract just the main message if it's too long
           const conciseError = errorMsg.length > 100 ? errorMsg.substring(0, 100) + '...' : errorMsg;
           setErrorMessage(conciseError);
@@ -828,8 +825,8 @@ const PeppolNetworkPage = () => {
         setSuccessMessage(result.message || t('peppol.messages.success.testSuccessful'));
         setTimeout(() => setSuccessMessage(null), 5000);
       } else {
-        // Check if participant is already registered - this is actually OK
-        if (result.alreadyRegistered) {
+        // Check if result exists and if participant is already registered - this is actually OK
+        if (result && result.alreadyRegistered) {
           if (result.registeredWithDigiteal) {
             // Already registered with Digiteal
             setSuccessMessage(t('peppol.messages.success.testAlreadyRegisteredDigiteal'));
@@ -845,7 +842,7 @@ const PeppolNetworkPage = () => {
           }
         } else {
           // Actual test failure
-          setErrorMessage(result.error || t('peppol.messages.errors.testError'));
+          setErrorMessage((result && result.error) || t('peppol.messages.errors.testError'));
           setTimeout(() => setErrorMessage(null), 5000);
         }
       }
@@ -1617,13 +1614,13 @@ const PeppolNetworkPage = () => {
                 <div className="flex items-center">
                   <Icon name="Network" size={24} className="text-primary mr-3" />
                   <h1 className="text-xl sm:text-2xl font-bold text-foreground">{t('peppol.header.title')}</h1>
-                  {peppolSettings.isConfigured && (
+                  {peppolSettings.isConfigured && !peppolSettings.peppolDisabled && (
                     <div className="ml-3 flex items-center space-x-2">
                       <div className="w-2 h-2 rounded-full bg-green-500"></div>
                       <span className="text-xs text-muted-foreground">{t('peppol.header.connected')}</span>
                     </div>
                   )}
-                  {!peppolSettings.isConfigured && peppolSettings.peppolId && (
+                  {(!peppolSettings.isConfigured || peppolSettings.peppolDisabled) && peppolSettings.peppolId && (
                     <div className="ml-3 flex items-center space-x-2">
                       <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
                       <span className="text-xs text-muted-foreground">{t('peppol.header.configurationRequired')}</span>
@@ -1776,8 +1773,8 @@ const PeppolNetworkPage = () => {
                       </div>
                     )}
 
-                    {/* Header - Only show when NOT configured */}
-                    {!peppolSettings.isConfigured && (
+                    {/* Header - Only show when NOT configured OR when Peppol is disabled */}
+                    {(!peppolSettings.isConfigured || peppolSettings.peppolDisabled) && (
                       <div className="flex items-center space-x-2 sm:space-x-3">
                         <div className="p-2 bg-primary/10 rounded-lg">
                           <Icon name="Link" size={20} className="sm:w-6 sm:h-6 text-primary" />
@@ -1792,7 +1789,8 @@ const PeppolNetworkPage = () => {
                     )}
 
                     {/* Form Fields */}
-                    {!peppolSettings.isConfigured ? (
+                    {/* Show registration form if not configured OR if Peppol is disabled */}
+                    {(!peppolSettings.isConfigured || peppolSettings.peppolDisabled) ? (
                       <div className="space-y-6">
                         {/* Company Information */}
                         <div className="bg-card rounded-lg border border-border p-6">
@@ -2057,8 +2055,8 @@ const PeppolNetworkPage = () => {
                             </div>
                           )}
 
-                          {/* Action Buttons - Only show when not configured */}
-                          {!peppolSettings.isConfigured && (
+                          {/* Action Buttons - Only show when not configured OR when Peppol is disabled */}
+                          {(!peppolSettings.isConfigured || peppolSettings.peppolDisabled) && (
                             <div className="pt-4 space-y-3">
                               {/* Test Result Messages - Show near test button */}
                               {successMessage && (

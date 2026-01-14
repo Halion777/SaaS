@@ -234,8 +234,33 @@ const Peppol = () => {
         return;
       }
 
-      // Helper function to fetch with retry logic
+      // Helper function to check if participant data is complete
+      const isParticipantDataComplete = (participant) => {
+        if (!participant || typeof participant !== 'object') return false;
+        
+        // Check if we have essential fields
+        const hasName = participant.name || participant.businessName || participant.companyName;
+        const hasCountry = participant.countryCode || participant.country;
+        const hasDocumentTypes = participant.supportedDocumentTypes || participant.documentTypes;
+        
+        // If we have name, country, and document types, consider it complete
+        // Also check if it has businessCard structure (from public API)
+        const hasBusinessCard = participant.businessCard?.businessEntities?.[0];
+        
+        return (hasName && hasCountry && (hasDocumentTypes || hasBusinessCard));
+      };
+
+      // Helper function to fetch with retry logic and caching
+      const fetchCache = new Map(); // Cache to avoid duplicate requests
       const fetchWithRetry = async (action, peppolIdentifier, maxRetries = 3, delay = 500) => {
+        // Create cache key
+        const cacheKey = `${action}:${peppolIdentifier}`;
+        
+        // Check cache first
+        if (fetchCache.has(cacheKey)) {
+          return fetchCache.get(cacheKey);
+        }
+
         for (let attempt = 0; attempt < maxRetries; attempt++) {
           try {
             const { data, error } = await supabase.functions.invoke('peppol-webhook-config', {
@@ -251,10 +276,12 @@ const Peppol = () => {
             // Check if error exists and extract status
             const errorStatus = error?.status || (error && typeof error === 'object' && 'status' in error ? error.status : null);
             
-            // If successful or 404 (participant not found in this endpoint), return
+            // If successful or 404 (participant not found in this endpoint), cache and return
             // 404 is acceptable - participant may not exist in one endpoint but exist in another
             if (!error || errorStatus === 404) {
-              return { data, error: errorStatus === 404 ? null : error };
+              const result = { data, error: errorStatus === 404 ? null : error };
+              fetchCache.set(cacheKey, result);
+              return result;
             }
 
             // If it's a rate limit error (429) or server error (5xx), retry
@@ -266,18 +293,42 @@ const Peppol = () => {
               }
             }
 
-            // For other errors (like 401, 403), return immediately (don't retry)
-            return { data, error };
+            // For other errors (like 401, 403), cache and return immediately (don't retry)
+            const result = { data, error };
+            fetchCache.set(cacheKey, result);
+            return result;
           } catch (err) {
             if (attempt < maxRetries - 1) {
               const backoffDelay = delay * Math.pow(2, attempt);
               await new Promise(resolve => setTimeout(resolve, backoffDelay));
               continue;
             }
-            return { data: null, error: err };
+            const result = { data: null, error: err };
+            fetchCache.set(cacheKey, result);
+            return result;
           }
         }
-        return { data: null, error: new Error('Max retries exceeded') };
+        const result = { data: null, error: new Error('Max retries exceeded') };
+        fetchCache.set(cacheKey, result);
+        return result;
+      };
+
+      // Helper function to merge participant data from different sources
+      const mergeParticipantData = (identifier, basicDetails, publicDetails, fallbackData = {}) => {
+        return {
+          peppolIdentifier: identifier,
+          id: identifier,
+          // From authenticated endpoint
+          name: basicDetails?.name || publicDetails?.businessCard?.businessEntities?.[0]?.names?.[0]?.name || fallbackData.name || 'N/A',
+          registrationDate: basicDetails?.registrationDate || publicDetails?.businessCard?.businessEntities?.[0]?.registrationDate || null,
+          contactPerson: basicDetails?.contactPerson || null,
+          // From public endpoint
+          countryCode: publicDetails?.businessCard?.businessEntities?.[0]?.countryCode || fallbackData.countryCode || 'N/A',
+          supportedDocumentTypes: publicDetails?.supportedDocumentTypes 
+            ? publicDetails.supportedDocumentTypes.map(dt => dt.type || dt)
+            : (fallbackData.supportedDocumentTypes || []),
+          smpHostName: publicDetails?.smpHostName || null
+        };
       };
 
       // Process each participant sequentially with delays to avoid rate limiting
@@ -291,25 +342,27 @@ const Peppol = () => {
         }
 
         try {
-          // If participant is already an object with details, check if it has enough info
+          // If participant is already an object with details
           if (typeof participant === 'object' && participant !== null) {
             const identifier = participant.peppolIdentifier || participant.id || participant.identifier;
             
-            // If we already have name and other details, use it
-            if (participant.name || participant.businessName || participant.companyName) {
+            // Check if data is already complete - if so, skip API calls
+            if (isParticipantDataComplete(participant)) {
               detailedParticipants.push({
                 peppolIdentifier: identifier,
                 id: identifier,
                 name: participant.name || participant.businessName || participant.companyName || 'N/A',
                 countryCode: participant.countryCode || participant.country || 'N/A',
-                supportedDocumentTypes: participant.supportedDocumentTypes || participant.documentTypes || []
+                supportedDocumentTypes: participant.supportedDocumentTypes || participant.documentTypes || [],
+                smpHostName: participant.smpHostName || null,
+                registrationDate: participant.registrationDate || null
               });
               continue;
             }
             
-            // If we have identifier but no details, fetch details from both endpoints
+            // If we have identifier but incomplete data, fetch details from both endpoints
             if (identifier) {
-              // Fetch from both endpoints in parallel (but with retry logic)
+              // Fetch from both endpoints in parallel (but with retry logic and caching)
               const [basicResult, publicResult] = await Promise.all([
                 fetchWithRetry('get-participant-details', identifier),
                 fetchWithRetry('get-participant', identifier)
@@ -320,21 +373,17 @@ const Peppol = () => {
               const basicError = basicResult.error;
               const publicError = publicResult.error;
 
-              // Merge data from both endpoints (404 is acceptable - participant may not exist in one endpoint)
-              const mergedData = {
-                peppolIdentifier: identifier,
-                id: identifier,
-                // From authenticated endpoint
-                name: basicDetails?.name || publicDetails?.businessCard?.businessEntities?.[0]?.names?.[0]?.name || 'N/A',
-                registrationDate: basicDetails?.registrationDate || publicDetails?.businessCard?.businessEntities?.[0]?.registrationDate || null,
-                contactPerson: basicDetails?.contactPerson || null,
-                // From public endpoint
-                countryCode: publicDetails?.businessCard?.businessEntities?.[0]?.countryCode || 'N/A',
-                supportedDocumentTypes: publicDetails?.supportedDocumentTypes 
-                  ? publicDetails.supportedDocumentTypes.map(dt => dt.type || dt)
-                  : [],
-                smpHostName: publicDetails?.smpHostName || null
-              };
+              // Merge data from both endpoints
+              const mergedData = mergeParticipantData(
+                identifier,
+                basicDetails,
+                publicDetails,
+                {
+                  name: participant.name || participant.businessName || participant.companyName,
+                  countryCode: participant.countryCode || participant.country,
+                  supportedDocumentTypes: participant.supportedDocumentTypes || participant.documentTypes || []
+                }
+              );
 
               // Return merged data if we got data from at least one endpoint (404 errors are acceptable)
               const hasBasicData = basicDetails && !basicError;
@@ -343,7 +392,7 @@ const Peppol = () => {
               if (hasBasicData || hasPublicData) {
                 detailedParticipants.push(mergedData);
               } else {
-                // If both failed with non-404 errors, log and use fallback
+                // If both failed with non-404 errors, use fallback
                 console.warn(`Failed to fetch details for ${identifier}:`, { basicError, publicError });
                 detailedParticipants.push({
                   peppolIdentifier: identifier || 'N/A',
@@ -369,7 +418,7 @@ const Peppol = () => {
 
           // If participant is a string (just identifier), fetch details from both endpoints
           if (typeof participant === 'string') {
-            // Fetch from both endpoints in parallel (but with retry logic)
+            // Fetch from both endpoints in parallel (but with retry logic and caching)
             const [basicResult, publicResult] = await Promise.all([
               fetchWithRetry('get-participant-details', participant),
               fetchWithRetry('get-participant', participant)
@@ -381,20 +430,7 @@ const Peppol = () => {
             const publicError = publicResult.error;
 
             // Merge data from both endpoints
-            const mergedData = {
-              peppolIdentifier: participant,
-              id: participant,
-              // From authenticated endpoint
-              name: basicDetails?.name || publicDetails?.businessCard?.businessEntities?.[0]?.names?.[0]?.name || 'N/A',
-              registrationDate: basicDetails?.registrationDate || publicDetails?.businessCard?.businessEntities?.[0]?.registrationDate || null,
-              contactPerson: basicDetails?.contactPerson || null,
-              // From public endpoint
-              countryCode: publicDetails?.businessCard?.businessEntities?.[0]?.countryCode || 'N/A',
-              supportedDocumentTypes: publicDetails?.supportedDocumentTypes 
-                ? publicDetails.supportedDocumentTypes.map(dt => dt.type || dt)
-                : [],
-              smpHostName: publicDetails?.smpHostName || null
-            };
+            const mergedData = mergeParticipantData(participant, basicDetails, publicDetails);
 
             // Return merged data if we got data from at least one endpoint
             const hasBasicData = basicDetails && !basicError;
@@ -500,12 +536,17 @@ const Peppol = () => {
         
         if (scheme === '9925' && identifier.toLowerCase().startsWith('be')) {
           // Extract 10 digits from BEXXXXXXXXXX
-          const digitsOnly = identifier.replace(/\D/g, '').substring(2);
-          if (digitsOnly.length === 10) {
-            const id0208 = `0208:${digitsOnly}`;
+          // For 9925:be1001464622, the identifier is "be1001464622"
+          // Remove all non-digits: "1001464622" (10 digits - this is the company number)
+          const digitsOnly = identifier.replace(/\D/g, '');
+          
+          // The company number should be exactly 10 digits
+          // If we have more than 10, take the last 10 (in case of formatting issues)
+          // If we have less than 10, it's invalid
+          if (digitsOnly.length >= 10) {
+            const companyNumber = digitsOnly.slice(-10); // Take last 10 digits
+            const id0208 = `0208:${companyNumber}`;
             // Always include 0208 ID for Belgian participants
-            // Check if it exists in participants, but include it anyway
-            const exists = participants.some(p => (p.peppolIdentifier || p.id) === id0208);
             if (!related.includes(id0208)) {
               related.push(id0208);
             }
@@ -516,8 +557,6 @@ const Peppol = () => {
           if (digitsOnly.length === 10) {
             const id9925 = `9925:be${digitsOnly}`;
             // Always include 9925 ID for Belgian participants
-            // Check if it exists in participants, but include it anyway
-            const exists = participants.some(p => (p.peppolIdentifier || p.id) === id9925);
             if (!related.includes(id9925)) {
               related.push(id9925);
             }
