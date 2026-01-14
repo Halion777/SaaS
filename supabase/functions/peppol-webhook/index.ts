@@ -189,13 +189,29 @@ serve(async (req: Request) => {
       );
     }
 
-    // Extract credentials and validate (you should verify against configured credentials)
+    // Extract credentials and validate against environment variables
     const base64Credentials = authHeader.split(' ')[1];
     const credentials = atob(base64Credentials);
     const [username, password] = credentials.split(':');
     
-    // Basic credential check (replace with your actual validation)
-    if (username !== 'haliqo-test' || password !== 'Haliqo123') {
+    // Get credentials from environment variables
+    // Try both with and without VITE_ prefix for compatibility
+    // @ts-ignore
+    const expectedUsername = Deno.env.get('PEPPOL_API_USERNAME') || Deno.env.get('VITE_PEPPOL_API_USERNAME') || '';
+    // @ts-ignore
+    const expectedPassword = Deno.env.get('PEPPOL_API_PASSWORD') || Deno.env.get('VITE_PEPPOL_API_PASSWORD') || '';
+    
+    // Validate credentials
+    if (!expectedUsername || !expectedPassword) {
+      console.error('[Peppol Webhook] PEPPOL_API_USERNAME or PEPPOL_API_PASSWORD not configured');
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error' }), 
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    if (username !== expectedUsername || password !== expectedPassword) {
+      console.warn('[Peppol Webhook] Invalid credentials provided');
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }), 
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

@@ -3,16 +3,22 @@ import { supabase } from './supabaseClient';
 import { getAllPeppolIdentifiers } from '../utils/peppolSchemes';
 
 // Digiteal API Configuration
+// Get configuration from environment variables
+const isTestMode = import.meta.env.VITE_PEPPOL_TEST_MODE !== 'false'; // Default to test mode if not explicitly set to false
+const apiEndpoint = import.meta.env.VITE_PEPPOL_API_ENDPOINT || '';
+const apiUsername = import.meta.env.VITE_PEPPOL_API_USERNAME || '';
+const apiPassword = import.meta.env.VITE_PEPPOL_API_PASSWORD || '';
+
 const PEPPOL_CONFIG = {
   test: {
-    baseUrl: 'https://test.digiteal.eu',
-    username: 'Haliqo-test',
-    password: 'Haliqo123'
+    baseUrl: apiEndpoint || 'https://test.digiteal.eu',
+    username: apiUsername,
+    password: apiPassword
   },
   production: {
-    baseUrl: 'https://app.digiteal.eu',
-    username: 'Haliqo-test', // Replace with production credentials
-    password: 'Haliqo123'    // Replace with production credentials
+    baseUrl: apiEndpoint || 'https://app.digiteal.eu',
+    username: apiUsername,
+    password: apiPassword
   }
 };
 
@@ -1078,8 +1084,16 @@ const createFormData = (xml, comment = "Sent from Haliqo") => {
 
 // Main Peppol Service Class
 export class PeppolService {
-  constructor(isTest = true) {
-    this.config = isTest ? PEPPOL_CONFIG.test : PEPPOL_CONFIG.production;
+  constructor(isTest = null) {
+    // Use environment variable if not explicitly provided
+    // Default to test mode if VITE_PEPPOL_TEST_MODE is not explicitly set to 'false'
+    const testMode = isTest !== null ? isTest : (import.meta.env.VITE_PEPPOL_TEST_MODE !== 'false');
+    this.config = testMode ? PEPPOL_CONFIG.test : PEPPOL_CONFIG.production;
+    
+    // Warn if credentials are not configured
+    if (!this.config.username || !this.config.password) {
+      console.warn('[PeppolService] PEPPOL_API_USERNAME or PEPPOL_API_PASSWORD not configured. Please set VITE_PEPPOL_API_USERNAME and VITE_PEPPOL_API_PASSWORD environment variables.');
+    }
   }
 
   // Get required fields for Peppol integration

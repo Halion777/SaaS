@@ -6,16 +6,22 @@
 import { supabase } from './supabaseClient';
 
 // Digiteal API Configuration
+// Get configuration from environment variables
+const isTestMode = import.meta.env.VITE_PEPPOL_TEST_MODE !== 'false'; // Default to test mode if not explicitly set to false
+const apiEndpoint = import.meta.env.VITE_PEPPOL_API_ENDPOINT || '';
+const apiUsername = import.meta.env.VITE_PEPPOL_API_USERNAME || '';
+const apiPassword = import.meta.env.VITE_PEPPOL_API_PASSWORD || '';
+
 const PEPPOL_CONFIG = {
   test: {
-    baseUrl: 'https://test.digiteal.eu',
-    username: 'haliqo-test',
-    password: 'Haliqo123'
+    baseUrl: apiEndpoint || 'https://test.digiteal.eu',
+    username: apiUsername,
+    password: apiPassword
   },
   production: {
-    baseUrl: 'https://app.digiteal.eu',
-    username: 'haliqo-test', // Replace with production credentials
-    password: 'Haliqo123'    // Replace with production credentials
+    baseUrl: apiEndpoint || 'https://app.digiteal.eu',
+    username: apiUsername,
+    password: apiPassword
   }
 };
 
@@ -80,8 +86,16 @@ const createAuthHeader = (username, password) => {
 };
 
 export class PeppolWebhookService {
-  constructor(isTest = true) {
-    this.config = isTest ? PEPPOL_CONFIG.test : PEPPOL_CONFIG.production;
+  constructor(isTest = null) {
+    // Use environment variable if not explicitly provided
+    // Default to test mode if VITE_PEPPOL_TEST_MODE is not explicitly set to 'false'
+    const testMode = isTest !== null ? isTest : (import.meta.env.VITE_PEPPOL_TEST_MODE !== 'false');
+    this.config = testMode ? PEPPOL_CONFIG.test : PEPPOL_CONFIG.production;
+    
+    // Warn if credentials are not configured
+    if (!this.config.username || !this.config.password) {
+      console.warn('[PeppolWebhookService] PEPPOL_API_USERNAME or PEPPOL_API_PASSWORD not configured. Please set VITE_PEPPOL_API_USERNAME and VITE_PEPPOL_API_PASSWORD environment variables.');
+    }
   }
 
   /**
@@ -237,6 +251,12 @@ export class PeppolWebhookService {
    * Get Supabase webhook URL for this environment
    */
   getSupabaseWebhookUrl() {
+    // Use VITE_PEPPOL_WEBHOOK_URL if configured, otherwise construct from Supabase URL
+    const webhookUrl = import.meta.env.VITE_PEPPOL_WEBHOOK_URL;
+    if (webhookUrl) {
+      return webhookUrl;
+    }
+    
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
     if (!supabaseUrl) {
       console.error('Supabase URL not found in environment');
