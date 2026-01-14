@@ -256,11 +256,14 @@ async function createInitialFollowUpForInvoice(admin: any, invoice: any, rules: 
   const dueDate = new Date(invoice.due_date);
   const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   
+  // Always create follow-up record so users can see it in UI
+  // But schedule it appropriately based on business logic
   if (daysUntilDue > rules.approaching_deadline_days) {
-    // Too early (more than 3 days before), don't create follow-up yet
-    // The daily scheduler will create it when it's exactly 3 days before
-    console.log(`Invoice ${invoice.invoice_number} is ${daysUntilDue} days before due date, too early to create approaching deadline follow-up`);
-    return;
+    // Too early (more than 3 days before), create follow-up but schedule it for later
+    // This ensures users can see it in UI, but it won't be sent until the right time
+    const scheduledDate = new Date(invoice.due_date);
+    scheduledDate.setDate(scheduledDate.getDate() - rules.approaching_deadline_days);
+    await createApproachingDeadlineFollowUp(admin, invoice, rules, scheduledDate);
   } else if (daysUntilDue > 0) {
     // Approaching deadline (1-3 days before), create now
     // createApproachingDeadlineFollowUp will check for existing and skip if found

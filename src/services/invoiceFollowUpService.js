@@ -242,6 +242,8 @@ export class InvoiceFollowUpService {
           description,
           notes,
           quote_id,
+          invoice_type,
+          peppol_metadata,
           quote:quotes(
             id,
             quote_tasks(
@@ -252,6 +254,17 @@ export class InvoiceFollowUpService {
               unit,
               unit_price,
               total_price
+            ),
+            quote_materials(
+              id,
+              quote_task_id,
+              name,
+              description,
+              quantity,
+              unit,
+              unit_price,
+              total_price,
+              order_index
             )
           )
         `)
@@ -288,68 +301,123 @@ export class InvoiceFollowUpService {
         .eq('id', invoice.client_id)
         .single();
 
-      // Get company info for PDF generation
+      // Get company info (needed for both PDF generation and email template)
       const { data: { user } } = await supabase.auth.getUser();
       let companyInfo = null;
       if (user?.id) {
         try {
           companyInfo = await loadCompanyInfo(user.id);
         } catch (error) {
-          console.warn('Error loading company info for PDF:', error);
+          console.warn('Error loading company info:', error);
         }
       }
 
-      // Prepare invoice data for PDF generation
-      const invoiceDataForPDF = {
-        companyInfo: companyInfo || {},
-        client: fullClient || {
-          name: client.name,
-          email: client.email,
-          phone: client.phone,
-          address: client.address,
-          postal_code: client.postal_code,
-          city: client.city,
-          country: client.country,
-          vat_number: client.vat_number,
-          client_type: client.client_type
-        },
-        invoice: {
-          issue_date: invoice.issue_date,
-          due_date: invoice.due_date,
-          amount: invoice.amount,
-          net_amount: invoice.net_amount,
-          tax_amount: invoice.tax_amount,
-          discount_amount: invoice.discount_amount,
-          final_amount: invoice.final_amount,
-          description: invoice.description,
-          title: invoice.title,
-          notes: invoice.notes,
-          invoice_type: invoice.invoice_type || 'final'
-        },
-        quote: invoice.quote || null
-      };
-
-      // Generate PDF blob
+      // Try to use pre-generated PDF from Supabase Storage
+      // This is the same PDF used for automatic follow-ups (stored during invoice creation/sending)
       let pdfBase64 = null;
-      try {
-        const invoiceType = invoice.invoice_type || 'final';
-        // Show warning for professional clients in email attachments
-        const isProfessionalClient = client.client_type === 'company' || client.client_type === 'professional';
-        const pdfBlob = await generateInvoicePDF(invoiceDataForPDF, invoice.invoice_number, null, 'fr', false, invoiceType, isProfessionalClient);
+      
+      // Check if invoice has stored PDF in peppol_metadata
+      if (invoice.peppol_metadata) {
+        const pdfStoragePath = invoice.peppol_metadata.pdf_storage_path;
+        const pdfStorageBucket = invoice.peppol_metadata.pdf_storage_bucket || 'invoice-attachments';
         
-        // Convert PDF blob to base64 for email attachment
-        pdfBase64 = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            const base64String = reader.result.split(',')[1]; // Remove data:application/pdf;base64, prefix
-            resolve(base64String);
+        if (pdfStoragePath && pdfStorageBucket) {
+          try {
+            // Download PDF from Supabase Storage
+            const { data: pdfData, error: downloadError } = await supabase.storage
+              .from(pdfStorageBucket)
+              .download(pdfStoragePath);
+            
+            if (!downloadError && pdfData) {
+              // Convert blob to base64 for email attachment
+              pdfBase64 = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                  const base64String = reader.result.split(',')[1]; // Remove data:application/pdf;base64, prefix
+                  resolve(base64String);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(pdfData);
+              });
+            } else {
+              console.warn('Failed to download PDF from storage, will generate new PDF:', downloadError?.message);
+            }
+          } catch (storageError) {
+            console.warn('Error downloading PDF from storage, will generate new PDF:', storageError);
+          }
+        }
+      }
+      
+      // Fallback: Generate PDF if not found in storage
+      if (!pdfBase64) {
+        try {
+          // Check if deposit invoice is paid for the same quote (for final invoices)
+          let depositInvoiceStatus = null;
+          if (invoice.invoice_type === 'final' && invoice.quote_id) {
+            // Fetch deposit invoice status from database
+            const { data: depositInvoice } = await supabase
+              .from('invoices')
+              .select('status')
+              .eq('user_id', invoice.user_id)
+              .eq('quote_id', invoice.quote_id)
+              .eq('invoice_type', 'deposit')
+              .maybeSingle();
+            
+            depositInvoiceStatus = depositInvoice?.status || null;
+          }
+
+          // Prepare invoice data for PDF generation (matching download button structure)
+          const invoiceDataForPDF = {
+            companyInfo: companyInfo || {},
+            client: fullClient || {
+              name: client.name,
+              email: client.email,
+              phone: client.phone,
+              address: client.address,
+              postal_code: client.postal_code,
+              city: client.city,
+              country: client.country,
+              vat_number: client.vat_number,
+              client_type: client.client_type
+            },
+            invoice: {
+              issue_date: invoice.issue_date,
+              due_date: invoice.due_date,
+              amount: invoice.amount,
+              net_amount: invoice.net_amount,
+              tax_amount: invoice.tax_amount,
+              discount_amount: invoice.discount_amount,
+              final_amount: invoice.final_amount,
+              description: invoice.description,
+              title: invoice.title,
+              notes: invoice.notes,
+              invoice_type: invoice.invoice_type || 'final',
+              peppol_metadata: invoice.peppol_metadata || null
+            },
+            quote: invoice.quote || null,
+            depositInvoiceStatus: depositInvoiceStatus // Pass deposit invoice status for PDF generation
           };
-          reader.onerror = reject;
-          reader.readAsDataURL(pdfBlob);
-        });
-      } catch (pdfError) {
-        console.error('Error generating PDF for follow-up:', pdfError);
-        // Continue without PDF attachment if generation fails
+
+          // Generate PDF blob
+          const invoiceType = invoice.invoice_type || 'final';
+          // Show warning for professional clients in email attachments
+          const isProfessionalClient = client.client_type === 'company' || client.client_type === 'professional';
+          const pdfBlob = await generateInvoicePDF(invoiceDataForPDF, invoice.invoice_number, null, clientLanguage, false, invoiceType, isProfessionalClient);
+          
+          // Convert PDF blob to base64 for email attachment
+          pdfBase64 = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              const base64String = reader.result.split(',')[1]; // Remove data:application/pdf;base64, prefix
+              resolve(base64String);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(pdfBlob);
+          });
+        } catch (pdfError) {
+          console.error('Error generating PDF for follow-up:', pdfError);
+          // Continue without PDF attachment if generation fails
+        }
       }
 
       // Calculate days overdue
