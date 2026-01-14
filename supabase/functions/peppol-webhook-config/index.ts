@@ -152,7 +152,33 @@ serve(async (req) => {
       const errorText = await response.text();
       
       // Try to parse the error details from Digiteal
-      let errorMessage = 'Failed to configure/fetch webhook';
+      let errorMessage = 'API request failed';
+      
+      // Provide action-specific error messages
+      if (action === 'get-participant' || action === 'get-participant-details') {
+        if (response.status === 404) {
+          errorMessage = `Participant not found: ${peppolIdentifier || 'unknown'}`;
+        } else {
+          errorMessage = `Failed to fetch participant details`;
+        }
+      } else if (action === 'get-participants') {
+        errorMessage = 'Failed to fetch participants list';
+      } else if (action === 'register-participant') {
+        errorMessage = 'Failed to register participant';
+      } else if (action === 'unregister-participant') {
+        errorMessage = 'Failed to unregister participant';
+      } else if (action === 'test-connection') {
+        errorMessage = 'Failed to test connection';
+      } else if (action === 'validate-document') {
+        errorMessage = 'Failed to validate document';
+      } else if (action === 'send-ubl-document') {
+        errorMessage = 'Failed to send UBL document';
+      } else if (action === 'add-document-type' || action === 'remove-document-type' || action === 'get-supported-document-types') {
+        errorMessage = `Failed to ${action.replace(/-/g, ' ')}`;
+      } else {
+        errorMessage = 'Failed to configure/fetch webhook';
+      }
+      
       try {
         const errorJson = JSON.parse(errorText);
         if (errorJson.message) {
@@ -161,7 +187,9 @@ serve(async (req) => {
           errorMessage = errorJson.error;
         }
       } catch {
-        errorMessage = errorText || errorMessage;
+        if (errorText && errorText.trim()) {
+          errorMessage = errorText;
+        }
       }
       
       return new Response(

@@ -234,112 +234,96 @@ const Peppol = () => {
         return;
       }
 
-      // Process each participant - fetch details if needed
-      const detailedParticipants = await Promise.all(
-        participantsList.map(async (participant) => {
+      // Helper function to fetch with retry logic
+      const fetchWithRetry = async (action, peppolIdentifier, maxRetries = 3, delay = 500) => {
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
           try {
-            // If participant is already an object with details, check if it has enough info
-            if (typeof participant === 'object' && participant !== null) {
-              const identifier = participant.peppolIdentifier || participant.id || participant.identifier;
-              
-              // If we already have name and other details, use it
-              if (participant.name || participant.businessName || participant.companyName) {
-                return {
-                  peppolIdentifier: identifier,
-                  id: identifier,
-                  name: participant.name || participant.businessName || participant.companyName || 'N/A',
-                  countryCode: participant.countryCode || participant.country || 'N/A',
-                  supportedDocumentTypes: participant.supportedDocumentTypes || participant.documentTypes || []
-                };
+            const { data, error } = await supabase.functions.invoke('peppol-webhook-config', {
+              body: {
+                endpoint: endpoint,
+                username: settings.apiUsername,
+                password: settings.apiPassword,
+                action: action,
+                peppolIdentifier: peppolIdentifier
               }
-              
-               // If we have identifier but no details, fetch details from both endpoints
-               if (identifier) {
-                 // Fetch from authenticated endpoint (basic info)
-                 const { data: basicDetails, error: basicError } = await supabase.functions.invoke('peppol-webhook-config', {
-                   body: {
-                     endpoint: endpoint,
-                     username: settings.apiUsername,
-                     password: settings.apiPassword,
-                     action: 'get-participant-details',
-                     peppolIdentifier: identifier
-                   }
-                 });
+            });
 
-                 // Fetch from public endpoint (detailed info including document types)
-                 const { data: publicDetails, error: publicError } = await supabase.functions.invoke('peppol-webhook-config', {
-                   body: {
-                     endpoint: endpoint,
-                     username: settings.apiUsername,
-                     password: settings.apiPassword,
-                     action: 'get-participant',
-                     peppolIdentifier: identifier
-                   }
-                 });
+            // Check if error exists and extract status
+            const errorStatus = error?.status || (error && typeof error === 'object' && 'status' in error ? error.status : null);
+            
+            // If successful or 404 (participant not found in this endpoint), return
+            // 404 is acceptable - participant may not exist in one endpoint but exist in another
+            if (!error || errorStatus === 404) {
+              return { data, error: errorStatus === 404 ? null : error };
+            }
 
-                 // Merge data from both endpoints
-                 const mergedData = {
-                   peppolIdentifier: identifier,
-                   id: identifier,
-                   // From authenticated endpoint
-                   name: basicDetails?.name || publicDetails?.businessCard?.businessEntities?.[0]?.names?.[0]?.name || 'N/A',
-                   registrationDate: basicDetails?.registrationDate || publicDetails?.businessCard?.businessEntities?.[0]?.registrationDate || null,
-                   contactPerson: basicDetails?.contactPerson || null,
-                   // From public endpoint
-                   countryCode: publicDetails?.businessCard?.businessEntities?.[0]?.countryCode || 'N/A',
-                   supportedDocumentTypes: publicDetails?.supportedDocumentTypes 
-                     ? publicDetails.supportedDocumentTypes.map(dt => dt.type || dt)
-                     : [],
-                   smpHostName: publicDetails?.smpHostName || null
-                 };
+            // If it's a rate limit error (429) or server error (5xx), retry
+            if (errorStatus === 429 || (errorStatus >= 500 && errorStatus < 600)) {
+              if (attempt < maxRetries - 1) {
+                const backoffDelay = delay * Math.pow(2, attempt); // Exponential backoff
+                await new Promise(resolve => setTimeout(resolve, backoffDelay));
+                continue;
+              }
+            }
 
-                 // Return merged data if at least one endpoint succeeded
-                 if (!basicError || !publicError) {
-                   return mergedData;
-                 }
-                 
-                 // If both failed, log and return basic info
-                 console.warn(`Failed to fetch details for ${identifier}:`, { basicError, publicError });
-               }
-              
-              // Fallback to basic info from participant object
-              return {
-                peppolIdentifier: identifier || 'N/A',
-                id: identifier || 'N/A',
+            // For other errors (like 401, 403), return immediately (don't retry)
+            return { data, error };
+          } catch (err) {
+            if (attempt < maxRetries - 1) {
+              const backoffDelay = delay * Math.pow(2, attempt);
+              await new Promise(resolve => setTimeout(resolve, backoffDelay));
+              continue;
+            }
+            return { data: null, error: err };
+          }
+        }
+        return { data: null, error: new Error('Max retries exceeded') };
+      };
+
+      // Process each participant sequentially with delays to avoid rate limiting
+      const detailedParticipants = [];
+      for (let i = 0; i < participantsList.length; i++) {
+        const participant = participantsList[i];
+        
+        // Add delay between participants (except first one)
+        if (i > 0) {
+          await new Promise(resolve => setTimeout(resolve, 300)); // 300ms delay between participants
+        }
+
+        try {
+          // If participant is already an object with details, check if it has enough info
+          if (typeof participant === 'object' && participant !== null) {
+            const identifier = participant.peppolIdentifier || participant.id || participant.identifier;
+            
+            // If we already have name and other details, use it
+            if (participant.name || participant.businessName || participant.companyName) {
+              detailedParticipants.push({
+                peppolIdentifier: identifier,
+                id: identifier,
                 name: participant.name || participant.businessName || participant.companyName || 'N/A',
                 countryCode: participant.countryCode || participant.country || 'N/A',
                 supportedDocumentTypes: participant.supportedDocumentTypes || participant.documentTypes || []
-              };
+              });
+              continue;
             }
+            
+            // If we have identifier but no details, fetch details from both endpoints
+            if (identifier) {
+              // Fetch from both endpoints in parallel (but with retry logic)
+              const [basicResult, publicResult] = await Promise.all([
+                fetchWithRetry('get-participant-details', identifier),
+                fetchWithRetry('get-participant', identifier)
+              ]);
 
-            // If participant is a string (just identifier), fetch details from both endpoints
-            if (typeof participant === 'string') {
-              // Fetch from authenticated endpoint (basic info)
-              const { data: basicDetails, error: basicError } = await supabase.functions.invoke('peppol-webhook-config', {
-                body: {
-                  endpoint: endpoint,
-                  username: settings.apiUsername,
-                  password: settings.apiPassword,
-                  action: 'get-participant-details',
-                  peppolIdentifier: participant
-                }
-              });
+              const basicDetails = basicResult.data;
+              const publicDetails = publicResult.data;
+              const basicError = basicResult.error;
+              const publicError = publicResult.error;
 
-              // Fetch from public endpoint (detailed info including document types)
-              const { data: publicDetails, error: publicError } = await supabase.functions.invoke('peppol-webhook-config', {
-                body: {
-                  endpoint: endpoint,
-                  username: settings.apiUsername,
-                  password: settings.apiPassword,
-                  action: 'get-participant',
-                  peppolIdentifier: participant
-                }
-              });
-
-              // Merge data from both endpoints
+              // Merge data from both endpoints (404 is acceptable - participant may not exist in one endpoint)
               const mergedData = {
-                peppolIdentifier: participant,
-                id: participant,
+                peppolIdentifier: identifier,
+                id: identifier,
                 // From authenticated endpoint
                 name: basicDetails?.name || publicDetails?.businessCard?.businessEntities?.[0]?.names?.[0]?.name || 'N/A',
                 registrationDate: basicDetails?.registrationDate || publicDetails?.businessCard?.businessEntities?.[0]?.registrationDate || null,
@@ -352,45 +336,108 @@ const Peppol = () => {
                 smpHostName: publicDetails?.smpHostName || null
               };
 
-              // Return merged data if at least one endpoint succeeded
-              if (!basicError || !publicError) {
-                return mergedData;
-              }
+              // Return merged data if we got data from at least one endpoint (404 errors are acceptable)
+              const hasBasicData = basicDetails && !basicError;
+              const hasPublicData = publicDetails && !publicError;
               
+              if (hasBasicData || hasPublicData) {
+                detailedParticipants.push(mergedData);
+              } else {
+                // If both failed with non-404 errors, log and use fallback
+                console.warn(`Failed to fetch details for ${identifier}:`, { basicError, publicError });
+                detailedParticipants.push({
+                  peppolIdentifier: identifier || 'N/A',
+                  id: identifier || 'N/A',
+                  name: participant.name || participant.businessName || participant.companyName || 'N/A',
+                  countryCode: participant.countryCode || participant.country || 'N/A',
+                  supportedDocumentTypes: participant.supportedDocumentTypes || participant.documentTypes || []
+                });
+              }
+              continue;
+            }
+            
+            // Fallback to basic info from participant object
+            detailedParticipants.push({
+              peppolIdentifier: identifier || 'N/A',
+              id: identifier || 'N/A',
+              name: participant.name || participant.businessName || participant.companyName || 'N/A',
+              countryCode: participant.countryCode || participant.country || 'N/A',
+              supportedDocumentTypes: participant.supportedDocumentTypes || participant.documentTypes || []
+            });
+            continue;
+          }
+
+          // If participant is a string (just identifier), fetch details from both endpoints
+          if (typeof participant === 'string') {
+            // Fetch from both endpoints in parallel (but with retry logic)
+            const [basicResult, publicResult] = await Promise.all([
+              fetchWithRetry('get-participant-details', participant),
+              fetchWithRetry('get-participant', participant)
+            ]);
+
+            const basicDetails = basicResult.data;
+            const publicDetails = publicResult.data;
+            const basicError = basicResult.error;
+            const publicError = publicResult.error;
+
+            // Merge data from both endpoints
+            const mergedData = {
+              peppolIdentifier: participant,
+              id: participant,
+              // From authenticated endpoint
+              name: basicDetails?.name || publicDetails?.businessCard?.businessEntities?.[0]?.names?.[0]?.name || 'N/A',
+              registrationDate: basicDetails?.registrationDate || publicDetails?.businessCard?.businessEntities?.[0]?.registrationDate || null,
+              contactPerson: basicDetails?.contactPerson || null,
+              // From public endpoint
+              countryCode: publicDetails?.businessCard?.businessEntities?.[0]?.countryCode || 'N/A',
+              supportedDocumentTypes: publicDetails?.supportedDocumentTypes 
+                ? publicDetails.supportedDocumentTypes.map(dt => dt.type || dt)
+                : [],
+              smpHostName: publicDetails?.smpHostName || null
+            };
+
+            // Return merged data if we got data from at least one endpoint
+            const hasBasicData = basicDetails && !basicError;
+            const hasPublicData = publicDetails && !publicError;
+            
+            if (hasBasicData || hasPublicData) {
+              detailedParticipants.push(mergedData);
+            } else {
               // Return basic info if both fetches fail
               console.warn(`Failed to fetch details for ${participant}:`, { basicError, publicError });
-              return {
+              detailedParticipants.push({
                 peppolIdentifier: participant,
                 id: participant,
                 name: 'N/A',
                 countryCode: 'N/A',
                 supportedDocumentTypes: []
-              };
+              });
             }
-
-            // Unknown format
-            return {
-              peppolIdentifier: 'N/A',
-              id: 'N/A',
-              name: 'N/A',
-              countryCode: 'N/A',
-              supportedDocumentTypes: []
-            };
-          } catch (err) {
-            console.warn(`Error processing participant:`, err, participant);
-            const identifier = typeof participant === 'string' 
-              ? participant 
-              : (participant?.peppolIdentifier || participant?.id || 'N/A');
-            return {
-              peppolIdentifier: identifier,
-              id: identifier,
-              name: 'N/A',
-              countryCode: 'N/A',
-              supportedDocumentTypes: []
-            };
+            continue;
           }
-        })
-      );
+
+          // Unknown format
+          detailedParticipants.push({
+            peppolIdentifier: 'N/A',
+            id: 'N/A',
+            name: 'N/A',
+            countryCode: 'N/A',
+            supportedDocumentTypes: []
+          });
+        } catch (err) {
+          console.warn(`Error processing participant:`, err, participant);
+          const identifier = typeof participant === 'string' 
+            ? participant 
+            : (participant?.peppolIdentifier || participant?.id || 'N/A');
+          detailedParticipants.push({
+            peppolIdentifier: identifier,
+            id: identifier,
+            name: 'N/A',
+            countryCode: 'N/A',
+            supportedDocumentTypes: []
+          });
+        }
+      }
 
       setParticipants(detailedParticipants);
     } catch (error) {
@@ -577,8 +624,8 @@ const Peppol = () => {
       await fetchParticipants();
       setTestResult({
         success: true,
-        message: 'Participant(s) unregistered and all Peppol data deleted successfully',
-        details: `Selected participant(s) have been removed from Peppol network and all related data has been deleted from the database`
+        message: 'Participant(s) unregistered and Peppol functionality disabled successfully',
+        details: `Selected participant(s) have been removed from the Digiteal account (Peppol network) and Peppol functionality has been disabled. All historical data (invoices, settings, records) has been preserved in the database.`
       });
       
       // Close modal
@@ -1302,19 +1349,19 @@ const Peppol = () => {
                     <Icon name="AlertCircle" size={18} className="text-destructive" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-semibold text-foreground mb-2">Warning: This will permanently:</p>
+                    <p className="text-sm font-semibold text-foreground mb-2">Warning: This will:</p>
                     <ul className="space-y-1.5 text-xs text-muted-foreground">
                       <li className="flex items-start gap-2">
                         <Icon name="X" size={12} className="text-destructive mt-0.5 flex-shrink-0" />
-                        <span>Unregister the selected Peppol ID(s) from the Peppol network</span>
+                        <span>Unregister the selected Peppol ID(s) from the Digiteal account (Peppol network)</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <Icon name="X" size={12} className="text-destructive mt-0.5 flex-shrink-0" />
-                        <span>Delete all Peppol-related data from the database</span>
+                        <span>Disable Peppol functionality for the user (they can no longer use Peppol features)</span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <Icon name="X" size={12} className="text-destructive mt-0.5 flex-shrink-0" />
-                        <span>Remove all associated invoices and settings</span>
+                        <Icon name="CheckCircle2" size={12} className="text-green-600 mt-0.5 flex-shrink-0" />
+                        <span className="text-green-700 dark:text-green-400">All historical data will be preserved (invoices, settings, and records remain in the database)</span>
                       </li>
                     </ul>
                   </div>
