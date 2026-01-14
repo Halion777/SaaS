@@ -439,11 +439,7 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
         depositInvoiceStatus: null // Will be calculated if needed by PDF service
       };
 
-      // Check if client is professional (company or professional type) - show warning for professional clients
-      const isProfessionalClient = invoice.client?.client_type === 'company' || invoice.client?.client_type === 'professional';
-      
       // Generate PDF blob (show bank info for Peppol PDFs - they're official documents)
-      // Show warning for professional clients (reference document only)
       const pdfBlob = await generateInvoicePDF(
         invoiceDataForPDF,
         invoiceNumber,
@@ -451,7 +447,7 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
         i18n.language,
         false, // Don't hide bank info for Peppol PDFs
         invoiceType,
-        isProfessionalClient // Show warning for professional clients
+        false // Don't show warning for Peppol PDFs
       );
 
       // Convert PDF blob to base64 for UBL XML embedding
