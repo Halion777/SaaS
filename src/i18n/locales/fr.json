@@ -4414,7 +4414,7 @@
         "invoicesCount_plural": "{{count}} factures",
         "headers": {
           "invoiceNumber": "N° Facture",
-          "client": "Fournisseur",
+          "client": "client",
           "amount": "Montant",
           "status": "Statut",
           "peppolStatus": "Statut Peppol",
