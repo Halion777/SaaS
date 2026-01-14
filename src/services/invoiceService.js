@@ -559,6 +559,61 @@ export class InvoiceService {
         throw new Error('Invoice not found');
       }
 
+      // Check if PDF already exists in storage
+      const sanitizedInvoiceNumber = invoice.invoice_number.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const storagePath = `invoice-pdfs/${userId}/${sanitizedInvoiceNumber}.pdf`;
+      const bucketName = 'invoice-attachments';
+
+      // Check if PDF already exists in metadata
+      if (invoice.peppol_metadata?.pdf_storage_path && invoice.peppol_metadata?.pdf_storage_bucket) {
+        // Verify PDF exists in storage
+        const { data: existingPdf, error: checkError } = await supabase.storage
+          .from(invoice.peppol_metadata.pdf_storage_bucket)
+          .download(invoice.peppol_metadata.pdf_storage_path);
+
+        if (!checkError && existingPdf) {
+          console.log(`✅ PDF already exists for invoice ${invoice.invoice_number}, skipping regeneration`);
+          return {
+            success: true,
+            storagePath: invoice.peppol_metadata.pdf_storage_path,
+            bucket: invoice.peppol_metadata.pdf_storage_bucket,
+            alreadyExists: true
+          };
+        }
+      }
+
+      // Check if PDF exists at standard path (even if not in metadata)
+      const { data: existingPdfAtPath, error: checkPathError } = await supabase.storage
+        .from(bucketName)
+        .download(storagePath);
+
+      if (!checkPathError && existingPdfAtPath) {
+        console.log(`✅ PDF already exists at ${bucketName}/${storagePath} for invoice ${invoice.invoice_number}, skipping regeneration`);
+        
+        // Update metadata if not already set
+        if (!invoice.peppol_metadata?.pdf_storage_path) {
+          const currentMetadata = invoice.peppol_metadata || {};
+          await supabase
+            .from('invoices')
+            .update({
+              peppol_metadata: {
+                ...currentMetadata,
+                pdf_storage_path: storagePath,
+                pdf_storage_bucket: bucketName,
+                pdf_generated_at: new Date().toISOString()
+              }
+            })
+            .eq('id', invoiceId);
+        }
+
+        return {
+          success: true,
+          storagePath: storagePath,
+          bucket: bucketName,
+          alreadyExists: true
+        };
+      }
+
       // Get company info
       const companyInfo = await loadCompanyInfo(userId);
       if (!companyInfo) {
@@ -611,36 +666,16 @@ export class InvoiceService {
       // Convert base64 to Uint8Array for storage
       const pdfBuffer = Uint8Array.from(atob(pdfBase64), c => c.charCodeAt(0));
 
-      // Generate storage path: invoice-pdfs/{userId}/{invoiceNumber}.pdf
-      const sanitizedInvoiceNumber = invoice.invoice_number.replace(/[^a-zA-Z0-9_-]/g, '_');
-      const storagePath = `invoice-pdfs/${userId}/${sanitizedInvoiceNumber}.pdf`;
-
       // Upload to Supabase Storage
-      // Try 'invoice-attachments' first, fallback to 'expense-invoice-attachments' if needed
-      let bucketName = 'invoice-attachments';
-      let uploadData = null;
-      let uploadError = null;
       
       console.log(`📄 Uploading PDF for invoice ${invoice.invoice_number} to ${bucketName}/${storagePath}...`);
       
-      ({ data: uploadData, error: uploadError } = await supabase.storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from(bucketName)
         .upload(storagePath, pdfBuffer, {
           contentType: 'application/pdf',
           upsert: true // Overwrite if exists
-        }));
-
-      // If bucket doesn't exist, try alternative bucket
-      if (uploadError && (uploadError.message?.includes('Bucket not found') || uploadError.message?.includes('not found'))) {
-        console.warn(`⚠️ Bucket '${bucketName}' not found or not accessible, trying 'expense-invoice-attachments'`);
-        bucketName = 'expense-invoice-attachments';
-        ({ data: uploadData, error: uploadError } = await supabase.storage
-          .from(bucketName)
-          .upload(storagePath, pdfBuffer, {
-            contentType: 'application/pdf',
-            upsert: true
-          }));
-      }
+        });
 
       if (uploadError) {
         console.error(`❌ Error uploading PDF to storage (bucket: ${bucketName}, path: ${storagePath}):`, uploadError);

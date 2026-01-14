@@ -1850,68 +1850,6 @@ export class PeppolService {
     };
   }
 
-  // Get Peppol participants from database
-  async getPeppolParticipants() {
-    try {
-      const { data, error } = await supabase
-        .from('peppol_participants')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  // Add Peppol participant
-  async addPeppolParticipant(participantData) {
-    try {
-      const { data, error } = await supabase
-        .from('peppol_participants')
-        .insert([participantData])
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  // Update Peppol participant
-  async updatePeppolParticipant(id, updates) {
-    try {
-      const { data, error } = await supabase
-        .from('peppol_participants')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  // Delete Peppol participant
-  async deletePeppolParticipant(id) {
-    try {
-      const { error } = await supabase
-        .from('peppol_participants')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      return { success: true };
-    } catch (error) {
-      throw error;
-    }
-  }
 
   // Get Peppol invoices
   async getPeppolInvoices() {

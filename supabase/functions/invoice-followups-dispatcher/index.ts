@@ -437,29 +437,7 @@ async function processFollowUp(admin: any, followUp: any) {
           };
           console.log(`✅ PDF attachment loaded from storage: ${pdfStorageBucket}/${pdfStoragePath}`);
         } else {
-          // If first bucket fails, try alternative bucket (for backward compatibility)
-          if (pdfStorageBucket === 'invoice-attachments') {
-            const altBucket = 'expense-invoice-attachments';
-            const { data: altPdfData, error: altDownloadError } = await admin.storage
-              .from(altBucket)
-              .download(pdfStoragePath);
-            
-            if (!altDownloadError && altPdfData) {
-              const arrayBuffer = await altPdfData.arrayBuffer();
-              const uint8Array = new Uint8Array(arrayBuffer);
-              const pdfBase64 = btoa(String.fromCharCode.apply(null, Array.from(uint8Array)));
-              
-              pdfAttachment = {
-                filename: `facture-${invoice.invoice_number}.pdf`,
-                content: pdfBase64
-              };
-              console.log(`✅ PDF attachment loaded from alternative storage: ${altBucket}/${pdfStoragePath}`);
-            } else {
-              console.warn(`⚠️ PDF not found at ${pdfStorageBucket}/${pdfStoragePath} or ${altBucket}/${pdfStoragePath}:`, downloadError?.message || altDownloadError?.message || 'File not found');
-            }
-          } else {
-            console.warn(`⚠️ PDF not found at ${pdfStorageBucket}/${pdfStoragePath}:`, downloadError?.message || 'File not found');
-          }
+          console.warn(`⚠️ PDF not found at ${pdfStorageBucket}/${pdfStoragePath}:`, downloadError?.message || 'File not found');
         }
       } else {
         console.warn(`⚠️ No PDF storage path available for invoice ${invoice.invoice_number}. Invoice may need PDF generation.`);
