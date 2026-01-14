@@ -2224,38 +2224,39 @@ const PeppolNetworkPage = () => {
                               </div>
                             </div>
 
-                            {/* Disable/Enable Peppol Toggle */}
-                            <div className="mt-4 bg-muted/20 border border-border rounded-lg p-4">
-                              <div className="flex items-center justify-between">
+                            {/* Peppol Status Display (Read-only) - Managed by Super Admin */}
+                            <div className={`mt-4 rounded-lg p-4 border ${
+                              peppolSettings.peppolDisabled 
+                                ? 'bg-destructive/5 border-destructive/20' 
+                                : 'bg-success/5 border-success/20'
+                            }`}>
+                              <div className="flex items-start gap-3">
+                                <Icon 
+                                  name={peppolSettings.peppolDisabled ? "AlertCircle" : "CheckCircle"} 
+                                  size={18} 
+                                  className={`flex-shrink-0 mt-0.5 ${
+                                    peppolSettings.peppolDisabled 
+                                      ? 'text-destructive' 
+                                      : 'text-success'
+                                  }`} 
+                                />
                                 <div className="flex-1">
                                   <h4 className="text-sm font-semibold text-foreground mb-1">
-                                    {peppolSettings.peppolDisabled ? t('peppol.setup.registered.peppolDisabled') : t('peppol.setup.registered.peppolEnabled')}
+                                    {peppolSettings.peppolDisabled 
+                                      ? t('peppol.setup.registered.peppolDisabled') 
+                                      : t('peppol.setup.registered.peppolEnabled')}
                                   </h4>
                                   <p className="text-xs text-muted-foreground">
                                     {peppolSettings.peppolDisabled
                                       ? t('peppol.setup.registered.peppolDisabledDescription')
                                       : t('peppol.setup.registered.peppolEnabledDescription')}
                                   </p>
+                                  {peppolSettings.peppolDisabled && (
+                                    <p className="text-xs text-muted-foreground mt-2 italic">
+                                      {t('peppol.setup.registered.managedByAdmin', 'Peppol functionality is managed by administrator. Please contact support to re-enable.')}
+                                    </p>
+                                  )}
                                 </div>
-                                <label className="relative inline-flex items-center cursor-pointer ml-4">
-                                  <input
-                                    type="checkbox"
-                                    checked={!peppolSettings.peppolDisabled}
-                                    onChange={async (e) => {
-                                      const newDisabled = !e.target.checked;
-                                      const result = await peppolService.togglePeppolDisabled(newDisabled);
-                                      if (result.success) {
-                                        setPeppolSettings(prev => ({ ...prev, peppolDisabled: newDisabled }));
-                                        alert(result.message);
-                                        await loadPeppolSettings();
-                                      } else {
-                                        alert(`${newDisabled ? t('peppol.setup.registered.failedToDisable') : t('peppol.setup.registered.failedToEnable')}: ${result.error}`);
-                                      }
-                                    }}
-                                    className="sr-only peer"
-                                  />
-                                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                </label>
                               </div>
                             </div>
                           </div>
