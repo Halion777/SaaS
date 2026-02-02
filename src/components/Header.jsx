@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
+import { useBookDemo } from '../context/BookDemoContext';
 import Icon from './AppIcon';
 import Button from './ui/Button';
 import LanguageDropdown from './LanguageDropdown';
@@ -117,6 +118,7 @@ const MobileLanguageSelector = () => {
 const Header = () => {
   const { t } = useTranslation();
   const { isAuthenticated, logout, user } = useAuth();
+  const { openBookDemo } = useBookDemo();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -306,6 +308,14 @@ const Header = () => {
                       {t('nav.freeTrial')}
                     </Button>
                   </Link>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="bg-[#12bf23] hover:bg-[#12bf23]/90 text-white font-medium"
+                    onClick={openBookDemo}
+                  >
+                    {t('nav.bookADemo')}
+                  </Button>
                 </>
               )}
             </div>
@@ -396,6 +406,17 @@ const Header = () => {
                         {t('nav.freeTrial')}
                       </Button>
                     </Link>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="w-full bg-[#12bf23] hover:bg-[#12bf23]/90 text-white font-medium"
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        openBookDemo();
+                      }}
+                    >
+                      {t('nav.bookADemo')}
+                    </Button>
                   </div>
               ) : (
                 /* Mobile Navigation for Authenticated Users */

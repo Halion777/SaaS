@@ -54,6 +54,7 @@
     "login": "Inloggen",
     "register": "Registreren",
     "freeTrial": "Gratis proef",
+    "bookADemo": "Boek een demo",
     "logout": "Uitloggen"
   },
   "header": {
@@ -79,7 +80,8 @@
       "learnMore": "Meer informatie",
       "viewDemo": "Demo bekijken",
       "choosePlan": "Kies dit plan",
-      "startFreeTrial": "Gratis proefperiode – 14 dagen"
+      "startFreeTrial": "Proefperiode – 14 dagen",
+      "bookADemo": "Boek een demo"
     },
     "processingOverlay": {
       "defaultMessage": "Verwerken...",
@@ -98,6 +100,36 @@
     },
     "loading": "Laden...",
     "verifyingAccess": "Toegang verifiëren..."
+  },
+  "bookDemo": {
+    "title": "Boek een demo",
+    "close": "Sluiten",
+    "success": "Uw demo-aanvraag is verzonden. We nemen snel contact op om de datum te bevestigen.",
+    "form": {
+      "name": "Naam",
+      "namePlaceholder": "Uw naam",
+      "companyName": "Bedrijfsnaam",
+      "companyPlaceholder": "Uw bedrijf",
+      "phone": "Telefoon",
+      "phonePlaceholder": "+32 000 00 00 00",
+      "email": "E-mail",
+      "emailPlaceholder": "u@bedrijf.com",
+      "preferredDatesLabel": "Gewenste data",
+      "preferredDatesHint": "Selecteer een of meerdere data waarop u beschikbaar bent.",
+      "prevMonth": "Vorige maand",
+      "nextMonth": "Volgende maand",
+      "submit": "Verstuur aanvraag",
+      "cancel": "Annuleren",
+      "errors": {
+        "nameRequired": "Naam is verplicht",
+        "companyRequired": "Bedrijfsnaam is verplicht",
+        "phoneRequired": "Telefoon is verplicht",
+        "emailRequired": "E-mail is verplicht",
+        "emailInvalid": "Voer een geldig e-mailadres in",
+        "datesRequired": "Selecteer minimaal één datum",
+        "submitFailed": "Verzenden mislukt. Probeer het opnieuw."
+      }
+    }
   },
   "home": {
     "hero": {

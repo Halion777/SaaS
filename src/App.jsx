@@ -4,6 +4,7 @@ import { I18nextProvider } from 'react-i18next';
 import i18n from './i18n';
 import Routes from "./Routes";
 import { AuthProvider } from "./context/AuthContext";
+import { BookDemoProvider } from "./context/BookDemoContext";
 import { MultiUserProvider } from "./context/MultiUserContext";
 import { NavigationProvider } from "./context/NavigationContext";
 import ProfileSelectionModal from "./components/ui/ProfileSelectionModal";
@@ -44,6 +45,7 @@ function App() {
 
     return (
       <InternetConnectionCheck>
+      <BookDemoProvider>
       <MultiUserProvider>
         <NavigationProvider>
         <Routes />
@@ -54,6 +56,7 @@ function App() {
         />
         </NavigationProvider>
       </MultiUserProvider>
+      </BookDemoProvider>
       </InternetConnectionCheck>
     );
   }

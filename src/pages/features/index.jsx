@@ -6,9 +6,11 @@ import Button from '../../components/ui/Button';
 import Icon from '../../components/AppIcon';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import { useBookDemo } from '../../context/BookDemoContext';
 
 const FeaturesPage = () => {
   const { t, i18n } = useTranslation();
+  const { openBookDemo } = useBookDemo();
   const [isVisible, setIsVisible] = useState({
     hero: false,
     features: false,
@@ -318,14 +320,16 @@ const FeaturesPage = () => {
                     </span>
                   </button>
                 </Link>
-                <Link to="/contact">
-                  <button className="bg-transparent text-white border-2 border-white px-10 py-5 rounded-xl font-bold text-lg hover:bg-white hover:text-[#0036ab] transition-all duration-300 w-full sm:w-auto group">
-                    <span className="flex items-center justify-center">
-                      <Icon name="Phone" size={20} className="mr-2" />
-                      {t('features.cta.secondaryButton')}
-                    </span>
-                  </button>
-                </Link>
+                <button
+                  type="button"
+                  onClick={openBookDemo}
+                  className="bg-[#12bf23] text-white px-10 py-5 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 w-full sm:w-auto hover:bg-[#12bf23]/90"
+                >
+                  <span className="flex items-center justify-center">
+                    <Icon name="CalendarCheck" size={20} className="mr-2" />
+                    {t('ui.buttons.bookADemo')}
+                  </span>
+                </button>
               </div>
             </div>
           </div>

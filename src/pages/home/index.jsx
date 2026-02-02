@@ -9,12 +9,14 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import TestimonialCarousel from '../../components/TestimonialCarousel';
 import CookieConsentBar from '../../components/CookieConsentBar';
+import { useBookDemo } from '../../context/BookDemoContext';
 import appSettingsService from '../../services/appSettingsService';
 import contactService from '../../services/contactService';
 import { supabase } from '../../services/supabaseClient';
 
 const HomePage = () => {
   const { t, i18n } = useTranslation();
+  const { openBookDemo } = useBookDemo();
   const [isVisible, setIsVisible] = useState({});
   const [openFAQ, setOpenFAQ] = useState(null);
   const [showHomeServices, setShowHomeServices] = useState(false); // Default to false (hidden)
@@ -289,9 +291,19 @@ const HomePage = () => {
                           <Icon name="Calendar" size={20} className="mr-2 group-hover:animate-pulse" />
                           {t('ui.buttons.startFreeTrial')}
                         </span>
-                  </button>
-                </Link>
-              </div>
+                      </button>
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={openBookDemo}
+                      className="bg-[#12bf23] text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 w-full sm:w-auto hover:bg-[#12bf23]/90"
+                    >
+                      <span className="flex items-center justify-center">
+                        <Icon name="CalendarCheck" size={20} className="mr-2" />
+                        {t('ui.buttons.bookADemo')}
+                      </span>
+                    </button>
+                  </div>
               
                   {/* Trust Indicators */}
                   <div className="flex flex-wrap justify-center lg:justify-start items-center gap-4 sm:gap-6 text-xs sm:text-sm text-gray-500">
@@ -1213,14 +1225,16 @@ const HomePage = () => {
                     </span>
                   </button>
                 </Link>
-                <Link to="/contact">
-                  <button className="bg-transparent text-white border-2 border-white px-10 py-5 rounded-xl font-bold text-lg hover:bg-white hover:text-[#0036ab] transition-all duration-300 w-full sm:w-auto group">
-                    <span className="flex items-center justify-center">
-                      <Icon name="Phone" size={20} className="mr-2" />
-                      {t('home.cta.secondaryButton')}
-                    </span>
-                  </button>
-                </Link>
+                <button
+                  type="button"
+                  onClick={openBookDemo}
+                  className="bg-[#12bf23] text-white px-10 py-5 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 w-full sm:w-auto hover:bg-[#12bf23]/90"
+                >
+                  <span className="flex items-center justify-center">
+                    <Icon name="CalendarCheck" size={20} className="mr-2" />
+                    {t('ui.buttons.bookADemo')}
+                  </span>
+                </button>
               </div>
             </div>
           </div>

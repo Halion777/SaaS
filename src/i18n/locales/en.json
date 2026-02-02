@@ -54,6 +54,7 @@
     "login": "Login",
     "register": "Register",
     "freeTrial": "Free Trial",
+    "bookADemo": "Book a demo",
     "logout": "Logout"
   },
   "header": {
@@ -79,7 +80,8 @@
       "learnMore": "Learn more",
       "viewDemo": "View demo",
       "choosePlan": "Choose this plan",
-      "startFreeTrial": "Free trial – 14 days"
+      "startFreeTrial": "Free trial – 14 days",
+      "bookADemo": "Book a demo"
     },
     "processingOverlay": {
       "defaultMessage": "Processing...",
@@ -98,6 +100,36 @@
     },
     "loading": "Loading...",
     "verifyingAccess": "Verifying access..."
+  },
+  "bookDemo": {
+    "title": "Book a demo",
+    "close": "Close",
+    "success": "Your demo request has been sent. We'll contact you shortly to confirm your preferred date.",
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "Your name",
+      "companyName": "Company name",
+      "companyPlaceholder": "Your company",
+      "phone": "Phone",
+      "phonePlaceholder": "+32 000 00 00 00",
+      "email": "Email",
+      "emailPlaceholder": "you@company.com",
+      "preferredDatesLabel": "Preferred dates",
+      "preferredDatesHint": "Select one or several dates when you're available.",
+      "prevMonth": "Previous month",
+      "nextMonth": "Next month",
+      "submit": "Send request",
+      "cancel": "Cancel",
+      "errors": {
+        "nameRequired": "Name is required",
+        "companyRequired": "Company name is required",
+        "phoneRequired": "Phone is required",
+        "emailRequired": "Email is required",
+        "emailInvalid": "Please enter a valid email",
+        "datesRequired": "Please select at least one date",
+        "submitFailed": "Failed to send. Please try again."
+      }
+    }
   },
   "home": {
     "hero": {

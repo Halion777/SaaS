@@ -6,10 +6,12 @@ import Button from '../../components/ui/Button';
 import Icon from '../../components/AppIcon';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import { useBookDemo } from '../../context/BookDemoContext';
 import { supabase } from '../../services/supabaseClient';
 
 const AboutPage = () => {
   const { t, i18n } = useTranslation();
+  const { openBookDemo } = useBookDemo();
   const [isVisible, setIsVisible] = useState({});
   const [mediaSettings, setMediaSettings] = useState({
     about: {
@@ -189,11 +191,14 @@ const AboutPage = () => {
                         {t('ui.buttons.startTrial')}
                       </Button>
                     </Link>
-                    <Link to="/contact">
-                      <Button variant="outline" size="lg" className="border-2 border-gray-200 hover:border-[#0036ab] px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
-                        {t('ui.buttons.contactUs')}
-                      </Button>
-                    </Link>
+                    <Button
+                      variant="default"
+                      size="lg"
+                      className="bg-[#12bf23] hover:bg-[#12bf23]/90 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
+                      onClick={openBookDemo}
+                    >
+                      {t('ui.buttons.bookADemo')}
+                    </Button>
                   </div>
                 </div>
                 
@@ -516,11 +521,14 @@ const AboutPage = () => {
                     {t('about.cta.primaryButton')}
                 </Button>
               </Link>
-              <Link to="/contact">
-                  <Button variant="outline" size="lg" className="border-2 border-white text-white hover:bg-white hover:text-[#0036ab] px-10 py-5 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
-                    {t('about.cta.secondaryButton')}
-                </Button>
-              </Link>
+              <Button
+                variant="default"
+                size="lg"
+                className="bg-[#12bf23] hover:bg-[#12bf23]/90 text-white px-10 py-5 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
+                onClick={openBookDemo}
+              >
+                {t('ui.buttons.bookADemo')}
+              </Button>
               </div>
             </div>
           </div>
