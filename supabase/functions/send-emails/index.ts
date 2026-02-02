@@ -927,8 +927,17 @@ serve(async (req) => {
         // Hardcoded template for super admin (styled like other email templates)
         const escapeHtml = (s: string) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         const preferredDatesRaw = emailData.preferred_dates;
+        // Format dates as DD/MM/YYYY for display
+        const formatDateDdMmYyyy = (iso: string) => {
+          const d = new Date(iso);
+          if (isNaN(d.getTime())) return iso;
+          const day = String(d.getDate()).padStart(2, '0');
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const year = d.getFullYear();
+          return `${day}/${month}/${year}`;
+        };
         const preferredDatesFormatted = Array.isArray(preferredDatesRaw) && preferredDatesRaw.length > 0
-          ? preferredDatesRaw.join(', ')
+          ? preferredDatesRaw.map((d: string) => formatDateDdMmYyyy(d)).join(', ')
           : '—';
         const name = escapeHtml(emailData.name || '');
         const companyName = escapeHtml(emailData.company_name || '');
