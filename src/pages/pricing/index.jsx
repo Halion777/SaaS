@@ -6,10 +6,12 @@ import Button from '../../components/ui/Button';
 import Icon from '../../components/AppIcon';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import { useBookDemo } from '../../context/BookDemoContext';
 import { SubscriptionNotificationService } from '../../services/subscriptionNotificationService';
 
 const PricingPage = () => {
   const { t, i18n } = useTranslation();
+  const { openBookDemo } = useBookDemo();
   const [billingCycle, setBillingCycle] = useState('monthly');
   // Initialize with default/fallback values immediately - no loading state
   const [pricing, setPricing] = useState({
@@ -362,17 +364,26 @@ const PricingPage = () => {
                     </ul>
                   </div>
                   
-                  <Link to="/register" className="w-full">
-                    <Button 
-                      className={`w-full py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 ${
-                        plan.popular 
-                          ? 'bg-[#0036ab] hover:bg-[#0036ab]/90 text-white' 
-                          : 'bg-white border-2 border-[#0036ab] text-[#0036ab] hover:bg-[#0036ab] hover:text-white'
-                      }`}
+                  <div className="space-y-3">
+                    <Link to="/register" className="block w-full">
+                      <Button 
+                        className={`w-full py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 ${
+                          plan.popular 
+                            ? 'bg-[#0036ab] hover:bg-[#0036ab]/90 text-white' 
+                            : 'bg-white border-2 border-[#0036ab] text-[#0036ab] hover:bg-[#0036ab] hover:text-white'
+                        }`}
+                      >
+                        {plan.cta}
+                      </Button>
+                    </Link>
+                    <Button
+                      type="button"
+                      onClick={openBookDemo}
+                      className="w-full py-3 rounded-xl font-medium text-[#12bf23] border-2 border-[#12bf23] bg-white hover:bg-[#12bf23]/10 transition-all duration-300"
                     >
-                      {plan.cta}
+                      {t('ui.buttons.bookADemo')}
                     </Button>
-                  </Link>
+                  </div>
                 </div>
               ))}
             </div>
