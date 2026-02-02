@@ -922,6 +922,68 @@ serve(async (req) => {
           throw new Error(`Email template 'contact_form' not found in database for language '${contactLanguage}'. Please create the template in the email_templates table.`);
         }
         break;
+
+      case 'book_demo': {
+        // Hardcoded template for super admin (styled like other email templates)
+        const escapeHtml = (s: string) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        const preferredDatesRaw = emailData.preferred_dates;
+        const preferredDatesFormatted = Array.isArray(preferredDatesRaw) && preferredDatesRaw.length > 0
+          ? preferredDatesRaw.join(', ')
+          : '—';
+        const name = escapeHtml(emailData.name || '');
+        const companyName = escapeHtml(emailData.company_name || '');
+        const phone = escapeHtml(emailData.phone || '');
+        const emailAddr = emailData.email || '';
+        const emailAddrEscaped = escapeHtml(emailAddr);
+        const subject = `Book a demo: ${name || '—'} (${companyName || '—'})`;
+        const html = `
+<div style="max-width: 600px; margin: 0 auto; font-family: 'Arial', 'Helvetica', sans-serif; background: #ffffff; padding: 40px;">
+  <h2 style="margin: 0 0 20px 0; font-size: 20px; color: #333; font-weight: bold;">New demo request</h2>
+  <div style="background: #f9fafb; padding: 15px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #059669;">
+    <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+      <span style="color: #666;">Name:</span>
+      <span style="color: #333; font-size: 14px;">${name || '—'}</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+      <span style="color: #666;">Company:</span>
+      <span style="color: #333; font-size: 14px;">${companyName || '—'}</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+      <span style="color: #666;">Phone:</span>
+      <span style="color: #333; font-size: 14px;">${phone || '—'}</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+      <span style="color: #666;">Email:</span>
+      <a href="mailto:${emailAddrEscaped}" style="color: #059669; font-size: 14px; text-decoration: none;">${emailAddrEscaped || '—'}</a>
+    </div>
+    <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+      <span style="color: #666;">Preferred dates:</span>
+      <span style="color: #333; font-size: 14px;">${escapeHtml(preferredDatesFormatted)}</span>
+    </div>
+  </div>
+  <p style="margin: 0; color: #666; font-size: 13px; font-style: italic;">Reply to this email to confirm the demo.</p>
+</div>`.trim();
+        const text = [
+          'New demo request',
+          `Name: ${emailData.name || '—'}`,
+          `Company: ${emailData.company_name || '—'}`,
+          `Phone: ${emailData.phone || '—'}`,
+          `Email: ${emailAddr}`,
+          `Preferred dates: ${preferredDatesFormatted}`,
+          '—',
+          'Reply to this email to confirm the demo.'
+        ].join('\n');
+        const supportEmail = emailData.support_email || fromEmail;
+        emailResult = await sendEmail({
+          from: fromEmail,
+          to: [supportEmail],
+          replyTo: emailAddr || fromEmail,
+          subject,
+          html,
+          text
+        });
+        break;
+      }
         
       case 'invoice_to_accountant':
       case 'expense_invoice_to_accountant':

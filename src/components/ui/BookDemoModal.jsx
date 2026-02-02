@@ -18,7 +18,7 @@ import { fr, enUS, nl } from 'date-fns/locale';
 import Icon from '../AppIcon';
 import Input from './Input';
 import Button from './Button';
-import contactService from '../../services/contactService';
+import bookDemoService from '../../services/bookDemoService';
 
 const MOBILE_BREAKPOINT = 768;
 
@@ -123,18 +123,15 @@ const BookDemoModal = ({ isOpen, onClose }) => {
     setIsSubmitting(true);
     setErrors({});
     try {
-      const lang = i18n.language?.split('-')[0] || 'fr';
-      const message = `${t('bookDemo.form.preferredDatesLabel')}: ${formData.preferredDates.join(', ')}`;
-      const result = await contactService.submitContactForm(
+      const result = await bookDemoService.submitBookDemo(
         {
-          firstName: formData.name.trim(),
-          lastName: formData.companyName.trim(),
+          name: formData.name.trim(),
+          companyName: formData.companyName.trim(),
           email: formData.email.trim(),
           phone: formData.phone.trim(),
-          subject: 'demo',
-          message
+          preferredDates: formData.preferredDates,
         },
-        lang
+        i18n.language
       );
       if (result.success) {
         setIsSubmitted(true);
@@ -171,21 +168,23 @@ const BookDemoModal = ({ isOpen, onClose }) => {
         }`}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="book-demo-title"
+        aria-labelledby={isSubmitted ? undefined : 'book-demo-title'}
       >
-        <div className={`flex items-center justify-between flex-shrink-0 bg-[#12bf23]/15 border-b-2 border-[#12bf23]/25 shadow-sm ${isMobile ? 'px-3 py-2' : 'px-4 py-3'}`}>
-          <h2 id="book-demo-title" className={`font-semibold text-[#166534] ${isMobile ? 'text-base' : 'text-lg'}`}>
-            {t('bookDemo.title')}
-          </h2>
-          <button
-            type="button"
-            onClick={handleClose}
-            className="p-2 rounded-none hover:bg-[#12bf23]/20 transition-colors text-[#166534]"
-            aria-label={t('bookDemo.close')}
-          >
-            <Icon name="X" size={20} className="text-[#166534]" />
-          </button>
-        </div>
+        {!isSubmitted && (
+          <div className={`flex items-center justify-between flex-shrink-0 bg-[#12bf23]/15 border-b-2 border-[#12bf23]/25 shadow-sm ${isMobile ? 'px-3 py-2' : 'px-4 py-3'}`}>
+            <h2 id="book-demo-title" className={`font-semibold text-[#166534] ${isMobile ? 'text-base' : 'text-lg'}`}>
+              {t('bookDemo.title')}
+            </h2>
+            <button
+              type="button"
+              onClick={handleClose}
+              className="p-2 rounded-none hover:bg-[#12bf23]/20 transition-colors text-[#166534]"
+              aria-label={t('bookDemo.close')}
+            >
+              <Icon name="X" size={20} className="text-[#166534]" />
+            </button>
+          </div>
+        )}
 
         <div className={`flex-1 min-h-0 overflow-y-auto bg-gray-50/40 ${isMobile ? 'p-3' : 'p-4 md:p-6'}`}>
           {isSubmitted ? (
@@ -355,7 +354,7 @@ const BookDemoModal = ({ isOpen, onClose }) => {
                   className={`flex-1 bg-[#12bf23] hover:bg-[#12bf23]/90 text-white rounded-none ${isMobile ? 'min-h-[44px]' : ''}`}
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? t('ui.buttons.loading') : t('bookDemo.form.submit')}
+                  {isSubmitting ? t('bookDemo.form.sending') : t('bookDemo.form.submit')}
                 </Button>
               </div>
             </form>

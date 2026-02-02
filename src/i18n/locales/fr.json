@@ -105,7 +105,7 @@
   "bookDemo": {
     "title": "Book une démo",
     "close": "Fermer",
-    "success": "Votre demande de démo a bien été envoyée. Nous vous recontacterons pour confirmer la date.",
+    "success": "Demande envoyée. Nous vous recontacterons rapidement.",
     "form": {
       "name": "Nom",
       "namePlaceholder": "Votre nom",
@@ -120,6 +120,7 @@
       "prevMonth": "Mois précédent",
       "nextMonth": "Mois suivant",
       "submit": "Envoyer la demande",
+      "sending": "Envoi en cours",
       "cancel": "Annuler",
       "errors": {
         "nameRequired": "Le nom est requis",

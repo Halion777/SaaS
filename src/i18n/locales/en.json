@@ -104,7 +104,7 @@
   "bookDemo": {
     "title": "Book a demo",
     "close": "Close",
-    "success": "Your demo request has been sent. We'll contact you shortly to confirm your preferred date.",
+    "success": "Request sent. We'll be in touch shortly.",
     "form": {
       "name": "Name",
       "namePlaceholder": "Your name",
@@ -119,6 +119,7 @@
       "prevMonth": "Previous month",
       "nextMonth": "Next month",
       "submit": "Send request",
+      "sending": "Sending",
       "cancel": "Cancel",
       "errors": {
         "nameRequired": "Name is required",

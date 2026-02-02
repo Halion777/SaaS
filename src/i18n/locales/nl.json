@@ -104,7 +104,7 @@
   "bookDemo": {
     "title": "Boek een demo",
     "close": "Sluiten",
-    "success": "Uw demo-aanvraag is verzonden. We nemen snel contact op om de datum te bevestigen.",
+    "success": "Aanvraag verzonden. We nemen snel contact op.",
     "form": {
       "name": "Naam",
       "namePlaceholder": "Uw naam",
@@ -119,6 +119,7 @@
       "prevMonth": "Vorige maand",
       "nextMonth": "Volgende maand",
       "submit": "Verstuur aanvraag",
+      "sending": "Versturen",
       "cancel": "Annuleren",
       "errors": {
         "nameRequired": "Naam is verplicht",
