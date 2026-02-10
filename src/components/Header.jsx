@@ -303,11 +303,13 @@ const Header = () => {
                   <Link to="/login" className="text-gray-700 hover:text-[#0036ab] transition-colors px-3 py-2 font-medium">
                     {t('nav.login')}
                   </Link>
+                  {/* Free trial button hidden
                   <Link to="/register">
                     <Button variant="primary" size="sm" className="bg-[#0036ab] hover:bg-[#0036ab]/90 text-white font-medium">
                       {t('nav.freeTrial')}
                     </Button>
                   </Link>
+                  */}
                   <Button
                     variant="default"
                     size="sm"
@@ -401,11 +403,13 @@ const Header = () => {
                         {t('nav.login')}
                       </Link>
                     </div>
+                    {/* Free trial button hidden
                     <Link to="/register" className="w-full">
                       <Button variant="primary" size="sm" className="w-full bg-[#0036ab] hover:bg-[#0036ab]/90 text-white font-medium">
                         {t('nav.freeTrial')}
                       </Button>
                     </Link>
+                    */}
                     <Button
                       variant="default"
                       size="sm"

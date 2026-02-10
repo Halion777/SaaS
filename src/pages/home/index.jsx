@@ -285,6 +285,7 @@ const HomePage = () => {
               
                   {/* CTA Buttons */}
                   <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8">
+                    {/* Free trial button hidden
                     <Link to="/register" className="group">
                       <button className="bg-[#0036ab] text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 w-full sm:w-auto hover:bg-[#0036ab]/90">
                         <span className="flex items-center justify-center">
@@ -293,6 +294,7 @@ const HomePage = () => {
                         </span>
                       </button>
                     </Link>
+                    */}
                     <button
                       type="button"
                       onClick={openBookDemo}
