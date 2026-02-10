@@ -185,12 +185,13 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
       }
 
       // Clear cache if it exists and has expired status - force fresh check after resubscription
-      const cachedData = getCachedSubscription(user.id);
+      let cachedData = getCachedSubscription(user.id);
       if (cachedData && (cachedData.status === 'expired' || cachedData.status === 'none')) {
-        // Clear expired cache to force fresh check
         clearSubscriptionCache();
+        // Don't use stale expired/none cache in this run — force fresh check or allow access on network error
+        cachedData = null;
       }
-      
+
       try {
         // Always try to fetch fresh data from network
         // Step 1: Check if user is a super admin or has lifetime access
