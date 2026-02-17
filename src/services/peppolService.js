@@ -22,6 +22,13 @@ const PEPPOL_CONFIG = {
   }
 };
 
+/** Returns tax percentage for UBL. Preserves 0% VAT; defaults to 21 only when value is missing. */
+function getTaxPercentage(value) {
+  if (value === 0 || value === '0') return 0;
+  if (value != null && value !== '') return Number(value);
+  return 21;
+}
+
 // Peppol Document Types supported by Digiteal for participant registration
 // Note: MLR and APPLICATION_RESPONSE are response types, not registration types
 const PEPPOL_DOCUMENT_TYPES = [
@@ -703,7 +710,7 @@ const generateAllowanceCharge = (invoiceConfig) => {
   
   // Get the primary VAT rate from invoice lines (most common one)
   const vatRate = invoiceConfig.invoiceLines && invoiceConfig.invoiceLines.length > 0
-    ? invoiceConfig.invoiceLines[0].taxPercentage || 21
+    ? getTaxPercentage(invoiceConfig.invoiceLines[0].taxPercentage)
     : 21;
   
   // AllowanceCharge for deposit deduction
@@ -889,7 +896,7 @@ export const generatePEPPOLXML = (invoiceData) => {
     // This is cleaner and more legally correct than showing full project lines
     
     const primaryVatRate = invoiceData.invoiceLines && invoiceData.invoiceLines.length > 0
-      ? invoiceData.invoiceLines[0].taxPercentage || 21
+      ? getTaxPercentage(invoiceData.invoiceLines[0].taxPercentage)
       : 21;
     
     const primaryVatCode = invoiceData.invoiceLines && invoiceData.invoiceLines.length > 0
@@ -937,7 +944,7 @@ export const generatePEPPOLXML = (invoiceData) => {
     // Final invoice: Use full totals, AllowanceCharge will deduct deposit
     // Get primary VAT rate from invoice lines
     const primaryVatRate = invoiceData.invoiceLines && invoiceData.invoiceLines.length > 0
-      ? invoiceData.invoiceLines[0].taxPercentage || 21
+      ? getTaxPercentage(invoiceData.invoiceLines[0].taxPercentage)
       : 21;
     const depositVATAmount = Math.round((invoiceData.depositAmount * (primaryVatRate / 100)) * 100) / 100;
     // AllowanceCharge amount should be EXCLUDING VAT (as per Peppol BIS Billing 3.0)
@@ -1845,7 +1852,7 @@ export class PeppolService {
         taxAmount: item.tax_amount || 0,
         totalAmount: item.total || 0,
         vatCode: item.vat_code || "S",
-        taxPercentage: item.vat_percentage || 21
+        taxPercentage: getTaxPercentage(item.vat_percentage)
       }))
     };
   }

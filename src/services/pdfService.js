@@ -411,6 +411,7 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
       services: 'DÉTAIL DES PRESTATIONS',
       subtotal: 'SOUS-TOTAL HT:',
       vat: 'TVA:',
+      vatReverseCharge: 'TVA autoliquidée',
       total: 'TOTAL TTC:',
       date: 'Date:',
       due: 'Échéance:',
@@ -435,6 +436,7 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
       services: 'SERVICE DETAILS',
       subtotal: 'SUBTOTAL EXCL. VAT:',
       vat: 'VAT:',
+      vatReverseCharge: 'VAT reverse charged',
       total: 'TOTAL INCL. VAT:',
       date: 'Date:',
       due: 'Due Date:',
@@ -459,6 +461,7 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
       services: 'DIENSTDETAILS',
       subtotal: 'SUBTOTAAL EXCL. BTW:',
       vat: 'BTW:',
+      vatReverseCharge: 'BTW verlegd',
       total: 'TOTAAL INCL. BTW:',
       date: 'Datum:',
       due: 'Vervaldatum:',
@@ -577,7 +580,10 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
   let totalWithVAT = subtotal + taxAmount;
   let isDepositPaid = false; // Check if deposit invoice is paid (for final invoices)
   let vatRate = subtotal > 0 ? taxAmount / subtotal : 0.21; // Calculate VAT rate
-  
+  const isZeroVat = taxAmount === 0;
+  const mainVatLabel = isZeroVat ? t.vatReverseCharge : t.vat;
+  const vatLabelForAmount = (amt) => (amt > 0 ? (language === 'fr' ? 'TVA:' : language === 'en' ? 'VAT:' : 'BTW:') : t.vatReverseCharge);
+
   if (quote && (quote.deposit_amount !== undefined || quote.balance_amount !== undefined)) {
     // Get deposit info directly from quote table columns
     depositAmount = parseFloat(quote.deposit_amount || 0); // This is EXCL VAT
@@ -788,7 +794,7 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
               <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: right; font-size: 10px; color: #1e40af;">${formatCurrency(depositAmount)}</td>
             </tr>
             <tr style="background-color: #dbeafe;">
-              <td style="border: 1px solid #d1d5db; padding: 8px 6px 8px 20px; font-size: 10px; color: #1e40af;" colspan="4">${language === 'fr' ? 'TVA:' : language === 'en' ? 'VAT:' : 'BTW:'}</td>
+              <td style="border: 1px solid #d1d5db; padding: 8px 6px 8px 20px; font-size: 10px; color: #1e40af;" colspan="4">${vatLabelForAmount(depositWithVAT - depositAmount)}</td>
               <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: right; font-size: 10px; color: #1e40af;">${formatCurrency(depositWithVAT - depositAmount)}</td>
             </tr>
             ` : isFinalInvoice ? `
@@ -802,12 +808,10 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
               <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: bold; color: ${primaryColor}; font-size: 10px;" colspan="4">${t.subtotal}</td>
               <td style="border: 1px solid #d1d5db; padding: 10px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 10px;">${formatCurrency(projectSubtotal)}</td>
             </tr>
-            ${projectVAT > 0 ? `
             <tr style="background-color: #f9fafb;">
-              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: bold; color: ${primaryColor}; font-size: 10px;" colspan="4">${t.vat}</td>
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: bold; color: ${primaryColor}; font-size: 10px;" colspan="4">${projectVAT > 0 ? t.vat : t.vatReverseCharge}</td>
               <td style="border: 1px solid #d1d5db; padding: 10px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 10px;">${formatCurrency(projectVAT)}</td>
             </tr>
-            ` : ''}
             <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${t.total}</td>
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatCurrency(totalWithVAT)}</td>
@@ -823,7 +827,7 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
               <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: right; font-size: 10px; color: #1e40af;">${formatCurrency(balanceAmount / (1 + vatRate))}</td>
             </tr>
             <tr style="background-color: #dbeafe;">
-              <td style="border: 1px solid #d1d5db; padding: 8px 6px 8px 20px; font-size: 10px; color: #1e40af;" colspan="4">${language === 'fr' ? 'TVA:' : language === 'en' ? 'VAT:' : 'BTW:'}</td>
+              <td style="border: 1px solid #d1d5db; padding: 8px 6px 8px 20px; font-size: 10px; color: #1e40af;" colspan="4">${vatLabelForAmount(balanceAmount - (balanceAmount / (1 + vatRate)))}</td>
               <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: right; font-size: 10px; color: #1e40af;">${formatCurrency(balanceAmount - (balanceAmount / (1 + vatRate)))}</td>
             </tr>
             <tr style="background-color: #f0fdf4; border-left: 4px solid #10b981;">
@@ -835,7 +839,7 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
               <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: right; font-size: 10px; color: #065f46;">${formatCurrency(depositAmount)}</td>
             </tr>
             <tr style="background-color: #f0fdf4;">
-              <td style="border: 1px solid #d1d5db; padding: 8px 6px 8px 20px; font-size: 10px; color: #065f46;" colspan="4">${language === 'fr' ? 'TVA:' : language === 'en' ? 'VAT:' : 'BTW:'}</td>
+              <td style="border: 1px solid #d1d5db; padding: 8px 6px 8px 20px; font-size: 10px; color: #065f46;" colspan="4">${vatLabelForAmount(depositWithVAT - depositAmount)}</td>
               <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: right; font-size: 10px; color: #065f46;">${formatCurrency(depositWithVAT - depositAmount)}</td>
             </tr>
             ` : `
@@ -844,12 +848,10 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
               <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: bold; color: ${primaryColor}; font-size: 10px;" colspan="4">${t.subtotal}</td>
               <td style="border: 1px solid #d1d5db; padding: 10px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 10px;">${formatCurrency(subtotal)}</td>
             </tr>
-            ${taxAmount > 0 ? `
             <tr style="background-color: #f9fafb;">
-              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: bold; color: ${primaryColor}; font-size: 10px;" colspan="4">${t.vat}</td>
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: bold; color: ${primaryColor}; font-size: 10px;" colspan="4">${mainVatLabel}</td>
               <td style="border: 1px solid #d1d5db; padding: 10px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 10px;">${formatCurrency(taxAmount)}</td>
             </tr>
-            ` : ''}
             <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${t.total}</td>
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatCurrency(totalWithVAT)}</td>
@@ -863,7 +865,7 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
               <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: right; font-size: 9px; color: ${primaryColor};">${formatCurrency(depositAmount)}</td>
             </tr>
             <tr style="background-color: #f9fafb;">
-              <td style="border: 1px solid #d1d5db; padding: 8px 6px 8px 20px; font-size: 9px; color: ${primaryColor};" colspan="4">${language === 'fr' ? 'TVA:' : language === 'en' ? 'VAT:' : 'BTW:'}</td>
+              <td style="border: 1px solid #d1d5db; padding: 8px 6px 8px 20px; font-size: 9px; color: ${primaryColor};" colspan="4">${vatLabelForAmount(depositWithVAT - depositAmount)}</td>
               <td style="border: 1px solid #d1d5db; padding: 8px 6px; text-align: right; font-size: 9px; color: ${primaryColor};">${formatCurrency(depositWithVAT - depositAmount)}</td>
             </tr>
             <tr style="background-color: #f9fafb;">
@@ -877,12 +879,10 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
               <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: bold; color: ${primaryColor}; font-size: 10px;" colspan="4">${t.subtotal}</td>
               <td style="border: 1px solid #d1d5db; padding: 10px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 10px;">${formatCurrency(subtotal)}</td>
             </tr>
-            ${taxAmount > 0 ? `
             <tr style="background-color: #f9fafb;">
-              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: bold; color: ${primaryColor}; font-size: 10px;" colspan="4">${t.vat}</td>
+              <td style="border: 1px solid #d1d5db; padding: 10px 6px; font-weight: bold; color: ${primaryColor}; font-size: 10px;" colspan="4">${mainVatLabel}</td>
               <td style="border: 1px solid #d1d5db; padding: 10px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 10px;">${formatCurrency(taxAmount)}</td>
             </tr>
-            ` : ''}
             <tr style="background-color: ${primaryColorLight}; border: 2px solid ${primaryColor};">
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; font-weight: bold; color: ${primaryColor}; font-size: 12px; text-transform: uppercase;" colspan="4">${t.total}</td>
               <td style="border: 1px solid #d1d5db; padding: 12px 6px; text-align: right; font-weight: bold; color: ${primaryColor}; font-size: 14px;">${formatCurrency(totalWithVAT)}</td>
