@@ -82,7 +82,7 @@ export const QUOTAS = {
   starter: {
     quotesPerMonth: -1, // -1 = unlimited (quotes are unlimited)
     invoicesPerMonth: -1, // -1 = unlimited (simple invoices are unlimited)
-    peppolInvoicesPerMonth: 50, // Up to 50 Peppol e-invoices per month (sent + received) - RESETS MONTHLY
+    peppolInvoicesPerMonth: 100, // Up to 100 Peppol e-invoices per month (sent + received) - RESETS MONTHLY
     clientsPerMonth: 30, // Up to 30 clients added per month - RESETS MONTHLY
     maxProfiles: 1 // 1 user profile (total limit, not monthly)
   },
@@ -128,7 +128,7 @@ export const PLAN_FEATURES = {
     [FEATURES.INVOICES]: 'full',         // Unlimited simple invoices
     [FEATURES.CLIENTS]: 'limited',       // Up to 30 active clients
     [FEATURES.TEMPLATES]: 'full',         // Premium quote template
-    [FEATURES.PEPPOL]: 'limited',        // Up to 50 Peppol invoices/month (sent + received)
+    [FEATURES.PEPPOL]: 'limited',        // Up to 100 Peppol invoices/month (sent + received)
     
     // Advanced Features
     [FEATURES.LEAD_GENERATION]: 'limited', // Qualified lead suggestions (BETA)
@@ -257,7 +257,7 @@ export const FEATURE_INFO = {
   },
   [FEATURES.PEPPOL]: {
     icon: 'FileCheck',
-    starterLimit: 'Up to 50/month (sent + received)',
+    starterLimit: 'Up to 100/month (sent + received)',
     proLimit: 'Unlimited (normal usage)'
   },
   [FEATURES.EMAIL_SUPPORT]: {
