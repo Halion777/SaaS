@@ -331,10 +331,11 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
           });
         });
       } else {
-        // Create a single line from invoice summary
-        const netAmount = invoice.netAmount || (invoice.amount - (invoice.taxAmount || 0));
-        const taxAmount = invoice.taxAmount || 0;
-        const vatPercentage = netAmount > 0 ? Math.round((taxAmount / netAmount) * 100) : 21;
+        // Create a single line from invoice summary (also used for credit notes; amounts may be negative)
+        const netAmount = invoice.netAmount ?? invoice.net_amount ?? (invoice.amount - (invoice.taxAmount || invoice.tax_amount || 0));
+        const taxAmount = invoice.taxAmount ?? invoice.tax_amount ?? 0;
+        const totalAmount = invoice.final_amount ?? invoice.amount;
+        const vatPercentage = netAmount !== 0 ? Math.round((taxAmount / netAmount) * 100) : 21;
 
         invoiceLines = [{
           description: invoice.description || invoice.title || 'Service',
@@ -342,7 +343,7 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
           unit_price: netAmount,
           subtotal: netAmount,
           tax_amount: taxAmount,
-          total: invoice.amount,
+          total: totalAmount,
           vat_code: 'S', // Standard VAT
           vat_percentage: vatPercentage
         }];
@@ -393,6 +394,7 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
         invoice_number: invoiceNumber, // Ensure invoice_number is set
         invoice_type: invoiceType, // Include invoice_type for Peppol
         due_date: finalDueDate, // Use modified due date (for all invoice types)
+        document_type: invoice.document_type || 'invoice', // For credit note UBL (381)
         // Extract deposit/balance amounts from peppol_metadata or quote data
         deposit_amount: invoice.peppol_metadata?.deposit_amount || invoice.quote?.deposit_amount || 0,
         balance_amount: invoice.peppol_metadata?.balance_amount || invoice.quote?.balance_amount || 0,
@@ -433,7 +435,8 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
           title: invoice.title,
           notes: invoice.notes,
           invoice_type: invoiceType,
-          peppol_metadata: invoice.peppol_metadata || null
+          peppol_metadata: invoice.peppol_metadata || null,
+          document_type: invoice.document_type || 'invoice'
         },
         quote: invoice.quote || null,
         depositInvoiceStatus: null // Will be calculated if needed by PDF service

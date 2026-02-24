@@ -25,6 +25,12 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [], filter
     { value: 'final', label: t('invoicesManagement.filter.invoiceType.final', 'Final Invoices') }
   ];
 
+  const documentTypeOptions = [
+    { value: '', label: t('invoicesManagement.filter.documentType.all', 'All') },
+    { value: 'invoice', label: t('invoicesManagement.filter.documentType.invoicesOnly', 'Invoices only') },
+    { value: 'credit_note', label: t('invoicesManagement.filter.documentType.creditNotesOnly', 'Credit notes only') }
+  ];
+
   // Generate client options from actual invoices data
   const clientOptions = React.useMemo(() => {
     const uniqueClients = new Map();
@@ -81,6 +87,8 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [], filter
     if (filters.search) count++;
     if (filters.status) count++;
     if (filters.client) count++;
+    if (filters.invoiceType) count++;
+    if (filters.documentType) count++;
     if (dateRange.start || dateRange.end) count++;
     if (amountRange.min || amountRange.max) count++;
     return count;
@@ -94,6 +102,7 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [], filter
       status: '',
       client: '',
       invoiceType: '',
+      documentType: '',
       dateRange: { start: '', end: '' },
       amountRange: { min: '', max: '' }
     };
@@ -170,6 +179,14 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [], filter
             value={filters.invoiceType || ''}
             onChange={(e) => onFiltersChange({ ...filters, invoiceType: e.target.value })}
             placeholder={t('invoicesManagement.filter.invoiceType.all', 'All Types')}
+          />
+
+          <Select
+            label={t('invoicesManagement.filter.documentType.label', 'Document type')}
+            options={documentTypeOptions}
+            value={filters.documentType || ''}
+            onChange={(e) => onFiltersChange({ ...filters, documentType: e.target.value })}
+            placeholder={t('invoicesManagement.filter.documentType.all', 'All')}
           />
 
           <div className="space-y-2">
@@ -253,6 +270,19 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [], filter
                 </button>
               </div>
             )}
+
+            {filters.documentType && (
+              <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
+                <span>{t('invoicesManagement.filter.chips.documentType', 'Document')}: {documentTypeOptions.find(opt => opt.value === filters.documentType)?.label}</span>
+                <button
+                  onClick={() => onFiltersChange({ ...filters, documentType: '' })}
+                  className="hover:bg-primary/20 rounded-full p-0.5"
+                  aria-label={t('invoicesManagement.filter.chips.removeDocumentType', 'Remove document type filter')}
+                >
+                  <Icon name="X" size={12} />
+                </button>
+              </div>
+            )}
             
             {(dateRange.start || dateRange.end) && (
               <div className="flex items-center space-x-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs">
@@ -319,6 +349,14 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [], filter
               value={filters.invoiceType || ''}
               onChange={(e) => onFiltersChange({ ...filters, invoiceType: e.target.value })}
               placeholder={t('invoicesManagement.filter.invoiceType.all', 'All Types')}
+            />
+
+            <Select
+              label={t('invoicesManagement.filter.documentType.label', 'Document type')}
+              options={documentTypeOptions}
+              value={filters.documentType || ''}
+              onChange={(e) => onFiltersChange({ ...filters, documentType: e.target.value })}
+              placeholder={t('invoicesManagement.filter.documentType.all', 'All')}
             />
 
             <div className="space-y-2">
@@ -399,6 +437,18 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [], filter
                   </button>
                 </div>
               )}
+
+              {filters.documentType && (
+                <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
+                  <span>{t('invoicesManagement.filter.chips.documentType', 'Document')}: {documentTypeOptions.find(opt => opt.value === filters.documentType)?.label}</span>
+                  <button
+                    onClick={() => onFiltersChange({ ...filters, documentType: '' })}
+                    className="hover:bg-primary/20 rounded-full p-0.5"
+                  >
+                    <Icon name="X" size={12} />
+                  </button>
+                </div>
+              )}
               
               {(dateRange.start || dateRange.end) && (
                 <div className="flex items-center space-x-1 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
@@ -443,6 +493,7 @@ const InvoicesFilterToolbar = ({ filters, onFiltersChange, invoices = [], filter
               {filters.status && ` • ${statusOptions.find(opt => opt.value === filters.status)?.label}`}
               {filters.client && ` • ${clientOptions.find(opt => opt.value === filters.client)?.label}`}
               {filters.invoiceType && ` • ${invoiceTypeOptions.find(opt => opt.value === filters.invoiceType)?.label}`}
+              {filters.documentType && ` • ${documentTypeOptions.find(opt => opt.value === filters.documentType)?.label}`}
               {(dateRange.start || dateRange.end) && ` • ${t('invoicesManagement.filter.chips.period', 'Period')}`}
               {(amountRange.min || amountRange.max) && ` • ${t('invoicesManagement.filter.chips.amount', 'Amount')}`}
             </span>

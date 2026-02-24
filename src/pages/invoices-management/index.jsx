@@ -11,6 +11,8 @@ import InvoicesFilterToolbar from './components/InvoicesFilterToolbar';
 import InvoicesDataTable from './components/InvoicesDataTable';
 import InvoiceDetailModal from './components/InvoiceDetailModal';
 import SendInvoiceModal from './components/SendInvoiceModal';
+import CreateCreditNoteModal from './components/CreateCreditNoteModal';
+import AddClientInvoiceModal from './components/AddClientInvoiceModal';
 
 import InvoiceService from '../../services/invoiceService';
 import { useAuth } from '../../context/AuthContext';
@@ -31,6 +33,7 @@ const InvoicesManagement = () => {
     status: '',
     client: '',
     invoiceType: '',
+    documentType: '', // '' = All, 'invoice' = Invoices only, 'credit_note' = Credit notes only
     dateRange: { start: '', end: '' },
     amountRange: { min: '', max: '' }
   });
@@ -44,6 +47,9 @@ const InvoicesManagement = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isSendInvoiceModalOpen, setIsSendInvoiceModalOpen] = useState(false);
   const [isSendToAccountantModalOpen, setIsSendToAccountantModalOpen] = useState(false);
+  const [creditNoteInvoice, setCreditNoteInvoice] = useState(null);
+  const [isCreateCreditNoteModalOpen, setIsCreateCreditNoteModalOpen] = useState(false);
+  const [isAddInvoiceModalOpen, setIsAddInvoiceModalOpen] = useState(false);
   const [groupByQuote, setGroupByQuote] = useState(false);
 
   // Handle sidebar offset for responsive layout
@@ -174,7 +180,12 @@ const InvoicesManagement = () => {
           peppol_metadata: invoice.peppol_metadata || null,
           // Extract deposit/balance amounts from peppol_metadata or quote for Peppol sending
           deposit_amount: invoice.peppol_metadata?.deposit_amount || invoice.quote?.deposit_amount || 0,
-          balance_amount: invoice.peppol_metadata?.balance_amount || invoice.quote?.balance_amount || 0
+          balance_amount: invoice.peppol_metadata?.balance_amount || invoice.quote?.balance_amount || 0,
+          // Credit note support
+          document_type: invoice.document_type || 'invoice',
+          related_invoice_id: invoice.related_invoice_id || null,
+          invoice_number: invoice.invoice_number,
+          final_amount: invoice.final_amount
         }));
         
         setInvoices(transformedInvoices);
@@ -210,7 +221,7 @@ const InvoicesManagement = () => {
 
   // Apply filters whenever invoices change (to hide final invoices if deposit is not paid)
   useEffect(() => {
-    if (invoices.length > 0 || filters.search || filters.status || filters.client || filters.invoiceType || filters.dateRange.start || filters.dateRange.end) {
+    if (invoices.length > 0 || filters.search || filters.status || filters.client || filters.invoiceType || filters.documentType || filters.dateRange.start || filters.dateRange.end) {
       handleFiltersChange(filters);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -307,6 +318,14 @@ const InvoicesManagement = () => {
       filtered = filtered.filter(invoice => {
         const invoiceType = invoice.invoiceType || invoice.invoice_type || 'final';
         return invoiceType === newFilters.invoiceType;
+      });
+    }
+
+    // Document type filter (Invoices only / Credit notes only / All)
+    if (newFilters.documentType) {
+      filtered = filtered.filter(invoice => {
+        const docType = invoice.document_type || 'invoice';
+        return docType === newFilters.documentType;
       });
     }
 
@@ -477,7 +496,8 @@ const InvoicesManagement = () => {
           title: invoice.title,
           notes: invoice.notes,
           invoice_type: invoice.invoiceType || invoice.invoice_type || 'final',
-          peppol_metadata: invoice.peppol_metadata || null
+          peppol_metadata: invoice.peppol_metadata || null,
+          document_type: invoice.document_type || 'invoice'
         },
         quote: invoice.quote || null,
         depositInvoiceStatus: depositInvoiceStatus // Pass deposit invoice status for PDF generation
@@ -496,7 +516,7 @@ const InvoicesManagement = () => {
       const url = URL.createObjectURL(pdfBlob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `invoice-${invoiceNumber}.pdf`;
+      a.download = `${invoice.document_type === 'credit_note' ? 'credit-note' : 'invoice'}-${invoiceNumber}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -531,6 +551,10 @@ const InvoicesManagement = () => {
         break;
       case 'export':
         await handleExportInvoicePDF(invoice);
+        break;
+      case 'create_credit_note':
+        setCreditNoteInvoice(invoice);
+        setIsCreateCreditNoteModalOpen(true);
         break;
       case 'edit':
         // Handle edit action
@@ -800,6 +824,16 @@ const InvoicesManagement = () => {
               </p>
             </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
+                {canEdit && (
+                  <Button
+                    iconName="Plus"
+                    iconPosition="left"
+                    onClick={() => setIsAddInvoiceModalOpen(true)}
+                    className="text-xs sm:text-sm"
+                  >
+                    {t('invoicesManagement.addInvoice.button', 'Add Invoice')}
+                  </Button>
+                )}
               </div>
           </div>
           </header>
@@ -967,6 +1001,29 @@ const InvoicesManagement = () => {
             onClose={handleModalClose}
             onSuccess={handleSendToAccountant}
             isExpenseInvoice={false}
+          />
+
+          {/* Create Credit Note Modal */}
+          <CreateCreditNoteModal
+            invoice={creditNoteInvoice}
+            isOpen={isCreateCreditNoteModalOpen}
+            onClose={() => {
+              setIsCreateCreditNoteModalOpen(false);
+              setCreditNoteInvoice(null);
+            }}
+            onCreated={() => {
+              fetchInvoices();
+            }}
+          />
+
+          {/* Add Client Invoice Modal */}
+          <AddClientInvoiceModal
+            isOpen={isAddInvoiceModalOpen}
+            onClose={() => setIsAddInvoiceModalOpen(false)}
+            onCreated={() => {
+              fetchInvoices();
+              setIsAddInvoiceModalOpen(false);
+            }}
           />
 
         </div>

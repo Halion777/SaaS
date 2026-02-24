@@ -609,7 +609,7 @@
           "feature1": "Unlimited quotes",
           "feature2": "Unlimited simple invoices",
           "feature3": "Up to 30 active clients",
-          "feature4": "Up to 50 Peppol e-invoices per month (sent + received)",
+          "feature4": "Up to 100 Peppol e-invoices per month (sent + received)",
           "feature5": "AI-powered smart quotes (voice or manual input)",
           "feature6": "Automatic AI suggestions for tasks, pricing and materials",
           "feature7": "Premium quote template with your logo and business information",
@@ -1016,7 +1016,7 @@
             "Unlimited quotes",
             "Unlimited simple invoices",
             "Up to 30 active clients",
-            "Up to 50 Peppol e-invoices per month (sent + received)",
+            "Up to 100 Peppol e-invoices per month (sent + received)",
             "AI-powered smart quotes (voice or manual input)",
             "Automatic AI suggestions for tasks, pricing and materials",
             "Premium quote template with your logo and business information",
@@ -4364,10 +4364,18 @@
           "deposit": "Deposit Invoices",
           "final": "Final Invoices"
         },
+        "documentType": {
+          "label": "Document type",
+          "all": "All",
+          "invoicesOnly": "Invoices only",
+          "creditNotesOnly": "Credit notes only"
+        },
         "chips": {
           "status": "Status",
           "client": "Client",
           "invoiceType": "Type",
+          "documentType": "Document",
+          "removeDocumentType": "Remove document type filter",
           "period": "Period",
           "amount": "Amount",
           "removeStatus": "Remove status filter",
@@ -4413,7 +4421,84 @@
         "actions": {
           "viewDetails": "View details",
           "sendInvoice": "Send invoice",
-          "exportPDF": "Export PDF"
+          "exportPDF": "Export PDF",
+          "createCreditNote": "Create Credit Note",
+          "sendToAccountant": "Send to Accountant"
+        }
+      },
+      "documentType": {
+        "invoice": "Invoice",
+        "creditNote": "Credit note"
+      },
+      "creditNote": {
+        "title": "Create Credit Note",
+        "subtitle": "For invoice {{number}}",
+        "reasonRequired": "Reason for credit note is required",
+        "notAuthenticated": "You must be logged in",
+        "createFailed": "Failed to create credit note",
+        "invoiceTotal": "Invoice total",
+        "reason": "Reason for credit note",
+        "reasonPlaceholder": "e.g. Correction, duplicate, returned goods",
+        "notes": "Notes",
+        "notesPlaceholder": "Optional additional notes",
+        "create": "Create Credit Note"
+      },
+      "addInvoice": {
+        "button": "Add Invoice",
+        "title": "Add Invoice",
+        "subtitle": "Create a client invoice without a quote",
+        "create": "Create Invoice",
+        "creating": "Creating...",
+        "sections": {
+          "client": "Client & document",
+          "amounts": "Amounts",
+          "datesTerms": "Dates & terms"
+        },
+        "fields": {
+          "client": "Client",
+          "selectClient": "Select client",
+          "invoiceNumber": "Invoice number",
+          "title": "Title",
+          "description": "Description",
+          "netAmount": "Net amount (excl. VAT)",
+          "taxAmount": "VAT amount",
+          "discountAmount": "Discount",
+          "finalAmount": "Final amount (incl. VAT)",
+          "issueDate": "Issue date",
+          "dueDate": "Due date",
+          "paymentTerms": "Payment terms",
+          "paymentMethod": "Payment method",
+          "invoiceType": "Invoice type",
+          "depositAmount": "Deposit amount (excl. VAT)",
+          "notes": "Notes"
+        },
+        "placeholders": {
+          "title": "Facture",
+          "description": "Description",
+          "notes": "Optional notes"
+        },
+        "invoiceType": {
+          "final": "Final",
+          "deposit": "Deposit"
+        },
+        "ocr": {
+          "title": "Automatic Invoice Scanner",
+          "description": "Upload an invoice to pre-fill fields",
+          "processing": "Analyzing invoice...",
+          "success": "Data extracted. Review and create.",
+          "failed": "Extraction failed. Fill in manually."
+        },
+        "errors": {
+          "clientRequired": "Please select a client",
+          "invoiceNumberRequired": "Invoice number is required for Peppol",
+          "titleRequired": "Title is required for Peppol",
+          "finalAmountRequired": "Final amount (or net + VAT) is required and must be greater than 0",
+          "issueDateRequired": "Issue date is required for Peppol",
+          "dueDateRequired": "Due date is required for Peppol",
+          "paymentTermsRequired": "Payment terms are required for Peppol",
+          "paymentMethodRequired": "Payment method is required for Peppol",
+          "notAuthenticated": "You must be logged in",
+          "createFailed": "Failed to create invoice"
         }
       },
       "empty": {
@@ -4477,6 +4562,8 @@
       "retry": "Retry",
       "modal": {
         "title": "Invoice Details",
+        "creditNoteTitle": "Credit Note",
+        "relatedInvoice": "Related invoice",
         "close": "Close",
         "invoiceLines": "Invoice Line Items",
         "invoiceLinesTable": {
@@ -4500,7 +4587,9 @@
           "status": "Status",
           "issueDate": "Issue Date",
           "dueDate": "Due Date",
-          "paymentMethod": "Payment Method"
+          "paymentMethod": "Payment Method",
+          "balance": "Balance",
+          "linkedCreditNotes": "Linked credit notes"
         },
         "clientInfo": {
           "title": "Client Information",

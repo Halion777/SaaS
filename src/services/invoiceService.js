@@ -14,7 +14,7 @@ export class InvoiceService {
    */
   static async fetchInvoices(userId) {
     try {
-      // Try to fetch all invoices including peppol_metadata
+      // Try to fetch all invoices including peppol_metadata (document_type, related_invoice_id when present for credit notes)
       const { data, error } = await supabase
         .from('invoices')
         .select(`
@@ -103,6 +103,8 @@ export class InvoiceService {
               notes,
               quote_id,
               invoice_type,
+              document_type,
+              related_invoice_id,
               created_at,
               updated_at,
               paid_at,
@@ -244,6 +246,190 @@ export class InvoiceService {
         error: error.message
       };
     }
+  }
+
+  /**
+   * Create a client invoice directly (no quote). Uses generate_invoice_number RPC for INV-xxxx.
+   * @param {string} userId - The current user ID
+   * @param {Object} data - Invoice data: client_id, invoice_number (optional, else from RPC), title, description, amount, net_amount, tax_amount, discount_amount, final_amount, issue_date, due_date, payment_terms, payment_method, notes, invoice_type, peppol_metadata (deposit_amount, balance_amount)
+   * @returns {Promise<{success: boolean, data: Object, error: string}>}
+   */
+  static async createClientInvoice(userId, data) {
+    try {
+      let invoiceNumber = data.invoice_number || null;
+      if (!invoiceNumber) {
+        const { data: generated, error: numberError } = await supabase
+          .rpc('generate_invoice_number', { user_id: userId });
+        if (numberError) throw new Error(`Failed to generate invoice number: ${numberError.message}`);
+        invoiceNumber = generated;
+      }
+
+      const netAmount = parseFloat(data.net_amount ?? data.amount ?? 0);
+      const taxAmount = parseFloat(data.tax_amount ?? 0);
+      const discountAmount = parseFloat(data.discount_amount ?? 0);
+      const finalAmount = parseFloat(data.final_amount ?? data.amount ?? netAmount + taxAmount - discountAmount);
+
+      const insertData = {
+        user_id: userId,
+        client_id: data.client_id,
+        quote_id: null,
+        quote_number: null,
+        invoice_number: invoiceNumber,
+        title: data.title || 'Facture',
+        description: data.description || null,
+        status: 'unpaid',
+        amount: netAmount,
+        net_amount: netAmount,
+        tax_amount: taxAmount,
+        discount_amount: discountAmount,
+        final_amount: finalAmount,
+        issue_date: data.issue_date || new Date().toISOString().split('T')[0],
+        due_date: data.due_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        payment_method: data.payment_method || 'À définir',
+        payment_terms: data.payment_terms || 'Paiement à 30 jours',
+        notes: data.notes || null,
+        invoice_type: data.invoice_type || 'final',
+        document_type: 'invoice',
+        related_invoice_id: null,
+        peppol_metadata: data.peppol_metadata || null
+      };
+
+      const { data: created, error: insertError } = await supabase
+        .from('invoices')
+        .insert([insertData])
+        .select()
+        .single();
+
+      if (insertError) throw new Error(insertError.message);
+
+      return {
+        success: true,
+        data: created,
+        message: 'Invoice created successfully'
+      };
+    } catch (error) {
+      console.error('Error creating client invoice:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Create a credit note from an existing invoice (negative amounts, linked via related_invoice_id)
+   * @param {string} userId - The current user ID
+   * @param {string} sourceInvoiceId - The invoice ID to create a credit note for
+   * @param {{ reason?: string, notes?: string }} options - Reason for credit note and optional notes
+   * @returns {Promise<{success: boolean, data: Object, error: string}>}
+   */
+  static async createCreditNoteFromInvoice(userId, sourceInvoiceId, { reason = '', notes = '' } = {}) {
+    try {
+      const { data: source, error: fetchError } = await supabase
+        .from('invoices')
+        .select('*')
+        .eq('id', sourceInvoiceId)
+        .eq('user_id', userId)
+        .single();
+
+      if (fetchError || !source) {
+        throw new Error('Invoice not found or access denied');
+      }
+      if (source.document_type === 'credit_note') {
+        throw new Error('Cannot create a credit note from another credit note');
+      }
+
+      const { data: creditNoteNumber, error: numberError } = await supabase
+        .rpc('generate_credit_note_number', {});
+
+      if (numberError) {
+        throw new Error(`Failed to generate credit note number: ${numberError.message}`);
+      }
+
+      const netAmount = parseFloat(source.net_amount || source.amount || 0);
+      const taxAmount = parseFloat(source.tax_amount || 0);
+      const discountAmount = parseFloat(source.discount_amount || 0);
+      const finalAmount = parseFloat(source.final_amount || 0);
+
+      const creditNoteData = {
+        user_id: userId,
+        client_id: source.client_id,
+        quote_id: source.quote_id || null,
+        invoice_number: creditNoteNumber,
+        quote_number: source.quote_number || null,
+        title: `Credit Note: ${source.title || 'Invoice'}`,
+        description: reason || notes || source.description || 'Credit note',
+        status: 'unpaid',
+        amount: -netAmount,
+        net_amount: -netAmount,
+        tax_amount: -taxAmount,
+        discount_amount: -discountAmount,
+        final_amount: -finalAmount,
+        issue_date: source.issue_date || new Date().toISOString().split('T')[0],
+        due_date: source.due_date || new Date().toISOString().split('T')[0],
+        payment_method: source.payment_method || 'À définir',
+        payment_terms: source.payment_terms || 'Paiement à 30 jours',
+        notes: notes || `Credit note for invoice ${source.invoice_number}`,
+        invoice_type: source.invoice_type || 'final',
+        document_type: 'credit_note',
+        related_invoice_id: sourceInvoiceId,
+        peppol_metadata: {
+          ...(source.peppol_metadata || {}),
+          is_credit_note: true,
+          related_invoice_number: source.invoice_number,
+          credit_note_reason: reason || null
+        }
+      };
+
+      const { data: created, error: insertError } = await supabase
+        .from('invoices')
+        .insert([creditNoteData])
+        .select()
+        .single();
+
+      if (insertError) {
+        throw new Error(`Failed to create credit note: ${insertError.message}`);
+      }
+
+      return {
+        success: true,
+        data: created,
+        message: 'Credit note created successfully'
+      };
+    } catch (error) {
+      console.error('Error creating credit note:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Compute balance per invoice (invoice total − SUM of linked credit notes).
+   * Credit notes have negative final_amount, so balance = invoice.final_amount + sum(linked CN final_amount).
+   * @param {Array} invoices - Full list of invoices (including credit notes) from fetchInvoices
+   * @returns {Object} Map of invoice id (string) -> balance (number) for invoices only (not credit notes)
+   */
+  static getBalanceByInvoiceId(invoices) {
+    const list = Array.isArray(invoices) ? invoices : [];
+    const creditNotesByRelated = {};
+    list.forEach(inv => {
+      if (inv.document_type === 'credit_note' && inv.related_invoice_id) {
+        const rid = inv.related_invoice_id;
+        if (!creditNotesByRelated[rid]) creditNotesByRelated[rid] = 0;
+        creditNotesByRelated[rid] += parseFloat(inv.final_amount || 0);
+      }
+    });
+    const balanceByInvoiceId = {};
+    list.forEach(inv => {
+      if (inv.document_type !== 'credit_note') {
+        const invTotal = parseFloat(inv.final_amount || 0);
+        const cnSum = creditNotesByRelated[inv.id] || 0;
+        balanceByInvoiceId[inv.id] = invTotal + cnSum;
+      }
+    });
+    return balanceByInvoiceId;
   }
 
   /**
@@ -527,6 +713,7 @@ export class InvoiceService {
           notes,
           invoice_type,
           quote_id,
+          document_type,
           peppol_metadata,
           quote:quotes(
             id,
@@ -609,7 +796,8 @@ export class InvoiceService {
           title: invoice.title,
           notes: invoice.notes,
           invoice_type: invoice.invoice_type || 'final',
-          peppol_metadata: invoice.peppol_metadata || null
+          peppol_metadata: invoice.peppol_metadata || null,
+          document_type: invoice.document_type || 'invoice'
         },
         quote: invoice.quote || null,
         depositInvoiceStatus: depositInvoiceStatus // Pass deposit invoice status for PDF generation

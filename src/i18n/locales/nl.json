@@ -609,7 +609,7 @@
           "feature1": "Onbeperkte offertes",
           "feature2": "Onbeperkte eenvoudige facturen",
           "feature3": "Tot 30 actieve klanten",
-          "feature4": "Tot 50 Peppol e-facturen per maand (verzonden + ontvangen)",
+          "feature4": "Tot 100 Peppol e-facturen per maand (verzonden + ontvangen)",
           "feature5": "AI-aangedreven slimme offertes (spraak of handmatige invoer)",
           "feature6": "Automatische AI-suggesties voor taken, prijzen en materialen",
           "feature7": "Premium offertesjabloon met uw logo en bedrijfsinformatie",
@@ -1026,7 +1026,7 @@
             "Onbeperkte offertes",
             "Onbeperkte eenvoudige facturen",
             "Tot 30 actieve klanten",
-            "Tot 50 Peppol e-facturen per maand (verzonden + ontvangen)",
+            "Tot 100 Peppol e-facturen per maand (verzonden + ontvangen)",
             "AI-aangedreven slimme offertes (spraak of handmatige invoer)",
             "Automatische AI-suggesties voor taken, prijzen en materialen",
             "Premium offertesjabloon met uw logo en bedrijfsinformatie",
@@ -4402,10 +4402,18 @@
           "deposit": "Aanbetalingsfacturen",
           "final": "Eindfacturen"
         },
+        "documentType": {
+          "label": "Documenttype",
+          "all": "Alles",
+          "invoicesOnly": "Alleen facturen",
+          "creditNotesOnly": "Alleen creditnota's"
+        },
         "chips": {
           "status": "Status",
           "client": "Klant",
           "invoiceType": "Type",
+          "documentType": "Document",
+          "removeDocumentType": "Documenttypefilter verwijderen",
           "period": "Periode",
           "amount": "Bedrag",
           "removeStatus": "Statusfilter verwijderen",
@@ -4450,7 +4458,84 @@
         "actions": {
           "viewDetails": "Details bekijken",
           "sendInvoice": "Factuur verzenden",
-          "exportPDF": "PDF exporteren"
+          "exportPDF": "PDF exporteren",
+          "createCreditNote": "Creditnota aanmaken",
+          "sendToAccountant": "Verzenden naar accountant"
+        }
+      },
+      "documentType": {
+        "invoice": "Factuur",
+        "creditNote": "Creditnota"
+      },
+      "creditNote": {
+        "title": "Creditnota aanmaken",
+        "subtitle": "Voor factuur {{number}}",
+        "reasonRequired": "Reden voor creditnota is verplicht",
+        "notAuthenticated": "U moet ingelogd zijn",
+        "createFailed": "Creditnota aanmaken mislukt",
+        "invoiceTotal": "Factuurtotaal",
+        "reason": "Reden voor creditnota",
+        "reasonPlaceholder": "bijv. Correctie, duplicaat, geretourneerde goederen",
+        "notes": "Notities",
+        "notesPlaceholder": "Optionele aanvullende notities",
+        "create": "Creditnota aanmaken"
+      },
+      "addInvoice": {
+        "button": "Factuur toevoegen",
+        "title": "Factuur toevoegen",
+        "subtitle": "Maak een klantfactuur zonder offerte",
+        "create": "Factuur aanmaken",
+        "creating": "Aanmaken...",
+        "sections": {
+          "client": "Klant en document",
+          "amounts": "Bedragen",
+          "datesTerms": "Data en voorwaarden"
+        },
+        "fields": {
+          "client": "Klant",
+          "selectClient": "Selecteer klant",
+          "invoiceNumber": "Factuurnummer",
+          "title": "Titel",
+          "description": "Beschrijving",
+          "netAmount": "Netto bedrag (excl. BTW)",
+          "taxAmount": "BTW bedrag",
+          "discountAmount": "Korting",
+          "finalAmount": "Totaalbedrag (incl. BTW)",
+          "issueDate": "Uitgiftedatum",
+          "dueDate": "Vervaldatum",
+          "paymentTerms": "Betalingsvoorwaarden",
+          "paymentMethod": "Betalingsmethode",
+          "invoiceType": "Factuurtype",
+          "depositAmount": "Aanbetalingsbedrag (excl. BTW)",
+          "notes": "Notities"
+        },
+        "placeholders": {
+          "title": "Factuur",
+          "description": "Beschrijving",
+          "notes": "Optionele notities"
+        },
+        "invoiceType": {
+          "final": "Eindfactuur",
+          "deposit": "Aanbetaling"
+        },
+        "ocr": {
+          "title": "Automatische factuurscanner",
+          "description": "Upload een factuur om velden voor te vullen",
+          "processing": "Factuur analyseren...",
+          "success": "Gegevens geëxtraheerd. Controleer en maak aan.",
+          "failed": "Extractie mislukt. Vul handmatig in."
+        },
+        "errors": {
+          "clientRequired": "Selecteer een klant",
+          "invoiceNumberRequired": "Factuurnummer is verplicht voor Peppol",
+          "titleRequired": "Titel is verplicht voor Peppol",
+          "finalAmountRequired": "Totaalbedrag (of netto + BTW) is verplicht en moet groter zijn dan 0",
+          "issueDateRequired": "Uitgiftedatum is verplicht voor Peppol",
+          "dueDateRequired": "Vervaldatum is verplicht voor Peppol",
+          "paymentTermsRequired": "Betalingsvoorwaarden zijn verplicht voor Peppol",
+          "paymentMethodRequired": "Betalingsmethode is verplicht voor Peppol",
+          "notAuthenticated": "U moet ingelogd zijn",
+          "createFailed": "Factuur aanmaken mislukt"
         }
       },
       "empty": {
@@ -4514,6 +4599,8 @@
       "retry": "Opnieuw proberen",
       "modal": {
         "title": "Factuurdetails",
+        "creditNoteTitle": "Creditnota",
+        "relatedInvoice": "Gerelateerde factuur",
         "close": "Sluiten",
         "invoiceLines": "Factuurregels",
         "invoiceLinesTable": {
@@ -4537,7 +4624,9 @@
           "status": "Status",
           "issueDate": "Uitgiftedatum",
           "dueDate": "Vervaldatum",
-          "paymentMethod": "Betalingsmethode"
+          "paymentMethod": "Betalingsmethode",
+          "balance": "Saldo",
+          "linkedCreditNotes": "Gekoppelde creditnota's"
         },
         "clientInfo": {
           "title": "Klantinformatie",

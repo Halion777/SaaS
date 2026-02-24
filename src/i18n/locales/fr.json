@@ -610,7 +610,7 @@
           "feature1": "Devis illimités",
           "feature2": "Factures simples illimitées",
           "feature3": "Jusqu'à 30 clients actifs",
-          "feature4": "Jusqu'à 50 factures électroniques Peppol par mois (envoyées + reçues)",
+          "feature4": "Jusqu'à 100 factures électroniques Peppol par mois (envoyées + reçues)",
           "feature5": "Devis intelligents alimentés par l'IA (saisie vocale ou manuelle)",
           "feature6": "Suggestions IA automatiques pour les tâches, prix et matériaux",
           "feature7": "Modèle de devis premium avec votre logo et informations commerciales",
@@ -1027,7 +1027,7 @@
             "Devis illimités",
             "Factures simples illimitées",
             "Jusqu'à 30 clients actifs",
-            "Jusqu'à 50 factures électroniques Peppol par mois (envoyées + reçues)",
+            "Jusqu'à 100 factures électroniques Peppol par mois (envoyées + reçues)",
             "Devis intelligents alimentés par l'IA (saisie vocale ou manuelle)",
             "Suggestions IA automatiques pour les tâches, prix et matériaux",
             "Modèle de devis premium avec votre logo et informations commerciales",
@@ -4417,10 +4417,18 @@
           "deposit": "Factures d'acompte",
           "final": "Factures finales"
         },
+        "documentType": {
+          "label": "Type de document",
+          "all": "Tous",
+          "invoicesOnly": "Factures uniquement",
+          "creditNotesOnly": "Avoirs uniquement"
+        },
         "chips": {
           "status": "Statut",
           "client": "Client",
           "invoiceType": "Type",
+          "documentType": "Document",
+          "removeDocumentType": "Supprimer le filtre type de document",
           "period": "Période",
           "amount": "Montant",
           "removeStatus": "Supprimer le filtre de statut",
@@ -4466,7 +4474,84 @@
         "actions": {
           "viewDetails": "Voir les détails",
           "sendInvoice": "Envoyer la facture",
-          "exportPDF": "Exporter PDF"
+          "exportPDF": "Exporter PDF",
+          "createCreditNote": "Créer un avoir",
+          "sendToAccountant": "Envoyer au comptable"
+        }
+      },
+      "documentType": {
+        "invoice": "Facture",
+        "creditNote": "Avoir"
+      },
+      "creditNote": {
+        "title": "Créer un avoir",
+        "subtitle": "Pour la facture {{number}}",
+        "reasonRequired": "La raison de l'avoir est requise",
+        "notAuthenticated": "Vous devez être connecté",
+        "createFailed": "Échec de la création de l'avoir",
+        "invoiceTotal": "Total de la facture",
+        "reason": "Raison de l'avoir",
+        "reasonPlaceholder": "ex. Correction, doublon, marchandises retournées",
+        "notes": "Notes",
+        "notesPlaceholder": "Notes complémentaires (optionnel)",
+        "create": "Créer l'avoir"
+      },
+      "addInvoice": {
+        "button": "Ajouter une facture",
+        "title": "Ajouter une facture",
+        "subtitle": "Créer une facture client sans devis",
+        "create": "Créer la facture",
+        "creating": "Création...",
+        "sections": {
+          "client": "Client et document",
+          "amounts": "Montants",
+          "datesTerms": "Dates et conditions"
+        },
+        "fields": {
+          "client": "Client",
+          "selectClient": "Sélectionner un client",
+          "invoiceNumber": "Numéro de facture",
+          "title": "Titre",
+          "description": "Description",
+          "netAmount": "Montant net (HT)",
+          "taxAmount": "Montant TVA",
+          "discountAmount": "Remise",
+          "finalAmount": "Montant total (TTC)",
+          "issueDate": "Date d'émission",
+          "dueDate": "Date d'échéance",
+          "paymentTerms": "Conditions de paiement",
+          "paymentMethod": "Mode de paiement",
+          "invoiceType": "Type de facture",
+          "depositAmount": "Montant d'acompte (HT)",
+          "notes": "Notes"
+        },
+        "placeholders": {
+          "title": "Facture",
+          "description": "Description",
+          "notes": "Notes optionnelles"
+        },
+        "invoiceType": {
+          "final": "Finale",
+          "deposit": "Acompte"
+        },
+        "ocr": {
+          "title": "Scanner de facture",
+          "description": "Téléchargez une facture pour pré-remplir les champs",
+          "processing": "Analyse en cours...",
+          "success": "Données extraites. Vérifiez et créez.",
+          "failed": "Extraction échouée. Remplissez manuellement."
+        },
+        "errors": {
+          "clientRequired": "Veuillez sélectionner un client",
+          "invoiceNumberRequired": "Le numéro de facture est requis pour Peppol",
+          "titleRequired": "Le titre est requis pour Peppol",
+          "finalAmountRequired": "Le montant total (ou net + TVA) est requis et doit être supérieur à 0",
+          "issueDateRequired": "La date d'émission est requise pour Peppol",
+          "dueDateRequired": "La date d'échéance est requise pour Peppol",
+          "paymentTermsRequired": "Les conditions de paiement sont requises pour Peppol",
+          "paymentMethodRequired": "Le mode de paiement est requis pour Peppol",
+          "notAuthenticated": "Vous devez être connecté",
+          "createFailed": "Échec de la création de la facture"
         }
       },
       "empty": {
@@ -4534,6 +4619,8 @@
       "retry": "Réessayer",
       "modal": {
         "title": "Détails de la facture",
+        "creditNoteTitle": "Avoir",
+        "relatedInvoice": "Facture d'origine",
         "close": "Fermer",
         "invoiceLines": "Lignes de facture",
         "invoiceLinesTable": {
@@ -4557,7 +4644,9 @@
           "status": "Statut",
           "issueDate": "Date d'émission",
           "dueDate": "Date d'échéance",
-          "paymentMethod": "Méthode de paiement"
+          "paymentMethod": "Méthode de paiement",
+          "balance": "Solde",
+          "linkedCreditNotes": "Avoirs liés"
         },
         "clientInfo": {
           "title": "Informations client",

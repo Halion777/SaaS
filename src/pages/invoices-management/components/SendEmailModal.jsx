@@ -182,7 +182,8 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
           title: invoice.title,
           notes: invoice.notes,
           invoice_type: invoice.invoice_type || invoice.invoiceType || 'final',
-          peppol_metadata: invoice.peppol_metadata || null
+          peppol_metadata: invoice.peppol_metadata || null,
+          document_type: invoice.document_type || 'invoice'
         },
         quote: invoice.quote || null,
         depositInvoiceStatus: invoice.depositInvoiceStatus || null // Can be passed from parent if available

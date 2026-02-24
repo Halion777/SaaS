@@ -382,10 +382,14 @@ export const generateInvoicePDF = async (invoiceData, invoiceNumber, elementToCa
 const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBankInfo = false, invoiceType = null, showWarning = false) => {
   const { companyInfo, client, invoice, quote } = invoiceData;
   
+  // Credit note: same layout, different title and related invoice ref
+  const isCreditNote = invoice.document_type === 'credit_note';
+  const relatedInvoiceNumber = invoice.peppol_metadata?.related_invoice_number || null;
+
   // Get invoice_type from parameter, invoice object, or peppol_metadata
   const finalInvoiceType = invoiceType || invoice.invoice_type || invoice.peppol_metadata?.invoice_type || 'final';
-  const isDepositInvoice = finalInvoiceType === 'deposit';
-  const isFinalInvoice = finalInvoiceType === 'final';
+  const isDepositInvoice = !isCreditNote && finalInvoiceType === 'deposit';
+  const isFinalInvoice = !isCreditNote && finalInvoiceType === 'final';
   
   // Color scheme matching quote preview
   const primaryColor = '#374151'; // Dark gray
@@ -403,6 +407,8 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
   const labels = {
     fr: {
       invoice: 'FACTURE',
+      creditNote: 'AVOIR',
+      relatedInvoice: 'Réf. facture',
       depositInvoice: 'FACTURE D\'ACOMPTE',
       finalInvoice: 'FACTURE FINALE',
       client: 'CLIENT',
@@ -428,6 +434,8 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
     },
     en: {
       invoice: 'INVOICE',
+      creditNote: 'CREDIT NOTE',
+      relatedInvoice: 'Related invoice',
       depositInvoice: 'DEPOSIT INVOICE',
       finalInvoice: 'FINAL INVOICE',
       client: 'CLIENT',
@@ -453,6 +461,8 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
     },
     nl: {
       invoice: 'FACTUUR',
+      creditNote: 'CREDITNOTA',
+      relatedInvoice: 'Gerelateerde factuur',
       depositInvoice: 'AANBETALING FACTUUR',
       finalInvoice: 'EIND FACTUUR',
       client: 'KLANT',
@@ -673,8 +683,9 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
           </div>
         </div>
         <div style="text-align: right; flex: 1;">
-          <h2 style="margin: 0 0 10px 0; font-size: 18px; color: ${primaryColor}; font-weight: bold; letter-spacing: 1px;">${isDepositInvoice ? t.depositInvoice : (isFinalInvoice && depositEnabled ? t.finalInvoice : t.invoice)}</h2>
+          <h2 style="margin: 0 0 10px 0; font-size: 18px; color: ${primaryColor}; font-weight: bold; letter-spacing: 1px;">${isCreditNote ? t.creditNote : (isDepositInvoice ? t.depositInvoice : (isFinalInvoice && depositEnabled ? t.finalInvoice : t.invoice))}</h2>
           <p style="margin: 5px 0; font-size: 16px; color: ${primaryColor}; font-weight: bold;">${escapeHtml(invoiceNumber || 'N/A')}</p>
+          ${isCreditNote && relatedInvoiceNumber ? `<p style="margin: 2px 0; color: ${secondaryColor}; font-size: 10px;">${t.relatedInvoice}: ${escapeHtml(relatedInvoiceNumber)}</p>` : ''}
           <p style="margin: 3px 0; color: ${secondaryColor}; font-size: 11px;">${t.date} ${currentDate}</p>
           ${dueDate ? `<p style="margin: 3px 0; color: ${secondaryColor}; font-size: 11px;">${t.due} ${dueDate}</p>` : ''}
         </div>

@@ -1,12 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import { formatCurrency } from '../../../utils/numberFormat';
+import InvoiceService from '../../../services/invoiceService';
 
 const InvoiceDetailModal = ({ invoice, isOpen, onClose, allInvoices = [] }) => {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState('details');
+
+  const isCreditNote = invoice?.document_type === 'credit_note';
+  const balanceByInvoiceId = useMemo(
+    () => InvoiceService.getBalanceByInvoiceId(allInvoices),
+    [allInvoices]
+  );
+  const balance = !isCreditNote && invoice ? (balanceByInvoiceId[invoice.id] ?? invoice.amount ?? invoice.final_amount) : null;
+  const linkedCreditNotes = useMemo(
+    () => (allInvoices || []).filter(inv => inv.related_invoice_id === invoice?.id),
+    [allInvoices, invoice?.id]
+  );
+  const relatedInvoice = useMemo(
+    () => (invoice?.related_invoice_id && allInvoices?.length)
+      ? allInvoices.find(inv => inv.id === invoice.related_invoice_id)
+      : null,
+    [invoice?.related_invoice_id, allInvoices]
+  );
 
   // Reset active tab when modal opens/closes or invoice changes
   React.useEffect(() => {
@@ -100,8 +118,15 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose, allInvoices = [] }) => {
                 <Icon name="FileText" size={20} color="var(--color-primary)" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-foreground">{t('invoicesManagement.modal.title')}</h2>
+                <h2 className="text-xl font-semibold text-foreground">
+                  {isCreditNote ? t('invoicesManagement.modal.creditNoteTitle', 'Credit Note') : t('invoicesManagement.modal.title')}
+                </h2>
                 <p className="text-sm text-muted-foreground">{invoice.number}</p>
+                {isCreditNote && relatedInvoice && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {t('invoicesManagement.modal.relatedInvoice', 'Related invoice')}: {relatedInvoice.number}
+                  </p>
+                )}
               </div>
             </div>
             <button
@@ -171,6 +196,24 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose, allInvoices = [] }) => {
                       <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('invoicesManagement.modal.invoiceInfo.dueDate')}</label>
                       <p className="text-sm font-medium text-foreground">{formatDate(invoice.dueDate)}</p>
                     </div>
+                    {!isCreditNote && balance != null && (
+                      <div className="space-y-1 md:col-span-2">
+                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('invoicesManagement.modal.invoiceInfo.balance', 'Balance')}</label>
+                        <p className="text-sm font-semibold text-foreground">{formatCurrency(balance)}</p>
+                      </div>
+                    )}
+                    {!isCreditNote && linkedCreditNotes.length > 0 && (
+                      <div className="space-y-1 md:col-span-2">
+                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('invoicesManagement.modal.invoiceInfo.linkedCreditNotes', 'Linked credit notes')}</label>
+                        <ul className="text-sm text-foreground space-y-1">
+                          {linkedCreditNotes.map(cn => (
+                            <li key={cn.id}>
+                              {cn.number}: {formatCurrency(cn.amount ?? cn.final_amount ?? 0)}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 </div>
 

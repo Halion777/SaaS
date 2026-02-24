@@ -811,21 +811,62 @@ const generateInvoiceLines = (lines) => lines.map((line, index) => `
     </cac:InvoiceLine>
   `).join("");
 
+// Generate CreditNoteLine elements for UBL CreditNote-2 (Peppol BIS Billing 3.0)
+// Amounts must be positive in the XML; credit nature is indicated by CreditNoteTypeCode 381
+const generateCreditNoteLines = (lines, orderReference) => lines.map((line, index) => {
+  const quantity = Math.abs(parseFloat(line.quantity) || 1);
+  const taxableAmount = Math.abs(parseFloat(line.taxableAmount) || 0);
+  const unitPrice = Math.abs(parseFloat(line.unitPrice) || 0);
+  const vatCode = line.vatCode || 'S';
+  const taxPct = getTaxPercentage(line.taxPercentage);
+  const exemptionXml = vatCode === 'K' ? '<cbc:TaxExemptionReasonCode>VATEX-EU-IC</cbc:TaxExemptionReasonCode>' : '';
+  const orderRefXml = orderReference ? `
+            <cac:OrderLineReference>
+              <cbc:LineID>${index + 1}</cbc:LineID>
+            </cac:OrderLineReference>
+            <cac:DocumentReference>
+              <cbc:ID>${xmlEscape(orderReference)}</cbc:ID>
+              <cbc:DocumentTypeCode>130</cbc:DocumentTypeCode>
+            </cac:DocumentReference>
+          ` : '';
+  return `
+      <cac:CreditNoteLine>
+        <cbc:ID>${index + 1}</cbc:ID>
+        <cbc:CreditedQuantity unitCode="1I">${quantity}</cbc:CreditedQuantity>
+        <cbc:LineExtensionAmount currencyID="EUR">${taxableAmount.toFixed(2)}</cbc:LineExtensionAmount>
+          ${orderRefXml}
+        <cac:Item>
+          <cbc:Name>${xmlEscape(line.description ?? "")}</cbc:Name>
+          <cac:ClassifiedTaxCategory>
+            <cbc:ID>${vatCode}</cbc:ID>
+            <cbc:Percent>${taxPct}</cbc:Percent>
+          ${exemptionXml}
+            <cac:TaxScheme>
+              <cbc:ID>VAT</cbc:ID>
+            </cac:TaxScheme>
+          </cac:ClassifiedTaxCategory>
+        </cac:Item>
+        <cac:Price>
+          <cbc:PriceAmount currencyID="EUR">${unitPrice.toFixed(2)}</cbc:PriceAmount>
+        </cac:Price>
+      </cac:CreditNoteLine>
+    `;
+}).join("");
+
 // Generate AdditionalDocumentReference with PDF attachment
 // According to Peppol BIS Billing 3.0, PDF attachments should be embedded in UBL XML
 // Structure: AdditionalDocumentReference > Attachment > EmbeddedDocumentBinaryObject
 // Note: DocumentTypeCode is NOT used for PDF attachments (only for invoice object references)
-const generatePDFAttachment = (pdfBase64, invoiceNumber) => {
+// For credit notes pass filenamePrefix 'credit-note' so filename is credit-note-CN-0001.pdf
+const generatePDFAttachment = (pdfBase64, documentNumber, filenamePrefix = 'invoice') => {
   if (!pdfBase64) {
     return '';
   }
-  
-  // Generate filename from invoice number
-  const filename = `invoice-${invoiceNumber}.pdf`;
-  
+  const filename = `${filenamePrefix}-${documentNumber}.pdf`;
+  const attachmentId = filenamePrefix === 'credit-note' ? 'CREDIT_NOTE_PDF' : 'INVOICE_PDF';
   return `
   <cac:AdditionalDocumentReference>
-    <cbc:ID>INVOICE_PDF</cbc:ID>
+    <cbc:ID>${attachmentId}</cbc:ID>
     <cac:Attachment>
       <cbc:EmbeddedDocumentBinaryObject
         mimeCode="application/pdf"
@@ -1078,6 +1119,113 @@ export const generatePEPPOLXML = (invoiceData) => {
   </Invoice>`;
 };
 
+/**
+ * Generate UBL Credit Note (Peppol BIS Billing 3.0) per standard.
+ * Uses CreditNote-2 schema with CreditNoteTypeCode 381, CreditNoteLine, CreditedQuantity,
+ * OrderReference to original invoice, and DocumentReference (130) on each line.
+ * All amounts in the XML are positive; the credit nature is indicated by the document type.
+ */
+export const generatePEPPOLCreditNoteXML = (creditNoteData) => {
+  if (!creditNoteData) {
+    throw new Error("Credit note data is required");
+  }
+  if (!creditNoteData.receiver?.peppolIdentifier || !creditNoteData.sender?.peppolIdentifier) {
+    throw new Error("Receiver and sender Peppol identifiers are required");
+  }
+  if (!creditNoteData.invoiceLines?.length) {
+    throw new Error("At least one credit note line is required");
+  }
+  if (!creditNoteData.issueDate) {
+    throw new Error("Issue date is required");
+  }
+  if (!creditNoteData.sender.addressLine1 || !creditNoteData.sender.city || !creditNoteData.sender.zipCode) {
+    throw new Error("Sender address fields (addressLine1, city, zipCode) are required");
+  }
+  if (!creditNoteData.receiver.addressLine1 || !creditNoteData.receiver.city || !creditNoteData.receiver.zipCode) {
+    throw new Error("Receiver address fields (addressLine1, city, zipCode) are required");
+  }
+
+  // Use positive amounts in UBL (credit is implied by CreditNoteTypeCode 381)
+  const linesWithPositiveAmounts = creditNoteData.invoiceLines.map((line) => ({
+    ...line,
+    quantity: Math.abs(parseFloat(line.quantity) || 1),
+    taxableAmount: Math.abs(parseFloat(line.taxableAmount) || 0),
+    taxAmount: Math.abs(parseFloat(line.taxAmount) || 0),
+    totalAmount: Math.abs(parseFloat(line.totalAmount) || 0),
+    unitPrice: Math.abs(parseFloat(line.unitPrice) || 0)
+  }));
+  const taxCategories = calculateTaxCategories(linesWithPositiveAmounts);
+  const totals = calculateTotals(linesWithPositiveAmounts);
+  const taxTotalAmount = Object.values(taxCategories).reduce((sum, cat) => {
+    const taxAmt = cat.taxPercentage === 0 ? 0 : Math.round((cat.taxableAmount * (cat.taxPercentage / 100)) * 100) / 100;
+    return sum + taxAmt;
+  }, 0);
+
+  const formatUBLDate = (dateValue) => {
+    if (!dateValue) return formatDate(new Date(), "date");
+    if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) return dateValue;
+    return formatDate(dateValue, "date");
+  };
+  const issueDate = formatUBLDate(creditNoteData.issueDate);
+  const deliveryDate = formatUBLDate(creditNoteData.deliveryDate || creditNoteData.issueDate);
+  const billName = creditNoteData.billName;
+  const buyerRef = creditNoteData.buyerReference || billName;
+  const orderReference = creditNoteData.relatedInvoiceNumber || null;
+  const pdfBase64 = creditNoteData.pdfBase64 || null;
+
+  const taxSubtotalsXml = Object.values(taxCategories).map((category) => {
+    const calculatedTaxAmount = category.taxPercentage === 0 ? 0 : Math.round((category.taxableAmount * (category.taxPercentage / 100)) * 100) / 100;
+    const exemptionXml = category.vatCode === 'K' ? '<cbc:TaxExemptionReasonCode>VATEX-EU-IC</cbc:TaxExemptionReasonCode>' : '';
+    return `
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount currencyID="EUR">${Math.abs(category.taxableAmount).toFixed(2)}</cbc:TaxableAmount>
+        <cbc:TaxAmount currencyID="EUR">${calculatedTaxAmount.toFixed(2)}</cbc:TaxAmount>
+        <cac:TaxCategory>
+          <cbc:ID>${category.vatCode}</cbc:ID>
+          <cbc:Percent>${category.taxPercentage}</cbc:Percent>
+          ${exemptionXml}
+          <cac:TaxScheme>
+            <cbc:ID>VAT</cbc:ID>
+          </cac:TaxScheme>
+        </cac:TaxCategory>
+      </cac:TaxSubtotal>`;
+  }).join("");
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+  <CreditNote xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+              xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
+              xmlns="urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2">
+    <cbc:UBLVersionID>2.1</cbc:UBLVersionID>
+    <cbc:CustomizationID>urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0</cbc:CustomizationID>
+    <cbc:ProfileID>urn:fdc:peppol.eu:2017:poacc:billing:01:1.0</cbc:ProfileID>
+    <cbc:ID>${xmlEscape(billName)}</cbc:ID>
+    <cbc:IssueDate>${issueDate}</cbc:IssueDate>
+    <cbc:CreditNoteTypeCode>381</cbc:CreditNoteTypeCode>
+    <cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>
+    <cbc:BuyerReference>${xmlEscape(buyerRef)}</cbc:BuyerReference>
+    ${orderReference ? `
+    <cac:OrderReference>
+      <cbc:ID>${xmlEscape(orderReference)}</cbc:ID>
+    </cac:OrderReference>` : ''}
+    ${generatePDFAttachment(pdfBase64, billName, 'credit-note')}
+    ${generatePartyInfo(creditNoteData.sender, true)}
+    ${generatePartyInfo(creditNoteData.receiver, false)}
+    ${generateDelivery({ ...creditNoteData, deliveryDate })}
+    ${generatePaymentMeansAndTerms(creditNoteData)}
+    <cac:TaxTotal>
+      <cbc:TaxAmount currencyID="EUR">${taxTotalAmount.toFixed(2)}</cbc:TaxAmount>
+      ${taxSubtotalsXml}
+    </cac:TaxTotal>
+    <cac:LegalMonetaryTotal>
+      <cbc:LineExtensionAmount currencyID="EUR">${totals.taxableAmount.toFixed(2)}</cbc:LineExtensionAmount>
+      <cbc:TaxExclusiveAmount currencyID="EUR">${totals.taxableAmount.toFixed(2)}</cbc:TaxExclusiveAmount>
+      <cbc:TaxInclusiveAmount currencyID="EUR">${totals.totalAmount.toFixed(2)}</cbc:TaxInclusiveAmount>
+      <cbc:PayableAmount currencyID="EUR">${totals.totalAmount.toFixed(2)}</cbc:PayableAmount>
+    </cac:LegalMonetaryTotal>
+    ${generateCreditNoteLines(linesWithPositiveAmounts, orderReference)}
+  </CreditNote>`;
+};
+
 // HTTP functions
 const createAuthHeader = (username, password) => `Basic ${encodeBase64(`${username}:${password}`)}`;
 
@@ -1290,29 +1438,28 @@ export class PeppolService {
         }
       }
       
-      // The INVOICE document type URN we're looking for
+      // URNs for Peppol BIS Billing 3.0 (EN 16931)
       const invoiceDocumentType = `urn:oasis:names:specification:ubl:schema:xsd:Invoice-2::Invoice##urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0::2.1`;
-      
-      // Check if any document type matches INVOICE
-      const isSupported = documentTypesArray.some(doc => {
-        // If doc is a string (URN), check direct match
-        if (typeof doc === 'string') {
-          return doc === invoiceDocumentType || doc.includes('Invoice-2::Invoice');
-        }
-        // If doc is an object, check type or fullType properties
+      const creditNoteDocumentType = `urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2::CreditNote##urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0::2.1`;
+      const checkForInvoice = (doc) => {
+        if (typeof doc === 'string') return doc === invoiceDocumentType || doc.includes('Invoice-2::Invoice');
         if (typeof doc === 'object') {
-          if (doc.type === 'INVOICE' || doc.type === documentType) {
-            return true;
-          }
-          if (doc.fullType === invoiceDocumentType) {
-            return true;
-          }
-          if (typeof doc.fullType === 'string' && doc.fullType.includes('Invoice-2::Invoice')) {
-            return true;
-          }
+          if (doc.type === 'INVOICE') return true;
+          if (doc.fullType === invoiceDocumentType || (typeof doc.fullType === 'string' && doc.fullType.includes('Invoice-2::Invoice'))) return true;
         }
         return false;
-      });
+      };
+      const checkForCreditNote = (doc) => {
+        if (typeof doc === 'string') return doc === creditNoteDocumentType || doc.includes('CreditNote-2::CreditNote');
+        if (typeof doc === 'object') {
+          if (doc.type === 'CREDIT_NOTE') return true;
+          if (doc.fullType === creditNoteDocumentType || (typeof doc.fullType === 'string' && doc.fullType.includes('CreditNote-2::CreditNote'))) return true;
+        }
+        return false;
+      };
+      const isSupported = documentType === 'CREDIT_NOTE'
+        ? documentTypesArray.some(checkForCreditNote)
+        : documentTypesArray.some(checkForInvoice);
 
       return {
         supported: isSupported,
@@ -1344,16 +1491,37 @@ export class PeppolService {
       }
       
       // Check mandatory document identifiers
-      const mandatoryFields = {
-        'cbc:CustomizationID': 'urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0',
-        'cbc:ProfileID': 'urn:fdc:peppol.eu:2017:poacc:billing:01:1.0',
-        'cbc:InvoiceTypeCode': '380'
-      };
-      
-      for (const [field, expectedValue] of Object.entries(mandatoryFields)) {
+      const mandatoryFields = [
+        ['cbc:CustomizationID', 'urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0'],
+        ['cbc:ProfileID', 'urn:fdc:peppol.eu:2017:poacc:billing:01:1.0']
+      ];
+      for (const [field, expectedValue] of mandatoryFields) {
         const fieldPattern = new RegExp(`<${field}[^>]*>${expectedValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}</${field}>`);
         if (!fieldPattern.test(xml)) {
           errors.push(`Missing or incorrect ${field}`);
+        }
+      }
+
+      const isCreditNoteDoc = /<CreditNote\s|<\/CreditNote>/.test(xml);
+      if (isCreditNoteDoc) {
+        // UBL CreditNote-2: require CreditNoteTypeCode 381 and CreditNoteLine(s)
+        if (!/<cbc:CreditNoteTypeCode[^>]*>381<\/cbc:CreditNoteTypeCode>/.test(xml)) {
+          errors.push('Missing or incorrect cbc:CreditNoteTypeCode (must be 381)');
+        }
+        if (!xml.includes('<cac:CreditNoteLine')) {
+          errors.push('Missing mandatory section: Credit Note Line(s) (cac:CreditNoteLine)');
+        }
+      } else {
+        // UBL Invoice-2: require InvoiceTypeCode 380 or 381 and InvoiceLine(s)
+        const invoiceTypePattern = /<cbc:InvoiceTypeCode[^>]*>(380|381)<\/cbc:InvoiceTypeCode>/;
+        if (!invoiceTypePattern.test(xml)) {
+          errors.push('Missing or incorrect cbc:InvoiceTypeCode (must be 380 or 381)');
+        }
+        if (!xml.includes('<cac:InvoiceLine')) {
+          errors.push('Missing mandatory section: Invoice Line(s) (cac:InvoiceLine)');
+        }
+        if (!xml.includes('<cbc:DueDate')) {
+          errors.push('Missing mandatory section: Due Date (cbc:DueDate)');
         }
       }
       
@@ -1378,19 +1546,16 @@ export class PeppolService {
         }
       }
       
-      // Check for required sections
-      const requiredSections = [
-        { name: 'cbc:ID', description: 'Invoice ID' },
+      // Check for required sections (common to both Invoice and CreditNote)
+      const commonSections = [
+        { name: 'cbc:ID', description: 'Document ID' },
         { name: 'cbc:IssueDate', description: 'Issue Date' },
-        { name: 'cbc:DueDate', description: 'Due Date' },
         { name: 'cac:AccountingSupplierParty', description: 'Supplier Party (Sender)' },
         { name: 'cac:AccountingCustomerParty', description: 'Customer Party (Receiver)' },
         { name: 'cac:TaxTotal', description: 'Tax Total' },
-        { name: 'cac:LegalMonetaryTotal', description: 'Legal Monetary Total' },
-        { name: 'cac:InvoiceLine', description: 'Invoice Line(s)' }
+        { name: 'cac:LegalMonetaryTotal', description: 'Legal Monetary Total' }
       ];
-      
-      for (const section of requiredSections) {
+      for (const section of commonSections) {
         if (!xml.includes(`<${section.name}`)) {
           errors.push(`Missing mandatory section: ${section.description} (${section.name})`);
         }
@@ -1424,7 +1589,11 @@ export class PeppolService {
         // Generate UBL XML
         let xml;
         try {
-          xml = generatePEPPOLXML(invoiceData);
+          if (invoiceData.documentType === 'credit_note') {
+            xml = generatePEPPOLCreditNoteXML(invoiceData);
+          } else {
+            xml = generatePEPPOLXML(invoiceData);
+          }
         } catch (xmlError) {
           throw new Error(`Failed to generate UBL XML: ${xmlError.message || 'Unknown error'}`);
         }
@@ -1645,19 +1814,19 @@ export class PeppolService {
       // The webhook will block the invoice if receiver limit is reached and update sender's invoice to "failed"
       // We removed the pre-send check here because it was not working reliably
 
-      // CRITICAL: Check if receiver supports INVOICE document type before sending
-      // Use the Peppol identifier from UI (if provided) or discovered identifier
+      // CRITICAL: Check if receiver supports the document type (INVOICE or CREDIT_NOTE) before sending
+      const pepDocType = invoiceData.documentType === 'credit_note' ? 'CREDIT_NOTE' : 'INVOICE';
       const documentTypeCheck = await this.checkReceiverSupportsDocumentType(
         receiverPeppolIdentifier,
-        'INVOICE'
+        pepDocType
       );
 
       if (!documentTypeCheck.supported) {
         const supportedTypes = documentTypeCheck.supportedDocuments?.map(d => d.type || d.fullType).join(', ') || 'none';
         throw new Error(
-          `Receiver ${receiverPeppolIdentifier} is registered on Peppol but does not support INVOICE document type. ` +
+          `Receiver ${receiverPeppolIdentifier} is registered on Peppol but does not support ${pepDocType} document type. ` +
           `Supported document types: ${supportedTypes || 'none'}. ` +
-          `Please contact the receiver to enable INVOICE support or use email delivery method.`
+          `Please contact the receiver to enable ${pepDocType} support or use email delivery method.`
         );
       }
 
@@ -1706,7 +1875,7 @@ export class PeppolService {
             .insert({
               user_id: user.id,
               invoice_number: invoiceData.billName,
-              document_type: 'INVOICE',
+              document_type: invoiceData.documentType === 'credit_note' ? 'CREDIT_NOTE' : 'INVOICE',
               direction: 'outbound',
               reference_number: invoiceData.buyerReference || invoiceData.billName,
               sender_id: senderId,
@@ -1808,6 +1977,9 @@ export class PeppolService {
       paymentMeans: 31, // Debit transfer (code 31 = Credit transfer)
       // Include invoice_type (deposit or final) to be included in Note field
       invoiceType: haliqoInvoice.invoice_type || 'final',
+      // Credit note: document type and reference to original invoice for UBL 381
+      documentType: haliqoInvoice.document_type || 'invoice',
+      relatedInvoiceNumber: haliqoInvoice.peppol_metadata?.related_invoice_number || haliqoInvoice.related_invoice_number || null,
       // Include deposit and balance amounts for deposit/final invoices
       depositAmount: parseFloat(haliqoInvoice.deposit_amount || 0),
       balanceAmount: parseFloat(haliqoInvoice.balance_amount || 0),

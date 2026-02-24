@@ -46,6 +46,17 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
     { value: 'cancelled', label: t('invoicesManagement.status.cancelled') }
   ];
 
+  const getDocumentTypeBadge = (invoice) => {
+    const isCreditNote = invoice?.document_type === 'credit_note';
+    return (
+      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
+        isCreditNote ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-muted text-muted-foreground'
+      }`}>
+        {isCreditNote ? t('invoicesManagement.documentType.creditNote', 'Credit note') : t('invoicesManagement.documentType.invoice', 'Invoice')}
+      </span>
+    );
+  };
+
   const getStatusBadge = (status, invoice = null) => {
     const statusConfig = {
       paid: { 
@@ -405,7 +416,10 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                           onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
                         />
                         <div>
-                            <div className="text-sm font-medium text-foreground">{invoice.number}</div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-sm font-medium text-foreground">{invoice.number}</span>
+                              {getDocumentTypeBadge(invoice)}
+                            </div>
                         </div>
                       </div>
                     </div>
@@ -503,6 +517,17 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                         title={!canEdit ? t('permissions.noFullAccess') : t('invoicesManagement.table.actions.sendToAccountant', 'Send to Accountant')}
                         disabled={!canEdit}
                       />
+                      {invoice.document_type !== 'credit_note' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          iconName="FileText"
+                          onClick={() => onInvoiceAction('create_credit_note', invoice)}
+                          className="text-xs text-primary hover:text-primary/80"
+                          title={t('invoicesManagement.table.actions.createCreditNote', 'Create Credit Note')}
+                          disabled={!canEdit}
+                        />
+                      )}
                     </div>
                   </div>
                 );
@@ -528,7 +553,10 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                   onChange={(e) => handleSelectInvoice(invoice.id, e.target.checked)}
                 />
                 <div>
-                  <div className="text-sm font-medium text-foreground">{invoice.number}</div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-medium text-foreground">{invoice.number}</span>
+                    {getDocumentTypeBadge(invoice)}
+                  </div>
                   {invoice.quoteNumber && (
                     <div className="text-xs text-muted-foreground">{t('invoicesManagement.table.quote')}: {invoice.quoteNumber}</div>
                   )}
@@ -545,7 +573,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
 
             {/* Amount and Financial Info */}
             <div className="mb-3">
-              <div className="text-lg font-bold text-foreground">{formatCurrency(invoice.amount)}</div>
+              <div className={`text-lg font-bold ${invoice.document_type === 'credit_note' ? 'text-foreground' : 'text-foreground'}`}>{formatCurrency(invoice.amount)}</div>
               {renderAmountInfo(invoice)}
             </div>
 
@@ -626,6 +654,17 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                 title={!canEdit ? t('permissions.noFullAccess') : t('invoicesManagement.table.actions.sendToAccountant', 'Send to Accountant')}
                 disabled={!canEdit}
               />
+              {invoice.document_type !== 'credit_note' && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  iconName="FileText"
+                  onClick={() => onInvoiceAction('create_credit_note', invoice)}
+                  className="text-xs text-primary hover:text-primary/80"
+                  title={t('invoicesManagement.table.actions.createCreditNote', 'Create Credit Note')}
+                  disabled={!canEdit}
+                />
+              )}
             </div>
           </div>
         );
@@ -773,9 +812,12 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                           />
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-foreground">{invoice.number}</div>
+                            <div className="flex flex-col gap-0.5">
+                              <div className="text-sm font-medium text-foreground">{invoice.number}</div>
+                              {getDocumentTypeBadge(invoice)}
+                            </div>
                           {invoice.quoteNumber && !groupByQuote && (
-                            <div className="text-xs text-muted-foreground">{t('invoicesManagement.table.quote')}: {invoice.quoteNumber}</div>
+                            <div className="text-xs text-muted-foreground mt-1">{t('invoicesManagement.table.quote')}: {invoice.quoteNumber}</div>
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -855,6 +897,17 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                               className="text-primary hover:text-primary/80"
                               disabled={!canEdit}
                             />
+                            {invoice.document_type !== 'credit_note' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                iconName="FileText"
+                                onClick={() => onInvoiceAction('create_credit_note', invoice)}
+                                title={t('invoicesManagement.table.actions.createCreditNote', 'Create Credit Note')}
+                                className="text-primary hover:text-primary/80"
+                                disabled={!canEdit}
+                              />
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -875,9 +928,12 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                     />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-foreground">{invoice.number}</div>
+                    <div className="flex flex-col gap-0.5">
+                      <div className="text-sm font-medium text-foreground">{invoice.number}</div>
+                      {getDocumentTypeBadge(invoice)}
+                    </div>
                     {invoice.quoteNumber && (
-                      <div className="text-xs text-muted-foreground">{t('invoicesManagement.table.quote')}: {invoice.quoteNumber}</div>
+                      <div className="text-xs text-muted-foreground mt-1">{t('invoicesManagement.table.quote')}: {invoice.quoteNumber}</div>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -958,6 +1014,17 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                         className="text-primary hover:text-primary/80"
                         disabled={!canEdit}
                       />
+                      {invoice.document_type !== 'credit_note' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          iconName="FileText"
+                          onClick={() => onInvoiceAction('create_credit_note', invoice)}
+                          title={t('invoicesManagement.table.actions.createCreditNote', 'Create Credit Note')}
+                          className="text-primary hover:text-primary/80"
+                          disabled={!canEdit}
+                        />
+                      )}
                     </div>
                   </td>
                 </tr>
