@@ -222,12 +222,13 @@ serve(async (req: Request) => {
     // Get receiver Peppol ID from normalized payload (from recipientPeppolIdentifier)
     let receiverPeppolId = payload.data?.receiverPeppolId || payload.data?.peppolIdentifier;
     
-    // If not in payload, try to extract from UBL XML for inbound invoices
+    // If not in payload, try to extract from UBL XML for inbound invoices or credit notes
     if (!receiverPeppolId && payload.data?.ublXml) {
       try {
         const parser = new XMLParser({ ignoreAttributes: false, removeNSPrefix: true, trimValues: true });
         const obj = parser.parse(payload.data.ublXml);
-        const invoiceNode = obj?.StandardBusinessDocument?.Invoice || obj?.Invoice;
+        const invoiceNode = obj?.StandardBusinessDocument?.Invoice || obj?.Invoice ||
+                           obj?.StandardBusinessDocument?.CreditNote || obj?.CreditNote;
         const accCustomer = invoiceNode?.AccountingCustomerParty;
         const party = accCustomer?.Party;
         const endpoint = party?.EndpointID;
@@ -757,22 +758,214 @@ function parseUBLInvoice(ublXml: string): any {
 }
 
 /**
+ * Parse UBL CreditNote-2 XML (Peppol BIS Billing 3.0) and return same shape as parseUBLInvoice
+ * so inbound credit notes create expense invoices with full extracted data.
+ */
+function parseUBLCreditNote(ublXml: string): any {
+  try {
+    const parser = new XMLParser({ ignoreAttributes: false, removeNSPrefix: true, trimValues: true });
+    const obj = parser.parse(ublXml);
+    const creditNote = obj?.StandardBusinessDocument?.CreditNote || obj?.CreditNote;
+    if (!creditNote) {
+      throw new Error('CreditNote node not found in UBL XML');
+    }
+
+    const asArray = (v: any) => (Array.isArray(v) ? v : [v]).filter(Boolean);
+    const pickRaw = (node: any, key: string) => {
+      if (!node) return undefined;
+      const v = node[key];
+      if (Array.isArray(v)) return v[0];
+      return v;
+    };
+    const scalar = (val: any) => {
+      if (val && typeof val === 'object' && '#text' in val) return val['#text'];
+      return val;
+    };
+    const txt = (node: any, key: string) => {
+      const v = scalar(pickRaw(node, key));
+      return v === undefined || v === null ? '' : String(v).trim();
+    };
+    const num = (node: any, key: string) => {
+      const v = txt(node, key);
+      if (!v) return 0;
+      const numberMatch = v.match(/^[-+]?(\d+(?:[.,]\d+)?)/);
+      if (numberMatch) {
+        const n = parseFloat(numberMatch[1].replace(',', '.'));
+        return isNaN(n) ? 0 : n;
+      }
+      return 0;
+    };
+    const attrCurrency = (node: any, key: string, fallback: string) => {
+      const raw = pickRaw(node, key);
+      if (raw && typeof raw === 'object' && raw['@_currencyID']) return raw['@_currencyID'];
+      return fallback;
+    };
+
+    const invoiceId = txt(creditNote, 'ID');
+    const issueDate = txt(creditNote, 'IssueDate');
+    const dueDate = txt(creditNote, 'DueDate');
+    const invoiceTypeCode = txt(creditNote, 'CreditNoteTypeCode') || '381';
+    const documentCurrencyCode = txt(creditNote, 'DocumentCurrencyCode');
+    const buyerReference = txt(creditNote, 'BuyerReference');
+
+    const supplierParty = pickRaw(pickRaw(creditNote, 'AccountingSupplierParty'), 'Party');
+    const supplierEndpointId = txt(supplierParty, 'EndpointID');
+    const supplierEndpointScheme = (() => {
+      const raw = pickRaw(supplierParty, 'EndpointID');
+      if (raw && typeof raw === 'object' && raw['@_schemeID']) return raw['@_schemeID'];
+      return '';
+    })();
+    const supplierName = txt(pickRaw(supplierParty, 'PartyName'), 'Name') || txt(supplierParty, 'Name');
+    const supplierVatNumber = txt(pickRaw(supplierParty, 'PartyTaxScheme'), 'CompanyID');
+    const supplierAddressNode = pickRaw(supplierParty, 'PostalAddress');
+    const supplierStreet = txt(supplierAddressNode, 'StreetName');
+    const supplierCity = txt(supplierAddressNode, 'CityName');
+    const supplierPostalCode = txt(supplierAddressNode, 'PostalZone');
+    const supplierCountry = txt(pickRaw(supplierAddressNode, 'Country'), 'IdentificationCode');
+    const supplierContact = pickRaw(supplierParty, 'Contact');
+    const supplierEmail = txt(supplierContact, 'ElectronicMail');
+
+    const customerParty = pickRaw(pickRaw(creditNote, 'AccountingCustomerParty'), 'Party');
+    const customerEndpointId = txt(customerParty, 'EndpointID');
+    const customerEndpointScheme = (() => {
+      const raw = pickRaw(customerParty, 'EndpointID');
+      if (raw && typeof raw === 'object' && raw['@_schemeID']) return raw['@_schemeID'];
+      return '';
+    })();
+    const customerName = txt(pickRaw(customerParty, 'PartyName'), 'Name') || txt(customerParty, 'Name');
+    const customerVatNumber = txt(pickRaw(customerParty, 'PartyTaxScheme'), 'CompanyID');
+    const customerContact = pickRaw(customerParty, 'Contact');
+    const customerEmail = txt(customerContact, 'ElectronicMail');
+    const customerPhone = txt(customerContact, 'Telephone');
+
+    const taxTotal = pickRaw(creditNote, 'TaxTotal');
+    const totalTaxAmount = num(taxTotal, 'TaxAmount');
+    const taxCurrency = attrCurrency(taxTotal, 'TaxAmount', documentCurrencyCode);
+    const taxSubtotals = asArray(pickRaw(taxTotal, 'TaxSubtotal')).map((subtotal: any) => ({
+      taxableAmount: num(subtotal, 'TaxableAmount'),
+      taxAmount: num(subtotal, 'TaxAmount'),
+      taxCategoryId: txt(pickRaw(subtotal, 'TaxCategory'), 'ID'),
+      taxPercent: num(pickRaw(subtotal, 'TaxCategory'), 'Percent'),
+      category: txt(pickRaw(subtotal, 'TaxCategory'), 'ID'),
+      percent: num(pickRaw(subtotal, 'TaxCategory'), 'Percent')
+    }));
+
+    const monetaryTotal = pickRaw(creditNote, 'LegalMonetaryTotal');
+    const lineExtensionAmount = num(monetaryTotal, 'LineExtensionAmount');
+    const taxExclusiveAmount = num(monetaryTotal, 'TaxExclusiveAmount');
+    const taxInclusiveAmount = num(monetaryTotal, 'TaxInclusiveAmount');
+    const payableAmount = num(monetaryTotal, 'PayableAmount');
+    const payableCurrency = attrCurrency(monetaryTotal, 'PayableAmount', documentCurrencyCode);
+
+    const creditNoteLines = asArray(creditNote.CreditNoteLine || []);
+    const invoiceLines = creditNoteLines.map((line: any, index: number) => {
+      const lineId = txt(line, 'ID') || String(index + 1);
+      const quantity = num(line, 'CreditedQuantity');
+      const unitCode = (() => {
+        const raw = pickRaw(line, 'CreditedQuantity');
+        if (raw && typeof raw === 'object' && raw['@_unitCode']) return raw['@_unitCode'];
+        return '';
+      })();
+      const lineExtensionAmount = num(line, 'LineExtensionAmount');
+      const itemName = txt(pickRaw(line, 'Item'), 'Name');
+      const priceAmount = num(pickRaw(line, 'Price'), 'PriceAmount');
+      const taxCategoryId = txt(pickRaw(pickRaw(line, 'Item'), 'ClassifiedTaxCategory'), 'ID');
+      const taxPercent = num(pickRaw(pickRaw(line, 'Item'), 'ClassifiedTaxCategory'), 'Percent');
+      return {
+        lineId,
+        quantity,
+        unitCode,
+        lineExtensionAmount,
+        itemName,
+        priceAmount,
+        taxCategoryId,
+        taxPercent,
+        id: lineId,
+        description: itemName,
+        unit_price: priceAmount,
+        unitPrice: priceAmount,
+        amount: lineExtensionAmount
+      };
+    });
+
+    const paymentMeans = pickRaw(creditNote, 'PaymentMeans');
+    const paymentMeansCode = txt(paymentMeans, 'PaymentMeansCode');
+    const paymentTermsNote = txt(pickRaw(creditNote, 'PaymentTerms'), 'Note');
+    const orderReference = pickRaw(creditNote, 'OrderReference');
+    const orderRefId = txt(orderReference, 'ID');
+    const salesOrderId = orderReference ? txt(orderReference, 'SalesOrderID') : '';
+    const deliveryDate = txt(pickRaw(creditNote, 'Delivery'), 'ActualDeliveryDate');
+
+    return {
+      invoiceId,
+      issueDate,
+      dueDate,
+      invoiceTypeCode,
+      documentCurrencyCode,
+      buyerReference,
+      supplier: {
+        peppolId: supplierEndpointScheme && supplierEndpointId ? `${supplierEndpointScheme}:${supplierEndpointId}` : '',
+        name: supplierName,
+        vatNumber: supplierVatNumber,
+        contactName: txt(supplierContact, 'Name'),
+        contactPhone: txt(supplierContact, 'Telephone'),
+        address: { street: supplierStreet, city: supplierCity, postalCode: supplierPostalCode, country: supplierCountry },
+        email: supplierEmail
+      },
+      customer: {
+        peppolId: customerEndpointScheme && customerEndpointId ? `${customerEndpointScheme}:${customerEndpointId}` : '',
+        name: customerName,
+        vatNumber: customerVatNumber,
+        email: customerEmail,
+        phone: customerPhone
+      },
+      tax: { totalTaxAmount, taxCurrency, subtotals: taxSubtotals },
+      totals: {
+        lineExtensionAmount,
+        taxExclusiveAmount,
+        taxInclusiveAmount,
+        payableAmount,
+        currency: payableCurrency
+      },
+      invoiceLines,
+      payment: {
+        meansCode: paymentMeansCode,
+        meansName: (() => {
+          const raw = pickRaw(paymentMeans, 'PaymentMeansCode');
+          return raw && typeof raw === 'object' && raw['@_name'] ? raw['@_name'] : '';
+        })(),
+        paymentId: paymentMeans ? txt(paymentMeans, 'PaymentID') : '',
+        iban: paymentMeans && pickRaw(paymentMeans, 'PayeeFinancialAccount') ? txt(pickRaw(paymentMeans, 'PayeeFinancialAccount'), 'ID') : '',
+        terms: paymentTermsNote
+      },
+      deliveryDate,
+      orderReference: orderRefId,
+      salesOrderId
+    };
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
  * Extract PDF attachments from AdditionalDocumentReference elements
  * Returns array of PDF attachments with base64 data and filename
+ * Supports both Invoice and CreditNote UBL roots.
  */
 function extractPDFAttachments(ublXml: string): Array<{ filename: string; base64: string; mimeCode: string }> {
   const attachments: Array<{ filename: string; base64: string; mimeCode: string }> = [];
   
   try {
-    // Parse XML to extract AdditionalDocumentReference elements
+    // Parse XML to extract AdditionalDocumentReference elements (Invoice or CreditNote)
     const parser = new XMLParser({ ignoreAttributes: false, removeNSPrefix: true, trimValues: true });
     const obj = parser.parse(ublXml);
-    const invoice = obj?.StandardBusinessDocument?.Invoice || obj?.Invoice;
+    const document = obj?.StandardBusinessDocument?.Invoice || obj?.Invoice ||
+                     obj?.StandardBusinessDocument?.CreditNote || obj?.CreditNote;
     
-    if (!invoice) return attachments;
+    if (!document) return attachments;
     
     // Get AdditionalDocumentReference elements (can be array or single object)
-    const additionalDocs = invoice.AdditionalDocumentReference;
+    const additionalDocs = document.AdditionalDocumentReference;
     if (!additionalDocs) return attachments;
     
     const docsArray = Array.isArray(additionalDocs) ? additionalDocs : [additionalDocs];
@@ -1198,11 +1391,13 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
     
     if (data.ublXml) {
       try {
-        parsedInvoice = parseUBLInvoice(data.ublXml);
-        
-        // Extract PDF attachments from AdditionalDocumentReference (will store after we have invoice number)
+        if (isCreditNote) {
+          parsedInvoice = parseUBLCreditNote(data.ublXml);
+        } else {
+          parsedInvoice = parseUBLInvoice(data.ublXml);
+        }
+        // Extract PDF attachments from AdditionalDocumentReference (Invoice or CreditNote)
         const pdfAttachments = extractPDFAttachments(data.ublXml);
-        
       } catch (parseError: any) {
         console.error('[Peppol Webhook] Failed to parse UBL XML:', parseError?.message || parseError);
         console.error('[Peppol Webhook] XML snippet:', data.ublXml?.substring(0, 500));
