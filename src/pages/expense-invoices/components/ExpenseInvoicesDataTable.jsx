@@ -80,10 +80,10 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
     const balanceAmount = invoice.peppol_metadata?.balance_amount || 0;
     const depositEnabled = depositAmount > 0;
     
-    // Calculate net and VAT for the displayed amount
+    // Calculate net and VAT for the displayed amount (credit notes already stored negative)
     let displayNet = invoice.net_amount || 0;
     let displayVAT = invoice.vat_amount || 0;
-    
+
     // For invoices with deposits, calculate proportional net/VAT
     if (depositEnabled && depositAmount > 0 && balanceAmount > 0) {
       if (invoiceType === 'deposit') {
@@ -107,9 +107,9 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
         displayVAT = invoice.vat_amount || 0;
       }
     }
-    
-    // Only show if we have valid amounts
-    if (displayNet > 0 || displayVAT > 0) {
+
+    // Only show if we have valid amounts (non-zero); credit notes already stored negative
+    if (displayNet !== 0 || displayVAT !== 0) {
       return (
         <div className="text-xs text-muted-foreground space-y-0.5">
           <div>HT: {formatCurrency(displayNet)}</div>
@@ -129,7 +129,16 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
     { value: 'cancelled', label: t('expenseInvoices.status.cancelled', 'Cancelled') }
   ];
 
-  const getInvoiceTypeBadge = (invoiceType) => {
+  const getInvoiceTypeBadge = (invoice) => {
+    if (invoice?.peppol_metadata?.isCreditNote) {
+      return (
+        <span className="px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1 bg-amber-100 text-amber-800 border border-amber-300">
+          <Icon name="FileMinus" size={12} />
+          <span>{t('expenseInvoices.invoiceType.creditNote', 'Credit note')}</span>
+        </span>
+      );
+    }
+    const invoiceType = typeof invoice === 'string' ? invoice : (invoice?.invoice_type || invoice?.invoiceType || 'final');
     const typeConfig = {
       deposit: {
         label: t('expenseInvoices.invoiceType.deposit', 'Deposit'),
@@ -142,10 +151,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
         icon: 'CheckCircle'
       }
     };
-
-    const type = invoiceType || 'final';
-    const config = typeConfig[type] || typeConfig.final;
-
+    const config = typeConfig[invoiceType] || typeConfig.final;
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${config.color}`}>
         <Icon name={config.icon} size={12} />
@@ -517,13 +523,13 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
           )}
         </div>
 
-        {/* Amount and Payment Method */}
+        {/* Amount and Payment Method (credit notes stored negative in DB) */}
         <div className="mb-3">
           <div className="text-lg font-bold text-foreground">{formatCurrency(invoice.amount)}</div>
-          {invoice.net_amount !== null && invoice.net_amount !== undefined && invoice.net_amount > 0 && (
+          {(invoice.net_amount !== null && invoice.net_amount !== undefined && invoice.net_amount !== 0) && (
             <div className="text-xs text-muted-foreground">{t('expenseInvoices.table.net', 'Net')}: {formatCurrency(invoice.net_amount)}</div>
           )}
-          {invoice.vat_amount !== null && invoice.vat_amount !== undefined && invoice.vat_amount > 0 && (
+          {(invoice.vat_amount !== null && invoice.vat_amount !== undefined && invoice.vat_amount !== 0) && (
             <div className="text-xs text-muted-foreground">{t('expenseInvoices.table.vat', 'VAT')}: {formatCurrency(invoice.vat_amount)}</div>
           )}
           {/* Balance amount (same as total for expense invoices) */}
@@ -536,7 +542,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
         {/* Status and Invoice Type */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex flex-col space-y-1">
-                    {getInvoiceTypeBadge(invoice.invoice_type)}
+                    {getInvoiceTypeBadge(invoice)}
                   </div>
           <div className="flex flex-col items-end space-y-1">
             {getStatusBadge(invoice.status, invoice.id)}
@@ -773,7 +779,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                     <div className="text-xs text-muted-foreground">{invoice.category || 'N/A'}</div>
                   </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                      {getInvoiceTypeBadge(invoice.invoice_type)}
+                      {getInvoiceTypeBadge(invoice)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-foreground">{invoice.supplier_name}</div>
@@ -895,7 +901,7 @@ const ExpenseInvoicesDataTable = ({ expenseInvoices, onExpenseInvoiceAction, sel
                     <div className="text-xs text-muted-foreground">{invoice.category || 'N/A'}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {getInvoiceTypeBadge(invoice.invoice_type)}
+                    {getInvoiceTypeBadge(invoice)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-foreground">{invoice.supplier_name}</div>

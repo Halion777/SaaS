@@ -373,12 +373,17 @@ export class InvoiceService {
         invoice_type: source.invoice_type || 'final',
         document_type: 'credit_note',
         related_invoice_id: sourceInvoiceId,
-        peppol_metadata: {
-          ...(source.peppol_metadata || {}),
-          is_credit_note: true,
-          related_invoice_number: source.invoice_number,
-          credit_note_reason: reason || null
-        }
+        // Do not copy send-status from related invoice: credit note has its own email/Peppol status
+        peppol_metadata: (() => {
+          const srcMeta = source.peppol_metadata || {};
+          const { email_sent_at, pdf_storage_path, pdf_storage_bucket, pdf_generated_at, ...rest } = srcMeta;
+          return {
+            ...rest,
+            is_credit_note: true,
+            related_invoice_number: source.invoice_number,
+            credit_note_reason: reason || null
+          };
+        })()
       };
 
       const { data: created, error: insertError } = await supabase

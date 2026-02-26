@@ -464,14 +464,14 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
         reader.readAsDataURL(pdfBlob);
       });
 
-      // Store/update PDF in Supabase Storage if due date was modified or PDF doesn't exist
-      // This ensures follow-up emails use the correct PDF with updated due date
+      // Store/update PDF in Supabase Storage if due date was modified, PDF doesn't exist, or this is a credit note
+      // For credit notes, always store (never reuse path – it might be the related invoice's PDF)
+      const isCreditNote = invoice.document_type === 'credit_note';
       let pdfStorageInfo = {};
       const existingPdfPath = invoice.peppol_metadata?.pdf_storage_path;
       const existingPdfBucket = invoice.peppol_metadata?.pdf_storage_bucket || 'invoice-attachments';
       
-      // If due date was modified or PDF doesn't exist, store/update the PDF
-      if (dueDateWasModified || !existingPdfPath) {
+      if (dueDateWasModified || !existingPdfPath || isCreditNote) {
         const sanitizedInvoiceNumber = invoiceNumber.replace(/[^a-zA-Z0-9_-]/g, '_');
         const storagePath = `invoice-pdfs/${user?.id}/${sanitizedInvoiceNumber}.pdf`;
         const bucketName = 'invoice-attachments';

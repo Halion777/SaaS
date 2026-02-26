@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import { formatCurrency } from '../../../utils/numberFormat';
 import { ExpenseInvoicesService } from '../../../services/expenseInvoicesService';
 
 const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
@@ -108,7 +109,8 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
   const displayInvoiceNumber = getDisplayInvoiceNumber(invoice);
   const peppolInvoiceNumber = getPeppolInvoiceNumber(invoice);
   const showPeppolNumber = invoice.source === 'peppol' && peppolInvoiceNumber !== displayInvoiceNumber;
-  
+  const isCreditNote = invoice?.peppol_metadata?.isCreditNote;
+
   // Check if PDF attachment is available
   const pdfAttachmentPath = invoice.peppol_metadata?.pdfAttachmentPath;
   const hasPDFAttachment = pdfAttachmentPath && invoice.source === 'peppol';
@@ -196,7 +198,7 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
               <div className="bg-card border border-border rounded-lg p-5">
                 <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
                   <Icon name="FileText" size={18} className="mr-2 text-primary" />
-                  {t('expenseInvoices.modal.invoiceInfo.title', 'Invoice Information')}
+                  {isCreditNote ? t('expenseInvoices.modal.creditNoteTitle', 'Credit note') : t('expenseInvoices.modal.invoiceInfo.title', 'Invoice Information')}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
@@ -204,6 +206,16 @@ const ExpenseInvoiceDetailModal = ({ invoice, isOpen, onClose }) => {
                     <p className="text-sm font-semibold text-foreground">{displayInvoiceNumber}</p>
                     {showPeppolNumber && (
                       <p className="text-xs text-muted-foreground mt-1">Peppol Invoice Number: {peppolInvoiceNumber}</p>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('expenseInvoices.modal.invoiceInfo.amount', 'Amount')}</label>
+                    <p className="text-sm font-semibold text-foreground">{formatCurrency(invoice.amount)}</p>
+                    {(invoice.net_amount != null && invoice.net_amount !== '') && (
+                      <p className="text-xs text-muted-foreground mt-1">{t('expenseInvoices.table.net', 'Net')}: {formatCurrency(invoice.net_amount)}</p>
+                    )}
+                    {(invoice.vat_amount != null && invoice.vat_amount !== '') && (
+                      <p className="text-xs text-muted-foreground">{t('expenseInvoices.table.vat', 'VAT')}: {formatCurrency(invoice.vat_amount)}</p>
                     )}
                   </div>
                   <div className="space-y-1">

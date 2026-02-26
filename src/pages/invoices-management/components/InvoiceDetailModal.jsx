@@ -292,6 +292,22 @@ const InvoiceDetailModal = ({ invoice, isOpen, onClose, allInvoices = [] }) => {
                         materials: taskMaterials
                       });
                     });
+                  } else if (invoice.peppol_metadata?.line_items && Array.isArray(invoice.peppol_metadata.line_items) && invoice.peppol_metadata.line_items.length > 0) {
+                    // Create Invoice (or similar): use line items from peppol_metadata
+                    invoice.peppol_metadata.line_items.forEach((line, index) => {
+                      const qty = parseFloat(line.quantity) || 1;
+                      const unitPrice = parseFloat(line.unit_price) || 0;
+                      const totalPrice = parseFloat(line.total_price) ?? (qty * unitPrice);
+                      invoiceLines.push({
+                        number: index + 1,
+                        description: line.description || '',
+                        quantity: qty,
+                        unit: line.unit || '',
+                        unitPrice,
+                        totalPrice,
+                        materials: []
+                      });
+                    });
                   } else {
                     // Single line from invoice summary
                     invoiceLines = [{

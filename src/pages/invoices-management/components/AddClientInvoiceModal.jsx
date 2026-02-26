@@ -12,17 +12,28 @@ import { supabase } from '../../../services/supabaseClient';
 import ClientModal from '../../client-management/components/ClientModal';
 
 const parseAmount = (value) => {
-  if (!value || typeof value !== 'string') return 0;
+  if (value === '' || value == null) return 0;
+  if (typeof value === 'number') return value;
   const normalized = String(value).trim().replace(',', '.');
   return parseFloat(normalized) || 0;
 };
 
 const normalizeAmount = (value) => {
-  if (!value || typeof value !== 'string') return value;
+  if (!value && value !== 0) return value;
+  if (typeof value === 'number') return String(value).replace('.', ',');
   let v = String(value).trim();
   if (v.includes('.')) v = v.replace('.', ',');
   return v;
 };
+
+const createEmptyLineItem = () => ({
+  id: `li-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  description: '',
+  quantity: '',
+  unit: 'unit',
+  unit_price: '',
+  total: ''
+});
 
 const AddClientInvoiceModal = ({ isOpen, onClose, onCreated }) => {
   const { t } = useTranslation();
@@ -51,6 +62,7 @@ const AddClientInvoiceModal = ({ isOpen, onClose, onCreated }) => {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [fileStoragePaths, setFileStoragePaths] = useState({});
   const [showAddClientModal, setShowAddClientModal] = useState(false);
+  const [lineItems, setLineItems] = useState([]);
 
   useEffect(() => {
     if (isOpen) {
@@ -105,6 +117,7 @@ const AddClientInvoiceModal = ({ isOpen, onClose, onCreated }) => {
     setUploadedFiles(files);
   };
 
+  // Extraction only pre-fills the form. Invoice is created only when the user clicks "Create Invoice" (user must review first).
   const runOCR = async (file, fileIndex) => {
     setIsOCRProcessing(true);
     setOcrStatus(t('invoicesManagement.addInvoice.ocr.processing', 'Analyzing invoice...'));
@@ -116,14 +129,29 @@ const AddClientInvoiceModal = ({ isOpen, onClose, onCreated }) => {
         setFormData(prev => ({
           ...prev,
           invoice_number: d.invoice_number || prev.invoice_number,
+          title: d.supplier_name ? (prev.title || d.supplier_name) : prev.title,
           net_amount: d.net_amount != null ? normalizeAmount(String(d.net_amount)) : prev.net_amount,
           tax_amount: d.vat_amount != null ? normalizeAmount(String(d.vat_amount)) : prev.tax_amount,
           final_amount: d.amount != null ? normalizeAmount(String(d.amount)) : prev.final_amount,
           description: d.description || prev.description,
           notes: d.notes || d.description || prev.notes,
           issue_date: d.issue_date || prev.issue_date,
-          due_date: d.due_date || prev.due_date
+          due_date: d.due_date || prev.due_date,
+          payment_terms: d.payment_terms || prev.payment_terms,
+          payment_method: d.payment_method || prev.payment_method
         }));
+        if (d.line_items && Array.isArray(d.line_items) && d.line_items.length > 0) {
+          setLineItems(d.line_items.map((item, i) => ({
+            id: `li-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 6)}`,
+            description: item.description ?? '',
+            quantity: item.quantity ?? '',
+            unit: item.unit || 'unit',
+            unit_price: item.unit_price != null ? normalizeAmount(String(item.unit_price)) : '',
+            total: item.total != null ? normalizeAmount(String(item.total)) : ''
+          })));
+        } else {
+          setLineItems([]);
+        }
         setOcrStatus(t('invoicesManagement.addInvoice.ocr.success', 'Data extracted. Review and create.'));
       } else {
         setOcrStatus('error');
@@ -202,8 +230,24 @@ const AddClientInvoiceModal = ({ isOpen, onClose, onCreated }) => {
         notes: formData.notes || null,
         invoice_type: formData.invoice_type || 'final'
       };
+      const peppolMeta = {};
       if (formData.invoice_type === 'deposit' && parseAmount(formData.deposit_amount) > 0) {
-        payload.peppol_metadata = { deposit_amount: parseAmount(formData.deposit_amount) };
+        peppolMeta.deposit_amount = parseAmount(formData.deposit_amount);
+      }
+      const validLineItems = lineItems
+        .map(li => ({
+          description: (li.description || '').trim(),
+          quantity: parseAmount(li.quantity),
+          unit: (li.unit || 'unit').trim() || 'unit',
+          unit_price: parseAmount(li.unit_price),
+          total_price: parseAmount(li.total) || (parseAmount(li.quantity) * parseAmount(li.unit_price))
+        }))
+        .filter(li => li.description || li.quantity > 0 || li.unit_price > 0);
+      if (validLineItems.length > 0) {
+        peppolMeta.line_items = validLineItems;
+      }
+      if (Object.keys(peppolMeta).length > 0) {
+        payload.peppol_metadata = peppolMeta;
       }
       const result = await InvoiceService.createClientInvoice(user.id, payload);
       if (!result.success) {
@@ -212,6 +256,7 @@ const AddClientInvoiceModal = ({ isOpen, onClose, onCreated }) => {
         return;
       }
       setFormData({ client_id: '', invoice_number: '', title: '', description: '', net_amount: '', tax_amount: '', discount_amount: '', final_amount: '', issue_date: '', due_date: '', payment_terms: 'Paiement à 30 jours', payment_method: 'À définir', notes: '', invoice_type: 'final', deposit_amount: '' });
+      setLineItems([]);
       setUploadedFiles([]);
       setFileStoragePaths({});
       setOcrStatus('');
@@ -231,6 +276,7 @@ const AddClientInvoiceModal = ({ isOpen, onClose, onCreated }) => {
     }
     setFileStoragePaths({});
     setUploadedFiles([]);
+    setLineItems([]);
     setOcrStatus('');
     setError('');
     onClose?.();
@@ -242,6 +288,21 @@ const AddClientInvoiceModal = ({ isOpen, onClose, onCreated }) => {
       return;
     }
     handleInputChange('client_id', v);
+  };
+
+  const addLineItem = () => setLineItems(prev => [...prev, createEmptyLineItem()]);
+  const removeLineItem = (id) => setLineItems(prev => prev.filter(li => li.id !== id));
+  const updateLineItem = (id, field, value) => {
+    setLineItems(prev => prev.map(li => {
+      if (li.id !== id) return li;
+      const next = { ...li, [field]: value };
+      if ((field === 'quantity' || field === 'unit_price') && next.quantity !== '' && next.unit_price !== '') {
+        const q = parseAmount(next.quantity);
+        const p = parseAmount(next.unit_price);
+        next.total = normalizeAmount(q * p);
+      }
+      return next;
+    }));
   };
 
   const handleAddClientSave = async (clientData) => {
@@ -274,7 +335,7 @@ const AddClientInvoiceModal = ({ isOpen, onClose, onCreated }) => {
               </div>
               <div>
                 <h2 className="text-xl font-semibold text-foreground">
-                  {t('invoicesManagement.addInvoice.title', 'Add Invoice')}
+                  {t('invoicesManagement.addInvoice.title', 'Create Invoice')}
                 </h2>
                 <p className="text-sm text-muted-foreground">
                   {t('invoicesManagement.addInvoice.subtitle', 'Create a client invoice without a quote')}
@@ -395,6 +456,90 @@ const AddClientInvoiceModal = ({ isOpen, onClose, onCreated }) => {
                   <Input type="text" inputMode="decimal" value={formData.final_amount} onChange={(e) => handleInputChange('final_amount', e.target.value.replace(/[^\d,.\s]/g, ''))} placeholder="0,00" required />
                 </div>
               </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium text-foreground border-b border-border pb-2 flex-1">
+                  {t('invoicesManagement.addInvoice.sections.lineItems', 'Line items (optional)')}
+                </h3>
+                <Button type="button" variant="outline" size="sm" onClick={addLineItem} className="ml-2 shrink-0">
+                  <Icon name="Plus" size={14} className="mr-1" />
+                  {t('invoicesManagement.addInvoice.lineItems.addLine', 'Add line')}
+                </Button>
+              </div>
+              {lineItems.length > 0 && (
+                <div className="rounded-lg border border-border overflow-hidden">
+                  <div className="grid grid-cols-12 gap-2 p-2 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    <div className="col-span-4">{t('invoicesManagement.addInvoice.lineItems.description', 'Description')}</div>
+                    <div className="col-span-1">{t('invoicesManagement.addInvoice.lineItems.quantity', 'Qty')}</div>
+                    <div className="col-span-2">{t('invoicesManagement.addInvoice.lineItems.unit', 'Unit')}</div>
+                    <div className="col-span-2">{t('invoicesManagement.addInvoice.lineItems.unitPrice', 'Unit price')}</div>
+                    <div className="col-span-2">{t('invoicesManagement.addInvoice.lineItems.total', 'Total')}</div>
+                    <div className="col-span-1" />
+                  </div>
+                  {lineItems.map((li) => (
+                    <div key={li.id} className="grid grid-cols-12 gap-2 p-2 border-t border-border items-center">
+                      <div className="col-span-4">
+                        <Input
+                          value={li.description}
+                          onChange={(e) => updateLineItem(li.id, 'description', e.target.value)}
+                          placeholder={t('invoicesManagement.addInvoice.lineItems.descriptionPlaceholder', 'Description')}
+                          className="text-sm"
+                        />
+                      </div>
+                      <div className="col-span-1">
+                        <Input
+                          type="text"
+                          inputMode="decimal"
+                          value={li.quantity}
+                          onChange={(e) => updateLineItem(li.id, 'quantity', e.target.value.replace(/[^\d,.\s]/g, ''))}
+                          placeholder="0"
+                          className="text-sm"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Input
+                          value={li.unit}
+                          onChange={(e) => updateLineItem(li.id, 'unit', e.target.value)}
+                          placeholder="unit"
+                          className="text-sm"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Input
+                          type="text"
+                          inputMode="decimal"
+                          value={li.unit_price}
+                          onChange={(e) => updateLineItem(li.id, 'unit_price', e.target.value.replace(/[^\d,.\s]/g, ''))}
+                          placeholder="0,00"
+                          className="text-sm"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Input
+                          type="text"
+                          inputMode="decimal"
+                          value={li.total}
+                          onChange={(e) => updateLineItem(li.id, 'total', e.target.value.replace(/[^\d,.\s]/g, ''))}
+                          placeholder="0,00"
+                          className="text-sm"
+                        />
+                      </div>
+                      <div className="col-span-1 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => removeLineItem(li.id)}
+                          className="p-1.5 text-muted-foreground hover:text-destructive rounded"
+                          aria-label={t('common.remove', 'Remove')}
+                        >
+                          <Icon name="Trash2" size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="space-y-4">

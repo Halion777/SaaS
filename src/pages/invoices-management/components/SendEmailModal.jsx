@@ -199,9 +199,11 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
       
       const existingPdfPath = invoice.peppol_metadata?.pdf_storage_path;
       const existingPdfBucket = invoice.peppol_metadata?.pdf_storage_bucket || 'invoice-attachments';
-      
-      // Only reuse existing PDF if it exists AND due date was NOT modified
-      if (existingPdfPath && existingPdfBucket && !dueDateWasModified) {
+      const isCreditNote = invoice.document_type === 'credit_note';
+
+      // For credit notes, always generate the PDF (never reuse stored path – it might be the related invoice's PDF)
+      // Only reuse existing PDF if it exists AND due date was NOT modified AND this is not a credit note
+      if (!isCreditNote && existingPdfPath && existingPdfBucket && !dueDateWasModified) {
         // PDF already exists - download it from storage
         try {
           const { data: pdfData, error: downloadError } = await supabase.storage
@@ -355,7 +357,7 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
         custom_message: translatedMessage, // Use translated message
         user_id: user?.id || null,
         attachments: [{
-          filename: `facture-${invoiceNumber}.pdf`,
+          filename: isCreditNote ? `credit-note-${invoiceNumber}.pdf` : `facture-${invoiceNumber}.pdf`,
           content: pdfBase64
         }]
       });
@@ -378,7 +380,7 @@ const SendEmailModal = ({ invoice, isOpen, onClose, onSuccess, isProfessionalCli
           custom_message: emailData.message || '',
           user_id: user?.id || null, // Pass user_id so edge function can fetch language preference from database
           attachments: [{
-            filename: `facture-${invoiceNumber}.pdf`,
+            filename: isCreditNote ? `credit-note-${invoiceNumber}.pdf` : `facture-${invoiceNumber}.pdf`,
             content: pdfBase64,
             type: 'application/pdf'
           }]

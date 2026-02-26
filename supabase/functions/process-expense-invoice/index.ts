@@ -124,7 +124,7 @@ serve(async (req) => {
       "supplier_phone": "supplier phone number if visible",
       "category": "expense category - choose closest match: fuel, it_software, energy, materials_supplies, telecommunications, rent_property, professional_services, insurance, travel_accommodation, banking_financial, marketing_advertising, other_professional",
       "description": "invoice description or detailed line items summary (extract all line items if visible, combine into description)",
-      "line_items": "array of line items if visible, each with description, quantity, unit_price, total (optional field)",
+      "line_items": "array of line items if visible. Each item: { \"description\": \"item name or description\", \"quantity\": number, \"unit\": \"unit\" or \"hours\" or \"days\" etc., \"unit_price\": number, \"total\": number }. Extract every row from the invoice line items table.",
       "payment_terms": "payment terms if mentioned (e.g., '30 jours net', 'Net 30', 'Paiement à réception', 'Payment terms', 'Conditions de paiement')",
       "payment_method": "payment method if mentioned (Virement, Bank Transfer, Check, Chèque, Cash, Espèces, Card, Carte, etc.)",
       "iban": "IBAN or bank account number if visible",
@@ -168,10 +168,12 @@ serve(async (req) => {
        - Look for various formats: BEXXX.XXX.XXX, BE-XXX-XXX-XXX, BE XXX XXX XXX, or just numbers with country context
        - Check both supplier and client sections if invoice shows both
     
-    6. LINE ITEMS:
-       - If invoice has line items table, extract each row with: description, quantity, unit_price, total
-       - Combine all line items into description field if line_items array not supported
-       - Look for tables with headers like "Description", "Qty", "Price", "Total"
+    6. LINE ITEMS (IMPORTANT for client and expense invoices):
+       - If invoice has a line items table, extract EVERY row into the line_items array
+       - Each line item must have: description (text), quantity (number), unit (e.g. "unit", "hours", "days", "m²"), unit_price (number), total (number = quantity * unit_price)
+       - Look for tables with headers like "Description", "Designation", "Qty", "Quantity", "Price", "Unit price", "Total", "Amount", "Montant"
+       - Preserve decimal numbers (use comma as decimal separator in output for amounts)
+       - Do not skip line items - extract the full breakdown for accurate invoicing
     
     7. CALCULATIONS:
        - If you see "HT" and "TTC" amounts: net_amount = TTC - TVA (or use HT directly if shown)
@@ -348,6 +350,18 @@ serve(async (req) => {
       return null;
     };
 
+    // Normalize line_items array for form pre-fill (client and expense invoices). Use extractedData directly so we get more than safeExtract's 10-item limit.
+    const rawLineItems = (extractedData?.line_items && Array.isArray(extractedData.line_items)) ? extractedData.line_items : [];
+    const line_items = rawLineItems.slice(0, 100).map((item: any, index: number) => {
+      if (!item || typeof item !== 'object') return null;
+      const desc = safeString(item.description) || '';
+      const qty = item.quantity != null ? (typeof item.quantity === 'number' ? item.quantity : parseFloat(String(item.quantity).replace(',', '.')) || 0) : 0;
+      const unitPrice = item.unit_price != null ? (typeof item.unit_price === 'number' ? item.unit_price : (cleanAmount(item.unit_price) || 0)) : 0;
+      const total = item.total != null ? (typeof item.total === 'number' ? item.total : (cleanAmount(item.total) || 0)) : (qty * unitPrice);
+      const unit = safeString(item.unit) || 'unit';
+      return { description: desc, quantity: qty, unit, unit_price: unitPrice, total };
+    }).filter(Boolean);
+
     const cleanedData = {
       invoice_number: safeString(safeData?.invoice_number),
       amount: cleanedAmount,
@@ -361,16 +375,10 @@ serve(async (req) => {
       supplier_address: safeString(safeData?.supplier_address),
       supplier_phone: safeString(safeData?.supplier_phone),
       category: safeString(safeData?.category),
-      description: safeString(safeData?.description) || (safeData?.line_items && Array.isArray(safeData.line_items) 
-        ? safeData.line_items.slice(0, 50).map((item: any) => {
-            // Safely extract values to avoid circular references
-            const desc = item && typeof item === 'object' ? safeString(item.description) || '' : '';
-            const qty = item && typeof item === 'object' ? safeString(item.quantity) || '' : '';
-            const price = item && typeof item === 'object' ? safeString(item.unit_price) || '' : '';
-            const total = item && typeof item === 'object' ? safeString(item.total) || '' : '';
-            return `${desc} ${qty}x ${price} = ${total}`;
-          }).join('; ') 
+      description: safeString(safeData?.description) || (line_items.length > 0
+        ? line_items.map((li: any) => `${li.description} ${li.quantity} ${li.unit} @ ${li.unit_price} = ${li.total}`).join('; ')
         : null),
+      line_items: line_items.length > 0 ? line_items : undefined,
       payment_terms: safeString(safeData?.payment_terms),
       payment_method: safeString(safeData?.payment_method),
       iban: safeString(safeData?.iban),

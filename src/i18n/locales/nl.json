@@ -4481,15 +4481,25 @@
         "create": "Creditnota aanmaken"
       },
       "addInvoice": {
-        "button": "Factuur toevoegen",
-        "title": "Factuur toevoegen",
+        "button": "Factuur aanmaken",
+        "title": "Factuur aanmaken",
         "subtitle": "Maak een klantfactuur zonder offerte",
         "create": "Factuur aanmaken",
         "creating": "Aanmaken...",
         "sections": {
           "client": "Klant en document",
           "amounts": "Bedragen",
+          "lineItems": "Regels (optioneel)",
           "datesTerms": "Data en voorwaarden"
+        },
+        "lineItems": {
+          "addLine": "Regel toevoegen",
+          "description": "Omschrijving",
+          "quantity": "Aantal",
+          "unit": "Eenheid",
+          "unitPrice": "Eenheidsprijs",
+          "total": "Totaal",
+          "descriptionPlaceholder": "Omschrijving"
         },
         "fields": {
           "client": "Klant",

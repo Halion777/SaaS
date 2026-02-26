@@ -831,7 +831,7 @@ const InvoicesManagement = () => {
                     onClick={() => setIsAddInvoiceModalOpen(true)}
                     className="text-xs sm:text-sm"
                   >
-                    {t('invoicesManagement.addInvoice.button', 'Add Invoice')}
+                    {t('invoicesManagement.addInvoice.button', 'Create Invoice')}
                   </Button>
                 )}
               </div>
@@ -1016,7 +1016,7 @@ const InvoicesManagement = () => {
             }}
           />
 
-          {/* Add Client Invoice Modal */}
+          {/* Create Client Invoice Modal */}
           <AddClientInvoiceModal
             isOpen={isAddInvoiceModalOpen}
             onClose={() => setIsAddInvoiceModalOpen(false)}

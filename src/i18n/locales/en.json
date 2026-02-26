@@ -4444,15 +4444,25 @@
         "create": "Create Credit Note"
       },
       "addInvoice": {
-        "button": "Add Invoice",
-        "title": "Add Invoice",
+        "button": "Create Invoice",
+        "title": "Create Invoice",
         "subtitle": "Create a client invoice without a quote",
         "create": "Create Invoice",
         "creating": "Creating...",
         "sections": {
           "client": "Client & document",
           "amounts": "Amounts",
+          "lineItems": "Line items (optional)",
           "datesTerms": "Dates & terms"
+        },
+        "lineItems": {
+          "addLine": "Add line",
+          "description": "Description",
+          "quantity": "Qty",
+          "unit": "Unit",
+          "unitPrice": "Unit price",
+          "total": "Total",
+          "descriptionPlaceholder": "Description"
         },
         "fields": {
           "client": "Client",

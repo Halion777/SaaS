@@ -1622,6 +1622,11 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
       }
     }
 
+    // Store credit note amounts as negative in DB (same as client credit notes)
+    const storeAmount = isCreditNote ? -Math.abs(totalAmount) : totalAmount;
+    const storeNetAmount = isCreditNote ? -Math.abs(netAmount) : netAmount;
+    const storeVatAmount = isCreditNote ? -Math.abs(taxAmount) : taxAmount;
+
     // Create expense invoice record (supplier invoice) with all extracted mandatory fields
     const insertPayload = {
         user_id: userId,
@@ -1629,9 +1634,9 @@ async function processInboundInvoice(supabase: any, userId: string, payload: Web
       supplier_name: supplierName,
         supplier_email: invoiceData.supplier.email || data.senderEmail || '',
       supplier_vat_number: supplierVatNumber,
-        amount: totalAmount,
-        net_amount: netAmount,
-        vat_amount: taxAmount,
+        amount: storeAmount,
+        net_amount: storeNetAmount,
+        vat_amount: storeVatAmount,
         status: 'pending',
         category: data.category || 'General',
         source: 'peppol',

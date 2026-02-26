@@ -50,7 +50,9 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
     const isCreditNote = invoice?.document_type === 'credit_note';
     return (
       <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
-        isCreditNote ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-muted text-muted-foreground'
+        isCreditNote
+          ? 'bg-slate-800 text-slate-100 dark:bg-slate-700 dark:text-white'
+          : 'bg-muted text-muted-foreground'
       }`}>
         {isCreditNote ? t('invoicesManagement.documentType.creditNote', 'Credit note') : t('invoicesManagement.documentType.invoice', 'Invoice')}
       </span>

@@ -314,10 +314,12 @@ export class InvoiceFollowUpService {
 
       // Try to use pre-generated PDF from Supabase Storage
       // This is the same PDF used for automatic follow-ups (stored during invoice creation/sending)
+      // For credit notes, never use stored path – it might be the related invoice's PDF
+      const isCreditNote = invoice.document_type === 'credit_note';
       let pdfBase64 = null;
       
-      // Check if invoice has stored PDF in peppol_metadata
-      if (invoice.peppol_metadata) {
+      // Check if invoice has stored PDF in peppol_metadata (and this is not a credit note)
+      if (!isCreditNote && invoice.peppol_metadata) {
         const pdfStoragePath = invoice.peppol_metadata.pdf_storage_path;
         const pdfStorageBucket = invoice.peppol_metadata.pdf_storage_bucket || 'invoice-attachments';
         
@@ -392,7 +394,8 @@ export class InvoiceFollowUpService {
               title: invoice.title,
               notes: invoice.notes,
               invoice_type: invoice.invoice_type || 'final',
-              peppol_metadata: invoice.peppol_metadata || null
+              peppol_metadata: invoice.peppol_metadata || null,
+              document_type: invoice.document_type || 'invoice'
             },
             quote: invoice.quote || null,
             depositInvoiceStatus: depositInvoiceStatus // Pass deposit invoice status for PDF generation

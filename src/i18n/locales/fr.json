@@ -4497,15 +4497,25 @@
         "create": "Créer l'avoir"
       },
       "addInvoice": {
-        "button": "Ajouter une facture",
-        "title": "Ajouter une facture",
+        "button": "Créer une facture",
+        "title": "Créer une facture",
         "subtitle": "Créer une facture client sans devis",
         "create": "Créer la facture",
         "creating": "Création...",
         "sections": {
           "client": "Client et document",
           "amounts": "Montants",
+          "lineItems": "Lignes (optionnel)",
           "datesTerms": "Dates et conditions"
+        },
+        "lineItems": {
+          "addLine": "Ajouter une ligne",
+          "description": "Description",
+          "quantity": "Qté",
+          "unit": "Unité",
+          "unitPrice": "Prix unitaire",
+          "total": "Total",
+          "descriptionPlaceholder": "Description"
         },
         "fields": {
           "client": "Client",
