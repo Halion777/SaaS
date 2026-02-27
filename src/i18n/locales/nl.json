@@ -4499,7 +4499,8 @@
           "unit": "Eenheid",
           "unitPrice": "Eenheidsprijs",
           "total": "Totaal",
-          "descriptionPlaceholder": "Omschrijving"
+          "descriptionPlaceholder": "Omschrijving",
+          "descriptionLinePlaceholder": "Omschrijving van de regel"
         },
         "fields": {
           "client": "Klant",
@@ -4507,7 +4508,8 @@
           "invoiceNumber": "Factuurnummer",
           "title": "Titel",
           "description": "Beschrijving",
-          "netAmount": "Netto bedrag (excl. BTW)",
+          "netAmount": "Subtotaal (net, excl. BTW)",
+          "vatPercent": "BTW %",
           "taxAmount": "BTW bedrag",
           "discountAmount": "Korting",
           "finalAmount": "Totaalbedrag (incl. BTW)",
@@ -4522,6 +4524,7 @@
         "placeholders": {
           "title": "Factuur",
           "description": "Beschrijving",
+          "descriptionWhole": "Omschrijving van de hele factuur",
           "notes": "Optionele notities"
         },
         "invoiceType": {

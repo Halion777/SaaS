@@ -47,6 +47,7 @@ const AddClientInvoiceModal = ({ isOpen, onClose, onCreated }) => {
     tax_amount: '',
     discount_amount: '',
     final_amount: '',
+    vat_percent: '21',
     issue_date: '',
     due_date: '',
     payment_terms: 'Paiement à 30 jours',
@@ -181,10 +182,10 @@ const AddClientInvoiceModal = ({ isOpen, onClose, onCreated }) => {
       setError(t('invoicesManagement.addInvoice.errors.titleRequired', 'Title is required for Peppol'));
       return;
     }
-    const net = parseAmount(formData.net_amount) || 0;
-    const tax = parseAmount(formData.tax_amount) || 0;
-    const discount = parseAmount(formData.discount_amount) || 0;
-    const finalAmt = parseAmount(formData.final_amount) || net + tax - discount;
+    const net = lineItemsSubtotal != null ? lineItemsSubtotal : (parseAmount(formData.net_amount) || 0);
+    const tax = Math.round(net * (vatPercent / 100) * 100) / 100;
+    const discountVal = parseAmount(formData.discount_amount) || 0;
+    const finalAmt = Math.round((net + tax - discountVal) * 100) / 100;
     if (finalAmt <= 0) {
       setError(t('invoicesManagement.addInvoice.errors.finalAmountRequired', 'Final amount (or net + VAT) is required and must be greater than 0'));
       return;
@@ -221,7 +222,7 @@ const AddClientInvoiceModal = ({ isOpen, onClose, onCreated }) => {
         description: formData.description || null,
         net_amount: net,
         tax_amount: tax,
-        discount_amount: discount,
+        discount_amount: discountVal,
         final_amount: finalAmt,
         issue_date: formData.issue_date || new Date().toISOString().split('T')[0],
         due_date: formData.due_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -255,7 +256,7 @@ const AddClientInvoiceModal = ({ isOpen, onClose, onCreated }) => {
         setIsSubmitting(false);
         return;
       }
-      setFormData({ client_id: '', invoice_number: '', title: '', description: '', net_amount: '', tax_amount: '', discount_amount: '', final_amount: '', issue_date: '', due_date: '', payment_terms: 'Paiement à 30 jours', payment_method: 'À définir', notes: '', invoice_type: 'final', deposit_amount: '' });
+      setFormData({ client_id: '', invoice_number: '', title: '', description: '', net_amount: '', tax_amount: '', discount_amount: '', final_amount: '', vat_percent: '21', issue_date: '', due_date: '', payment_terms: 'Paiement à 30 jours', payment_method: 'À définir', notes: '', invoice_type: 'final', deposit_amount: '' });
       setLineItems([]);
       setUploadedFiles([]);
       setFileStoragePaths({});
@@ -304,6 +305,26 @@ const AddClientInvoiceModal = ({ isOpen, onClose, onCreated }) => {
       return next;
     }));
   };
+
+  // Subtotal (net) from line items when any line has values
+  const lineItemsSubtotal = React.useMemo(() => {
+    if (!lineItems.length) return null;
+    const sum = lineItems.reduce((acc, li) => {
+      const total = parseAmount(li.total);
+      if (total > 0) return acc + total;
+      const q = parseAmount(li.quantity);
+      const p = parseAmount(li.unit_price);
+      return acc + (q * p);
+    }, 0);
+    return sum;
+  }, [lineItems]);
+
+  const vatPercent = parseAmount(formData.vat_percent) || 21;
+  const discount = parseAmount(formData.discount_amount) || 0;
+  // When we have line items, net = lineItemsSubtotal; otherwise use formData.net_amount
+  const effectiveNet = lineItemsSubtotal != null ? lineItemsSubtotal : parseAmount(formData.net_amount) || 0;
+  const computedTax = Math.round(effectiveNet * (vatPercent / 100) * 100) / 100;
+  const computedTotal = Math.round((effectiveNet + computedTax - discount) * 100) / 100;
 
   const handleAddClientSave = async (clientData) => {
     const { data, error: err } = await createClient(clientData);
@@ -429,35 +450,12 @@ const AddClientInvoiceModal = ({ isOpen, onClose, onCreated }) => {
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-foreground mb-2">{t('invoicesManagement.addInvoice.fields.description', 'Description')}</label>
-                  <Input value={formData.description} onChange={(e) => handleInputChange('description', e.target.value)} placeholder={t('invoicesManagement.addInvoice.placeholders.description', 'Description')} />
+                  <Input value={formData.description} onChange={(e) => handleInputChange('description', e.target.value)} placeholder={t('invoicesManagement.addInvoice.placeholders.descriptionWhole', 'Description of whole invoice')} />
                 </div>
               </div>
             </div>
 
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-foreground border-b border-border pb-2">
-                {t('invoicesManagement.addInvoice.sections.amounts', 'Amounts')}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">{t('invoicesManagement.addInvoice.fields.netAmount', 'Net amount (excl. VAT)')}</label>
-                  <Input type="text" inputMode="decimal" value={formData.net_amount} onChange={(e) => handleInputChange('net_amount', e.target.value.replace(/[^\d,.\s]/g, ''))} placeholder="0,00" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">{t('invoicesManagement.addInvoice.fields.taxAmount', 'VAT amount')}</label>
-                  <Input type="text" inputMode="decimal" value={formData.tax_amount} onChange={(e) => handleInputChange('tax_amount', e.target.value.replace(/[^\d,.\s]/g, ''))} placeholder="0,00" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">{t('invoicesManagement.addInvoice.fields.discountAmount', 'Discount')}</label>
-                  <Input type="text" inputMode="decimal" value={formData.discount_amount} onChange={(e) => handleInputChange('discount_amount', e.target.value.replace(/[^\d,.\s]/g, ''))} placeholder="0,00" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">{t('invoicesManagement.addInvoice.fields.finalAmount', 'Final amount (incl. VAT)')} <span className="text-destructive">*</span></label>
-                  <Input type="text" inputMode="decimal" value={formData.final_amount} onChange={(e) => handleInputChange('final_amount', e.target.value.replace(/[^\d,.\s]/g, ''))} placeholder="0,00" required />
-                </div>
-              </div>
-            </div>
-
+            {/* Line items first, then totals */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-medium text-foreground border-b border-border pb-2 flex-1">
@@ -484,7 +482,7 @@ const AddClientInvoiceModal = ({ isOpen, onClose, onCreated }) => {
                         <Input
                           value={li.description}
                           onChange={(e) => updateLineItem(li.id, 'description', e.target.value)}
-                          placeholder={t('invoicesManagement.addInvoice.lineItems.descriptionPlaceholder', 'Description')}
+                          placeholder={t('invoicesManagement.addInvoice.lineItems.descriptionLinePlaceholder', 'Description of line item')}
                           className="text-sm"
                         />
                       </div>
@@ -540,6 +538,39 @@ const AddClientInvoiceModal = ({ isOpen, onClose, onCreated }) => {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Subtotal, VAT %, VAT amount, Total (after line items) */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium text-foreground border-b border-border pb-2">
+                {t('invoicesManagement.addInvoice.sections.amounts', 'Amounts')}
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">{t('invoicesManagement.addInvoice.fields.netAmount', 'Subtotal (net, excl. VAT)')}</label>
+                  {lineItemsSubtotal != null ? (
+                    <Input type="text" inputMode="decimal" value={normalizeAmount(lineItemsSubtotal)} readOnly className="bg-muted/50" />
+                  ) : (
+                    <Input type="text" inputMode="decimal" value={formData.net_amount} onChange={(e) => handleInputChange('net_amount', e.target.value.replace(/[^\d,.\s]/g, ''))} placeholder="0,00" />
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">{t('invoicesManagement.addInvoice.fields.vatPercent', 'VAT %')}</label>
+                  <Input type="text" inputMode="decimal" value={formData.vat_percent} onChange={(e) => handleInputChange('vat_percent', e.target.value.replace(/[^\d,.\s]/g, ''))} placeholder="21" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">{t('invoicesManagement.addInvoice.fields.taxAmount', 'VAT amount')}</label>
+                  <Input type="text" inputMode="decimal" value={normalizeAmount(computedTax)} readOnly className="bg-muted/50" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">{t('invoicesManagement.addInvoice.fields.discountAmount', 'Discount')}</label>
+                  <Input type="text" inputMode="decimal" value={formData.discount_amount} onChange={(e) => handleInputChange('discount_amount', e.target.value.replace(/[^\d,.\s]/g, ''))} placeholder="0,00" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">{t('invoicesManagement.addInvoice.fields.finalAmount', 'Total (incl. VAT)')} <span className="text-destructive">*</span></label>
+                  <Input type="text" inputMode="decimal" value={normalizeAmount(computedTotal)} readOnly className="bg-muted/50 font-medium" />
+                </div>
+              </div>
             </div>
 
             <div className="space-y-4">

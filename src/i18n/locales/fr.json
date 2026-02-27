@@ -4515,7 +4515,8 @@
           "unit": "Unité",
           "unitPrice": "Prix unitaire",
           "total": "Total",
-          "descriptionPlaceholder": "Description"
+          "descriptionPlaceholder": "Description",
+          "descriptionLinePlaceholder": "Description de la ligne"
         },
         "fields": {
           "client": "Client",
@@ -4523,7 +4524,8 @@
           "invoiceNumber": "Numéro de facture",
           "title": "Titre",
           "description": "Description",
-          "netAmount": "Montant net (HT)",
+          "netAmount": "Sous-total (net, HT)",
+          "vatPercent": "TVA %",
           "taxAmount": "Montant TVA",
           "discountAmount": "Remise",
           "finalAmount": "Montant total (TTC)",
@@ -4538,6 +4540,7 @@
         "placeholders": {
           "title": "Facture",
           "description": "Description",
+          "descriptionWhole": "Description de la facture entière",
           "notes": "Notes optionnelles"
         },
         "invoiceType": {
