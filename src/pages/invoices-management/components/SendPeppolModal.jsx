@@ -279,12 +279,16 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
         // Create invoice lines from tasks and their materials
         // IMPORTANT: Tasks use total_price (users enter total prices, not unit prices)
         // unit_price = total_price (no multiplication by quantity)
+        // For credit notes, invoice amounts are negative; use absolute values for proportion so VAT % is correct
+        const invNet = Math.abs(parseFloat(invoice.netAmount ?? invoice.net_amount ?? 0));
+        const invTax = Math.abs(parseFloat(invoice.taxAmount ?? invoice.tax_amount ?? 0));
+        const hasValidRatio = invNet > 0 && (invTax > 0 || invNet > 0);
         invoice.quote.quote_tasks.forEach((task, taskIndex) => {
           // Task price is already total (user enters total price)
           // Use total_price or unit_price (they should be the same)
           const taskNetAmount = parseFloat(task.total_price || task.unit_price || 0);
-          const taskTaxAmount = invoice.taxAmount > 0 && invoice.netAmount > 0 
-            ? (taskNetAmount * (invoice.taxAmount / invoice.netAmount))
+          const taskTaxAmount = hasValidRatio
+            ? (taskNetAmount * (invTax / invNet))
             : 0;
           const taskVatPercentage = taskNetAmount > 0 ? Math.round((taskTaxAmount / taskNetAmount) * 100) : 21;
           
@@ -310,8 +314,8 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
             // Material price is already total (user enters total price)
             // Use total_price or unit_price (they should be the same)
             const materialNetAmount = parseFloat(material.total_price || material.unit_price || 0);
-            const materialTaxAmount = invoice.taxAmount > 0 && invoice.netAmount > 0 
-              ? (materialNetAmount * (invoice.taxAmount / invoice.netAmount))
+            const materialTaxAmount = hasValidRatio
+              ? (materialNetAmount * (invTax / invNet))
               : 0;
             const materialVatPercentage = materialNetAmount > 0 ? Math.round((materialTaxAmount / materialNetAmount) * 100) : 21;
             

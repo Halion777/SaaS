@@ -818,7 +818,9 @@ const generateCreditNoteLines = (lines, orderReference) => lines.map((line, inde
   const taxableAmount = Math.abs(parseFloat(line.taxableAmount) || 0);
   const unitPrice = Math.abs(parseFloat(line.unitPrice) || 0);
   const vatCode = line.vatCode || 'S';
-  const taxPct = getTaxPercentage(line.taxPercentage);
+  // BR-S-05: Standard rated (S) must have Percent > 0; never output 0 for S
+  let taxPct = getTaxPercentage(line.taxPercentage);
+  if (vatCode === 'S' && (taxPct == null || Number(taxPct) <= 0)) taxPct = 21;
   const exemptionXml = vatCode === 'K' ? '<cbc:TaxExemptionReasonCode>VATEX-EU-IC</cbc:TaxExemptionReasonCode>' : '';
   const orderRefXml = orderReference ? `
             <cac:OrderLineReference>
