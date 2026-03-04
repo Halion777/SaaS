@@ -70,11 +70,13 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
           }
         }
 
-        // 2) Stripe-only: get-subscription. On error → allow (no guard).
+        // 2) Stripe-only: get-subscription.
+        // Only show guard when we have a CLEAR success response. Any doubt → allow (no guard).
         const { data: stripeRes, error: stripeErr } = await supabase.functions.invoke('get-subscription', {
           body: { userId: user.id }
         });
 
+        // Invoke failed (network, timeout, function crash) → allow
         if (stripeErr) {
           setSubscriptionStatus('active');
           setShowExpiredModal(false);
@@ -82,26 +84,44 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
           return;
         }
 
-        const sub = stripeRes?.subscription ?? null;
+        // No response or function reported failure (e.g. Stripe/DB error) → allow
+        if (!stripeRes || stripeRes.success !== true) {
+          setSubscriptionStatus('active');
+          setShowExpiredModal(false);
+          setSubscriptionLoading(false);
+          return;
+        }
+
+        const sub = stripeRes.subscription ?? null;
         if (!sub) {
+          // Clear "no subscription" from Stripe → show guard
           setShowExpiredModal(true);
           setSubscriptionStatus('none');
           setSubscriptionLoading(false);
           return;
         }
 
-        // Guard only when period/trial has actually ended. "Canceled" means no renewal
-        // but access until current_period_end — so don't block on status alone.
-        const now = Date.now();
-        const periodEnd = sub.current_period_end ? (typeof sub.current_period_end === 'number' ? sub.current_period_end : new Date(sub.current_period_end).getTime()) : null;
-        const trialEnd = sub.trial_end ? (typeof sub.trial_end === 'number' ? sub.trial_end : new Date(sub.trial_end).getTime()) : null;
-        const periodEnded = periodEnd != null && periodEnd < now;
-        const trialEnded = trialEnd != null && trialEnd < now;
+        // Parse period/trial end; on any doubt (invalid dates, etc.) → allow
+        try {
+          const now = Date.now();
+          const periodEnd = sub.current_period_end != null
+            ? (typeof sub.current_period_end === 'number' ? sub.current_period_end : new Date(sub.current_period_end).getTime())
+            : null;
+          const trialEnd = sub.trial_end != null
+            ? (typeof sub.trial_end === 'number' ? sub.trial_end : new Date(sub.trial_end).getTime())
+            : null;
+          const periodEnded = periodEnd != null && periodEnd < now;
+          const trialEnded = trialEnd != null && trialEnd < now;
 
-        if (periodEnded || trialEnded) {
-          setShowExpiredModal(true);
-          setSubscriptionStatus('expired');
-        } else {
+          if (periodEnded || trialEnded) {
+            setShowExpiredModal(true);
+            setSubscriptionStatus('expired');
+          } else {
+            setSubscriptionStatus('active');
+            setShowExpiredModal(false);
+          }
+        } catch (parseErr) {
+          // Invalid dates or unexpected shape → allow
           setSubscriptionStatus('active');
           setShowExpiredModal(false);
         }
