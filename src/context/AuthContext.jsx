@@ -3,8 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import * as authService from '../services/authService';
 import { supabase } from '../services/supabaseClient';
 import { sessionManager } from '../services/supabaseClient';
-import { clearSubscriptionCache } from '../components/ProtectedRoute';
-
 // Create the AuthContext
 const AuthContext = createContext(null);
 
@@ -454,9 +452,6 @@ export const AuthProvider = ({ children }) => {
       setSession(null);
       setShowProfileSelection(false);
       setIsProfileSelected(false);
-      
-      // Clear subscription cache
-      clearSubscriptionCache();
       
       // Clear profile data
       if (user) {
