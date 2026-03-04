@@ -163,7 +163,7 @@ export const clearSubscriptionCache = () => {
  * Uses localStorage cache for 5 minutes to handle unstable connections
  * Detects network errors and uses cache instead of showing subscription guard
  */
-const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
+const ProtectedRoute = ({ children, skipSubscriptionCheck = true }) => {
   const { user, isAuthenticated, loading: authLoading, logout } = useAuth();
   const { loading: multiUserLoading } = useMultiUser();
   const location = useLocation();
