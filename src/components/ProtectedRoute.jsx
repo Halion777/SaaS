@@ -105,9 +105,9 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = true }) => {
         // due to timezone skew, renewal delay, or webhook delay. Only block when clearly ended.
         const GRACE_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-        // If Stripe says active or past_due, allow (they're in good standing or in payment grace)
+        // If Stripe says active, past_due, or trialing/trial, allow (trial users can use the app)
         const status = (sub.status || '').toLowerCase();
-        if (status === 'active' || status === 'past_due') {
+        if (status === 'active' || status === 'past_due' || status === 'trialing' || status === 'trial') {
           setSubscriptionStatus('active');
           setShowExpiredModal(false);
           setSubscriptionLoading(false);

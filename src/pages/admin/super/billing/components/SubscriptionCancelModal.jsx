@@ -44,7 +44,7 @@ const SubscriptionCancelModal = ({ isOpen, onClose, subscription, onUpdate }) =>
       
       if (hasStripeSubscription) {
         try {
-          const { data: stripeResult, error: stripeError } = await supabase.functions.invoke(
+          const { data: stripeResult, error: stripeInvokeError } = await supabase.functions.invoke(
             'admin-update-subscription',
             { 
               body: {
@@ -56,9 +56,9 @@ const SubscriptionCancelModal = ({ isOpen, onClose, subscription, onUpdate }) =>
             }
           );
 
-          if (stripeError) {
-            console.error('Stripe cancel error:', stripeError);
-            stripeError = `Stripe sync failed: ${stripeError.message}. Database will still be updated.`;
+          if (stripeInvokeError) {
+            console.error('Stripe cancel error:', stripeInvokeError);
+            stripeError = `Stripe sync failed: ${stripeInvokeError.message}. Database will still be updated.`;
           } else if (!stripeResult?.success) {
             console.error('Stripe cancel failed:', stripeResult?.error);
             stripeError = `Stripe sync failed: ${stripeResult?.error || 'Unknown error'}. Database will still be updated.`;
