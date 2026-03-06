@@ -15,7 +15,7 @@ import Footer from './Footer';
  * Protected route: auth + subscription. Guard uses Stripe only (get-subscription).
  * No localStorage/session/cache; show guard only when Stripe says subscription ended.
  */
-const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
+const ProtectedRoute = ({ children, skipSubscriptionCheck = true }) => {
   const { user, isAuthenticated, loading: authLoading, logout } = useAuth();
   const { loading: multiUserLoading } = useMultiUser();
   const location = useLocation();
