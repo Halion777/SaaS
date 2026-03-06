@@ -4423,7 +4423,7 @@
           "label": "Type de document",
           "all": "Tous",
           "invoicesOnly": "Factures uniquement",
-          "creditNotesOnly": "Avoirs uniquement"
+          "creditNotesOnly": "Notes de crédit uniquement"
         },
         "chips": {
           "status": "Statut",
@@ -4487,18 +4487,18 @@
         "creditNote": "Note de crédit"
       },
       "creditNote": {
-        "title": "Créer un avoir",
+        "title": "Créer une note de crédit",
         "confirmDelete": "Supprimer cette note de crédit ? Cette action est irréversible.",
         "subtitle": "Pour la facture {{number}}",
-        "reasonRequired": "La raison de l'avoir est requise",
+        "reasonRequired": "La raison de la note de crédit est requise",
         "notAuthenticated": "Vous devez être connecté",
-        "createFailed": "Échec de la création de l'avoir",
+        "createFailed": "Échec de la création de la note de crédit",
         "invoiceTotal": "Total de la facture",
-        "reason": "Raison de l'avoir",
+        "reason": "Raison de la note de crédit",
         "reasonPlaceholder": "ex. Correction, doublon, marchandises retournées",
         "notes": "Notes",
         "notesPlaceholder": "Notes complémentaires (optionnel)",
-        "create": "Créer l'avoir"
+        "create": "Créer la note de crédit"
       },
       "addInvoice": {
         "button": "Créer une facture",
@@ -4636,7 +4636,7 @@
       "retry": "Réessayer",
       "modal": {
         "title": "Détails de la facture",
-        "creditNoteTitle": "Avoir",
+        "creditNoteTitle": "Note de crédit",
         "relatedInvoice": "Facture d'origine",
         "close": "Fermer",
         "invoiceLines": "Lignes de facture",
@@ -4663,7 +4663,7 @@
           "dueDate": "Date d'échéance",
           "paymentMethod": "Méthode de paiement",
           "balance": "Solde",
-          "linkedCreditNotes": "Avoirs liés"
+          "linkedCreditNotes": "Notes de crédit liées"
         },
         "clientInfo": {
           "title": "Informations client",
