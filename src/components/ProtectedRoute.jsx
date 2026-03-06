@@ -101,7 +101,20 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = true }) => {
           return;
         }
 
-        // Parse period/trial end; on any doubt (invalid dates, etc.) → allow
+        // Permanent fix: grace period (24h) after period/trial end to avoid blocking paying users
+        // due to timezone skew, renewal delay, or webhook delay. Only block when clearly ended.
+        const GRACE_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+        // If Stripe says active or past_due, allow (they're in good standing or in payment grace)
+        const status = (sub.status || '').toLowerCase();
+        if (status === 'active' || status === 'past_due') {
+          setSubscriptionStatus('active');
+          setShowExpiredModal(false);
+          setSubscriptionLoading(false);
+          return;
+        }
+
+        // For trialing/canceled/etc: only show guard when period/trial ended *beyond* grace
         try {
           const now = Date.now();
           const periodEnd = sub.current_period_end != null
@@ -110,8 +123,8 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = true }) => {
           const trialEnd = sub.trial_end != null
             ? (typeof sub.trial_end === 'number' ? sub.trial_end : new Date(sub.trial_end).getTime())
             : null;
-          const periodEnded = periodEnd != null && periodEnd < now;
-          const trialEnded = trialEnd != null && trialEnd < now;
+          const periodEnded = periodEnd != null && (periodEnd + GRACE_MS) < now;
+          const trialEnded = trialEnd != null && (trialEnd + GRACE_MS) < now;
 
           if (periodEnded || trialEnded) {
             setShowExpiredModal(true);
@@ -121,7 +134,6 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = true }) => {
             setShowExpiredModal(false);
           }
         } catch (parseErr) {
-          // Invalid dates or unexpected shape → allow
           setSubscriptionStatus('active');
           setShowExpiredModal(false);
         }

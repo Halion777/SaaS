@@ -4423,6 +4423,7 @@
           "sendInvoice": "Send invoice",
           "exportPDF": "Export PDF",
           "createCreditNote": "Create Credit Note",
+          "deleteCreditNote": "Delete credit note",
           "sendToAccountant": "Send to Accountant"
         }
       },
@@ -4432,6 +4433,7 @@
       },
       "creditNote": {
         "title": "Create Credit Note",
+        "confirmDelete": "Delete this credit note? This cannot be undone.",
         "subtitle": "For invoice {{number}}",
         "reasonRequired": "Reason for credit note is required",
         "notAuthenticated": "You must be logged in",

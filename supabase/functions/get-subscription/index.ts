@@ -173,7 +173,7 @@ serve(async (req) => {
       scheduled_change: scheduledChange
     }
 
-    // Also sync to local database
+    // Sync to local database so DB stays correct even if webhooks failed or were missed
     try {
       await supabaseClient
         .from('subscriptions')
@@ -193,6 +193,17 @@ serve(async (req) => {
         }, {
           onConflict: 'user_id'
         })
+
+      // Also update users table so subscription_status / selected_plan stay in sync (fixes stale DB when webhooks missed)
+      await supabaseClient
+        .from('users')
+        .update({
+          subscription_status: normalizedStatus,
+          selected_plan: planType,
+          trial_end_date: formattedSubscription.trial_end ? new Date(formattedSubscription.trial_end).toISOString() : null
+        })
+        .eq('id', userId)
+        .eq('has_lifetime_access', false)
     } catch (syncError) {
       console.error('Error syncing subscription to database:', syncError)
       // Don't fail the request if sync fails

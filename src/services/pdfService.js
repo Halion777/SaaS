@@ -407,7 +407,7 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
   const labels = {
     fr: {
       invoice: 'FACTURE',
-      creditNote: 'AVOIR',
+      creditNote: 'Note de crédit',
       relatedInvoice: 'Réf. facture',
       depositInvoice: 'FACTURE D\'ACOMPTE',
       finalInvoice: 'FACTURE FINALE',
@@ -461,7 +461,7 @@ const generateInvoiceHTML = (invoiceData, invoiceNumber, language = 'fr', hideBa
     },
     nl: {
       invoice: 'FACTUUR',
-      creditNote: 'CREDITNOTA',
+      creditNote: 'Creditnota',
       relatedInvoice: 'Gerelateerde factuur',
       depositInvoice: 'AANBETALING FACTUUR',
       finalInvoice: 'EIND FACTUUR',

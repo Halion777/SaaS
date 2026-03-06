@@ -49,6 +49,7 @@ const InvoicesManagement = () => {
   const [isSendToAccountantModalOpen, setIsSendToAccountantModalOpen] = useState(false);
   const [creditNoteInvoice, setCreditNoteInvoice] = useState(null);
   const [isCreateCreditNoteModalOpen, setIsCreateCreditNoteModalOpen] = useState(false);
+  const [creatingCreditNoteForInvoiceId, setCreatingCreditNoteForInvoiceId] = useState(null);
   const [isAddInvoiceModalOpen, setIsAddInvoiceModalOpen] = useState(false);
   const [groupByQuote, setGroupByQuote] = useState(false);
 
@@ -553,6 +554,7 @@ const InvoicesManagement = () => {
         await handleExportInvoicePDF(invoice);
         break;
       case 'create_credit_note':
+        setCreatingCreditNoteForInvoiceId(invoice.id);
         setCreditNoteInvoice(invoice);
         setIsCreateCreditNoteModalOpen(true);
         break;
@@ -561,8 +563,16 @@ const InvoicesManagement = () => {
         console.log('Edit invoice:', invoice);
         break;
       case 'delete':
-        // Handle delete action
-        console.log('Delete invoice:', invoice);
+        // Only for added credit notes (created from invoice, not converted)
+        if (invoice?.document_type === 'credit_note' && invoice?.related_invoice_id) {
+          if (!confirm(t('invoicesManagement.creditNote.confirmDelete', 'Delete this credit note? This cannot be undone.'))) break;
+          const result = await InvoiceService.deleteCreditNote(user?.id, invoice.id);
+          if (result.success) {
+            fetchInvoices();
+          } else {
+            alert(result.error || t('invoicesManagement.errors.error', 'Error'));
+          }
+        }
         break;
       default:
         console.warn('Unknown action:', action, 'Normalized:', normalizedAction);
@@ -963,6 +973,7 @@ const InvoicesManagement = () => {
             onStatusUpdate={handleStatusUpdate}
             groupByQuote={groupByQuote}
             downloadingInvoiceId={downloadingInvoiceId}
+            creatingCreditNoteForInvoiceId={creatingCreditNoteForInvoiceId}
           />
           )}
 
@@ -1010,8 +1021,10 @@ const InvoicesManagement = () => {
             onClose={() => {
               setIsCreateCreditNoteModalOpen(false);
               setCreditNoteInvoice(null);
+              setCreatingCreditNoteForInvoiceId(null);
             }}
             onCreated={() => {
+              setCreatingCreditNoteForInvoiceId(null);
               fetchInvoices();
             }}
           />

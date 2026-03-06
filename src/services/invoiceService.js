@@ -411,6 +411,45 @@ export class InvoiceService {
   }
 
   /**
+   * Delete an "added" credit note (one created from an invoice via Create Credit Note).
+   * Only allowed when document_type is credit_note and related_invoice_id is set (not converted from quote).
+   * @param {string} userId - The current user ID
+   * @param {string} invoiceId - The credit note invoice ID to delete
+   * @returns {Promise<{success: boolean, error?: string}>}
+   */
+  static async deleteCreditNote(userId, invoiceId) {
+    try {
+      const { data: inv, error: fetchError } = await supabase
+        .from('invoices')
+        .select('id, document_type, related_invoice_id')
+        .eq('id', invoiceId)
+        .eq('user_id', userId)
+        .single();
+
+      if (fetchError || !inv) {
+        return { success: false, error: 'Invoice not found or access denied' };
+      }
+      if (inv.document_type !== 'credit_note' || !inv.related_invoice_id) {
+        return { success: false, error: 'Only added credit notes (created from an invoice) can be deleted' };
+      }
+
+      const { error: deleteError } = await supabase
+        .from('invoices')
+        .delete()
+        .eq('id', invoiceId)
+        .eq('user_id', userId);
+
+      if (deleteError) {
+        return { success: false, error: deleteError.message };
+      }
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting credit note:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
    * Compute balance per invoice (invoice total − SUM of linked credit notes).
    * Credit notes have negative final_amount, so balance = invoice.final_amount + sum(linked CN final_amount).
    * @param {Array} invoices - Full list of invoices (including credit notes) from fetchInvoices

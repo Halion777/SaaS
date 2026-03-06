@@ -4476,15 +4476,17 @@
           "sendInvoice": "Envoyer la facture",
           "exportPDF": "Exporter PDF",
           "createCreditNote": "Créer Note de crédit",
+          "deleteCreditNote": "Supprimer la note de crédit",
           "sendToAccountant": "Envoyer au comptable"
         }
       },
       "documentType": {
         "invoice": "Facture",
-        "creditNote": "Avoir"
+        "creditNote": "Note de crédit"
       },
       "creditNote": {
         "title": "Créer un avoir",
+        "confirmDelete": "Supprimer cette note de crédit ? Cette action est irréversible.",
         "subtitle": "Pour la facture {{number}}",
         "reasonRequired": "La raison de l'avoir est requise",
         "notAuthenticated": "Vous devez être connecté",

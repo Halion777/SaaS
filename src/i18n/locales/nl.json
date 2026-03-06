@@ -4460,6 +4460,7 @@
           "sendInvoice": "Factuur verzenden",
           "exportPDF": "PDF exporteren",
           "createCreditNote": "Creditnota aanmaken",
+          "deleteCreditNote": "Creditnota verwijderen",
           "sendToAccountant": "Verzenden naar accountant"
         }
       },
@@ -4469,6 +4470,7 @@
       },
       "creditNote": {
         "title": "Creditnota aanmaken",
+        "confirmDelete": "Deze creditnota verwijderen? Dit kan niet ongedaan worden gemaakt.",
         "subtitle": "Voor factuur {{number}}",
         "reasonRequired": "Reden voor creditnota is verplicht",
         "notAuthenticated": "U moet ingelogd zijn",
