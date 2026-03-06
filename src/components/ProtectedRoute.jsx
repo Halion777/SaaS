@@ -93,16 +93,44 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
         }
 
         const sub = stripeRes.subscription ?? null;
+
+        // Helper: when we would show guard, check DB as fallback — if DB says they have access, allow
+        const dbSaysHasAccess = async () => {
+          try {
+            const { data: dbSub } = await supabase
+              .from('subscriptions')
+              .select('status, current_period_end, trial_end')
+              .eq('user_id', user.id)
+              .order('updated_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            if (!dbSub) return false;
+            const s = (dbSub.status || '').toLowerCase();
+            if (s !== 'active' && s !== 'trialing' && s !== 'trial') return false;
+            const now = Date.now();
+            const periodEnd = dbSub.current_period_end ? new Date(dbSub.current_period_end).getTime() : null;
+            const trialEnd = dbSub.trial_end ? new Date(dbSub.trial_end).getTime() : null;
+            if (periodEnd != null && periodEnd < now) return false;
+            if (trialEnd != null && trialEnd < now) return false;
+            return true;
+          } catch {
+            return false;
+          }
+        };
+
         if (!sub) {
-          // Clear "no subscription" from Stripe → show guard
-          setShowExpiredModal(true);
-          setSubscriptionStatus('none');
+          if (await dbSaysHasAccess()) {
+            setSubscriptionStatus('active');
+            setShowExpiredModal(false);
+          } else {
+            setShowExpiredModal(true);
+            setSubscriptionStatus('none');
+          }
           setSubscriptionLoading(false);
           return;
         }
 
         // Permanent fix: grace period (24h) after period/trial end to avoid blocking paying users
-        // due to timezone skew, renewal delay, or webhook delay. Only block when clearly ended.
         const GRACE_MS = 24 * 60 * 60 * 1000; // 24 hours
 
         // If Stripe says active, past_due, or trialing/trial, allow (trial users can use the app)
@@ -127,8 +155,13 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
           const trialEnded = trialEnd != null && (trialEnd + GRACE_MS) < now;
 
           if (periodEnded || trialEnded) {
-            setShowExpiredModal(true);
-            setSubscriptionStatus('expired');
+            if (await dbSaysHasAccess()) {
+              setSubscriptionStatus('active');
+              setShowExpiredModal(false);
+            } else {
+              setShowExpiredModal(true);
+              setSubscriptionStatus('expired');
+            }
           } else {
             setSubscriptionStatus('active');
             setShowExpiredModal(false);
