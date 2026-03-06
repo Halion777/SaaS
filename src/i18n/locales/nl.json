@@ -4768,6 +4768,7 @@
           "configMissing": "Peppol-configuratie ontbreekt. Configureer Peppol voordat u facturen verzendt.",
           "peppolDisabled": "Peppol-functionaliteit is momenteel uitgeschakeld. Schakel deze in de Peppol-instellingen in om facturen te verzenden.",
           "receiverPeppolDisabled": "Deze klant heeft Peppol uitgeschakeld. U kunt geen facturen via Peppol naar deze klant verzenden. Gebruik in plaats daarvan e-maillevering.",
+          "receiverCreditNoteNotRegistered": "De ontvanger is geregistreerd op Peppol maar Creditnota (CREDIT_NOTE) is niet ingeschakeld voor deze deelnemer. Voeg CREDIT_NOTE toe voor deze deelnemer in uw Peppol/Digiteal-configuratie, of verzend de creditnota per e-mail.",
           "updateError": "Factuur verzonden maar fout bij bijwerken",
           "sendError": "Fout bij verzenden",
           "invalidPeppolId": "Dit Peppol ID bestaat niet in het Peppol-netwerk. Controleer het ID en probeer het opnieuw.",

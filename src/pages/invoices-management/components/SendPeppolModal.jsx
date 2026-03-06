@@ -144,6 +144,28 @@ const SendPeppolModal = ({ invoice, isOpen, onClose, onSuccess, onOpenEmailModal
     try {
       const peppolService = new PeppolService(true);
 
+      // For credit notes: verify receiver has CREDIT_NOTE document type registered (Digiteal) before sending
+      if (invoice.document_type === 'credit_note') {
+        const receiverId = clientPeppolId?.trim();
+        if (!receiverId) {
+          setError(t('invoicesManagement.sendPeppolModal.errors.clientPeppolIdRequired', 'Please select a Peppol ID for the client'));
+          setIsSending(false);
+          return;
+        }
+        try {
+          const cnSupport = await peppolService.checkReceiverSupportsDocumentType(receiverId, 'CREDIT_NOTE');
+          if (!cnSupport.supported) {
+            setError(t('invoicesManagement.sendPeppolModal.errors.receiverCreditNoteNotRegistered', 'The receiver is registered on Peppol but Credit Note (CREDIT_NOTE) is not enabled for this participant. Please add CREDIT_NOTE for this participant in your Peppol/Digiteal configuration, or send the credit note via email instead.'));
+            setIsSending(false);
+            return;
+          }
+        } catch (err) {
+          setError(err.message || t('invoicesManagement.sendPeppolModal.errors.sendError'));
+          setIsSending(false);
+          return;
+        }
+      }
+
       // Helper function to convert country name to ISO code
       const countryToISO = (country) => {
         if (!country) return 'BE';

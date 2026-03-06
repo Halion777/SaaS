@@ -4732,6 +4732,7 @@
           "configMissing": "Peppol configuration missing. Please configure Peppol before sending invoices.",
           "peppolDisabled": "Peppol functionality is currently disabled. Please enable it in Peppol settings to send invoices.",
           "receiverPeppolDisabled": "This client has Peppol disabled. You cannot send invoices via Peppol to this client. Please use email delivery instead.",
+          "receiverCreditNoteNotRegistered": "The receiver is registered on Peppol but Credit Note (CREDIT_NOTE) is not enabled for this participant. Please add CREDIT_NOTE for this participant in your Peppol/Digiteal configuration, or send the credit note via email instead.",
           "updateError": "Invoice sent but error updating",
           "sendError": "Error sending",
           "invalidPeppolId": "This Peppol ID does not exist in the Peppol network. Please verify the ID and try again.",

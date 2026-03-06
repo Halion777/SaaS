@@ -1649,27 +1649,31 @@ export class PeppolService {
         });
         
         if (response.error) {
-          // Parse error details from Digiteal API
+          // Parse error details from Digiteal API (may be in response.error or response.data when function returns 4xx)
           let errorMessage = response.error.message || 'Unknown error';
-          
-          // Check if error details contain RECIPIENT_NOT_IN_PEPPOL
-          if (response.error.details) {
+          const detailsRaw = response.error.details ?? response.data?.details;
+
+          if (detailsRaw) {
             try {
-              const details = typeof response.error.details === 'string' 
-                ? JSON.parse(response.error.details) 
-                : response.error.details;
-              
-              if (details.status === 'RECIPIENT_NOT_IN_PEPPOL' || details.errorCode === 'RECIPIENT_NOT_IN_PEPPOL') {
+              const details = typeof detailsRaw === 'string' ? JSON.parse(detailsRaw) : detailsRaw;
+
+              if (details.status === 'PARTICIPANT_NOT_REGISTERED_TO_CALLER' || details.errorCode === 'PARTICIPANT_NOT_REGISTERED_TO_CALLER') {
+                errorMessage = 'The participant is not registered by your Peppol integrator. Please register this participant in your Peppol/Digiteal configuration (and add CREDIT_NOTE for credit notes), or send via email instead.';
+              } else if (details.status === 'RECIPIENT_NOT_IN_PEPPOL' || details.errorCode === 'RECIPIENT_NOT_IN_PEPPOL') {
                 const recipientId = details.message?.match(/Recipient\s+([^\s]+)/)?.[1] || 'unknown';
                 errorMessage = `Receiver ${recipientId} is registered on Peppol but does not support INVOICE document type. Please contact the receiver to enable INVOICE support or use email delivery method.`;
               } else if (details.message) {
                 errorMessage = details.message;
+              } else if (response.data?.error) {
+                errorMessage = response.data.error;
               }
             } catch (e) {
-              // If parsing fails, use the original error message
+              if (response.data?.error) errorMessage = response.data.error;
             }
+          } else if (response.data?.error) {
+            errorMessage = response.data.error;
           }
-          
+
           throw new Error(errorMessage);
         }
         
@@ -1693,12 +1697,15 @@ export class PeppolService {
         
         // Don't retry for non-transient errors
         const errorMessage = error.message || '';
-        if (errorMessage.includes('not found') || 
+        if (errorMessage.includes('not found') ||
             errorMessage.includes('validation') ||
             errorMessage.includes('receiver not found') ||
+            errorMessage.includes('not registered by your Peppol integrator') ||
+            errorMessage.includes('not registered by the integrator') ||
             errorMessage.includes('401') ||
             errorMessage.includes('Unauthorized') ||
-            errorMessage.includes('404')) {
+            errorMessage.includes('404') ||
+            errorMessage.includes('403')) {
           throw error;
         }
         
