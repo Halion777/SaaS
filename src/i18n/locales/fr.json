@@ -4475,7 +4475,7 @@
           "viewDetails": "Voir les détails",
           "sendInvoice": "Envoyer la facture",
           "exportPDF": "Exporter PDF",
-          "createCreditNote": "Créer un avoir",
+          "createCreditNote": "Créer Note de crédit",
           "sendToAccountant": "Envoyer au comptable"
         }
       },
