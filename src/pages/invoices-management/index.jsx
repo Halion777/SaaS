@@ -563,16 +563,6 @@ const InvoicesManagement = () => {
         console.log('Edit invoice:', invoice);
         break;
       case 'delete':
-        // Only for added credit notes (created from invoice, not converted)
-        if (invoice?.document_type === 'credit_note' && invoice?.related_invoice_id) {
-          if (!confirm(t('invoicesManagement.creditNote.confirmDelete', 'Delete this credit note? This cannot be undone.'))) break;
-          const result = await InvoiceService.deleteCreditNote(user?.id, invoice.id);
-          if (result.success) {
-            fetchInvoices();
-          } else {
-            alert(result.error || t('invoicesManagement.errors.error', 'Error'));
-          }
-        }
         break;
       default:
         console.warn('Unknown action:', action, 'Normalized:', normalizedAction);

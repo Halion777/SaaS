@@ -111,15 +111,6 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
     );
   };
 
-  // True if invoice/credit note was already sent (Peppol or email) — used to hide delete for sent credit notes
-  const isInvoiceSent = (invoice) => {
-    if (!invoice) return false;
-    const status = invoice.peppolStatus || invoice.peppol_status;
-    if (status === 'sent' || status === 'delivered') return true;
-    if (invoice.peppol_metadata?.email_sent_at) return true;
-    return false;
-  };
-
   // Get combined Peppol/Email status for an invoice
   const getInvoiceSendStatus = (invoice) => {
     // Check Peppol status first (for professional clients)
@@ -540,17 +531,6 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                           loading={creatingCreditNoteForInvoiceId === invoice.id}
                         />
                       )}
-                      {invoice.document_type === 'credit_note' && invoice.related_invoice_id && !isInvoiceSent(invoice) && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          iconName="Trash2"
-                          onClick={() => onInvoiceAction('delete', invoice)}
-                          className="text-xs text-destructive hover:text-destructive/80"
-                          title={t('invoicesManagement.table.actions.deleteCreditNote', 'Delete credit note')}
-                          disabled={!canDelete}
-                        />
-                      )}
                     </div>
                   </div>
                 );
@@ -687,17 +667,6 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                   title={t('invoicesManagement.table.actions.createCreditNote', 'Create Credit Note')}
                   disabled={!canEdit || creatingCreditNoteForInvoiceId === invoice.id}
                   loading={creatingCreditNoteForInvoiceId === invoice.id}
-                />
-              )}
-              {invoice.document_type === 'credit_note' && invoice.related_invoice_id && !isInvoiceSent(invoice) && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  iconName="Trash2"
-                  onClick={() => onInvoiceAction('delete', invoice)}
-                  className="text-xs text-destructive hover:text-destructive/80"
-                  title={t('invoicesManagement.table.actions.deleteCreditNote', 'Delete credit note')}
-                  disabled={!canDelete}
                 />
               )}
             </div>
@@ -944,17 +913,6 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                                 loading={creatingCreditNoteForInvoiceId === invoice.id}
                               />
                             )}
-                            {invoice.document_type === 'credit_note' && invoice.related_invoice_id && !isInvoiceSent(invoice) && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                iconName="Trash2"
-                                onClick={() => onInvoiceAction('delete', invoice)}
-                                className="text-destructive hover:text-destructive/80"
-                                title={t('invoicesManagement.table.actions.deleteCreditNote', 'Delete credit note')}
-                                disabled={!canDelete}
-                              />
-                            )}
                           </div>
                         </td>
                       </tr>
@@ -1071,17 +1029,6 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                           className="text-primary hover:text-primary/80"
                           disabled={!canEdit || creatingCreditNoteForInvoiceId === invoice.id}
                           loading={creatingCreditNoteForInvoiceId === invoice.id}
-                        />
-                      )}
-                      {invoice.document_type === 'credit_note' && invoice.related_invoice_id && !isInvoiceSent(invoice) && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          iconName="Trash2"
-                          onClick={() => onInvoiceAction('delete', invoice)}
-                          className="text-destructive hover:text-destructive/80"
-                          title={t('invoicesManagement.table.actions.deleteCreditNote', 'Delete credit note')}
-                          disabled={!canDelete}
                         />
                       )}
                     </div>
