@@ -19,6 +19,15 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
+  // Invoice IDs that already have at least one credit note (so we don't show Create Credit Note again)
+  const invoiceIdsWithCreditNote = useMemo(() => {
+    return new Set(
+      (invoices || [])
+        .filter(inv => inv.document_type === 'credit_note' && inv.related_invoice_id)
+        .map(inv => inv.related_invoice_id)
+    );
+  }, [invoices]);
+
   // Auto-switch to card view on mobile/tablet
   React.useEffect(() => {
     const handleResize = () => {
@@ -519,7 +528,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                         title={!canEdit ? t('permissions.noFullAccess') : t('invoicesManagement.table.actions.sendToAccountant', 'Send to Accountant')}
                         disabled={!canEdit}
                       />
-                      {invoice.document_type !== 'credit_note' && (
+                      {invoice.document_type !== 'credit_note' && !invoiceIdsWithCreditNote.has(invoice.id) && (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -657,7 +666,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                 title={!canEdit ? t('permissions.noFullAccess') : t('invoicesManagement.table.actions.sendToAccountant', 'Send to Accountant')}
                 disabled={!canEdit}
               />
-              {invoice.document_type !== 'credit_note' && (
+              {invoice.document_type !== 'credit_note' && !invoiceIdsWithCreditNote.has(invoice.id) && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -901,7 +910,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                               className="text-primary hover:text-primary/80"
                               disabled={!canEdit}
                             />
-                            {invoice.document_type !== 'credit_note' && (
+                            {invoice.document_type !== 'credit_note' && !invoiceIdsWithCreditNote.has(invoice.id) && (
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -1019,7 +1028,7 @@ const InvoicesDataTable = ({ invoices, onInvoiceAction, selectedInvoices, onSele
                         className="text-primary hover:text-primary/80"
                         disabled={!canEdit}
                       />
-                      {invoice.document_type !== 'credit_note' && (
+                      {invoice.document_type !== 'credit_note' && !invoiceIdsWithCreditNote.has(invoice.id) && (
                         <Button
                           variant="ghost"
                           size="sm"
