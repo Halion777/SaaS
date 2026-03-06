@@ -396,6 +396,13 @@ export class InvoiceService {
         throw new Error(`Failed to create credit note: ${insertError.message}`);
       }
 
+      // Update the related invoice status to cancelled (credit note created for it)
+      try {
+        await InvoiceService.updateInvoiceStatus(sourceInvoiceId, 'cancelled', 'Credit note created');
+      } catch (statusErr) {
+        console.error('Credit note created but failed to set related invoice to cancelled:', statusErr);
+      }
+
       return {
         success: true,
         data: created,
