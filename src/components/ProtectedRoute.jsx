@@ -95,6 +95,7 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
         const sub = stripeRes.subscription ?? null;
 
         // Helper: when we would show guard, check DB as fallback — if DB says they have access, allow
+        // When in doubt (DB read fails), allow — avoid blocking on temporary DB/network errors
         const dbSaysHasAccess = async () => {
           try {
             const { data: dbSub } = await supabase
@@ -114,7 +115,7 @@ const ProtectedRoute = ({ children, skipSubscriptionCheck = false }) => {
             if (trialEnd != null && trialEnd < now) return false;
             return true;
           } catch {
-            return false;
+            return true; // DB read failed → allow (don't show guard unnecessarily)
           }
         };
 
