@@ -2454,7 +2454,9 @@
           "amount": "€{{amount}}/{{period}}",
           "manageSubscription": "Gérer l'abonnement",
           "noActiveSubscription": "Aucun abonnement actif",
-          "subscribeNow": "S'abonner maintenant"
+          "subscribeNow": "S'abonner maintenant",
+          "lifetimeSubscription": "Abonnement à vie",
+          "lifetimeSubscriptionNote": "Vous avez un accès complet sans paiement requis."
         }
       },
       "preferences": {

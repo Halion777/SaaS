@@ -2011,7 +2011,9 @@
           "amount": "€{{amount}}/{{period}}",
           "manageSubscription": "Abonnement beheren",
           "noActiveSubscription": "Geen actief abonnement",
-          "subscribeNow": "Nu abonneren"
+          "subscribeNow": "Nu abonneren",
+          "lifetimeSubscription": "Levenslang abonnement",
+          "lifetimeSubscriptionNote": "U heeft volledige toegang zonder betaling."
         }
       },
       "preferences": {

@@ -744,6 +744,12 @@ const UserProfile = ({ user, onLogout, isCollapsed = false, isGlobal = false }) 
                 </p>
               )}
             </>
+          ) : userProfile?.has_lifetime_access ? (
+            <div className="text-center py-6">
+              <Icon name="CheckCircle" size={24} className="text-green-600 dark:text-green-500 mx-auto mb-2" />
+              <p className="text-xs font-medium text-foreground mb-1">{t('profile.settings.subscription.lifetimeSubscription', 'Lifetime subscription')}</p>
+              <p className="text-xs text-muted-foreground">{t('profile.settings.subscription.lifetimeSubscriptionNote', 'You have full access with no payment required.')}</p>
+            </div>
           ) : (
             <div className="text-center py-6">
               <Icon name="AlertCircle" size={24} className="text-muted-foreground mx-auto mb-2" />

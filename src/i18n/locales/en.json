@@ -1979,7 +1979,9 @@
           "amount": "€{{amount}}/{{period}}",
           "manageSubscription": "Manage Subscription",
           "noActiveSubscription": "No active subscription",
-          "subscribeNow": "Subscribe Now"
+          "subscribeNow": "Subscribe Now",
+          "lifetimeSubscription": "Lifetime subscription",
+          "lifetimeSubscriptionNote": "You have full access with no payment required."
         }
       },
       "preferences": {

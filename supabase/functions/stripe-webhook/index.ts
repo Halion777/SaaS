@@ -242,9 +242,52 @@ serve(async (req) => {
       case 'invoice.payment_succeeded':
         const invoice = event.data.object as Stripe.Invoice
 
-        // Update subscription status to 'active' after trial ends
+        // Update subscription status to 'active' after trial ends (or first payment)
         if (invoice.subscription) {
           try {
+            // LOGICAL FIX: Ensure subscription row exists (e.g. if checkout.session.completed missed it)
+            const { data: existingSub } = await supabaseClient
+              .from('subscriptions')
+              .select('id, user_id')
+              .eq('stripe_subscription_id', invoice.subscription as string)
+              .maybeSingle()
+
+            if (!existingSub) {
+              const { data: userRow } = await supabaseClient
+                .from('users')
+                .select('id')
+                .eq('stripe_subscription_id', invoice.subscription as string)
+                .maybeSingle()
+              if (userRow?.id) {
+                const stripeSub = await stripe.subscriptions.retrieve(invoice.subscription as string)
+                const priceId = stripeSub.items.data[0]?.price?.id
+                const priceAmount = stripeSub.items.data[0]?.price?.unit_amount || 0
+                const priceInterval = stripeSub.items.data[0]?.price?.recurring?.interval || 'month'
+                const starterMonthly = Deno.env.get('STRIPE_STARTER_MONTHLY_PRICE_ID')
+                const starterYearly = Deno.env.get('STRIPE_STARTER_YEARLY_PRICE_ID')
+                const proMonthly = Deno.env.get('STRIPE_PRO_MONTHLY_PRICE_ID')
+                const proYearly = Deno.env.get('STRIPE_PRO_YEARLY_PRICE_ID')
+                let planType = 'starter'
+                if (priceId === proMonthly || priceId === proYearly) planType = 'pro'
+                await supabaseClient.from('subscriptions').upsert({
+                  user_id: userRow.id,
+                  stripe_subscription_id: stripeSub.id,
+                  stripe_customer_id: stripeSub.customer as string,
+                  plan_type: planType,
+                  plan_name: planType === 'pro' ? 'Pro Plan' : 'Starter Plan',
+                  status: 'active',
+                  interval: priceInterval === 'year' ? 'yearly' : 'monthly',
+                  amount: priceAmount / 100,
+                  current_period_start: new Date(stripeSub.current_period_start * 1000).toISOString(),
+                  current_period_end: new Date(stripeSub.current_period_end * 1000).toISOString(),
+                  trial_start: stripeSub.trial_start ? new Date(stripeSub.trial_start * 1000).toISOString() : null,
+                  trial_end: stripeSub.trial_end ? new Date(stripeSub.trial_end * 1000).toISOString() : null,
+                  cancel_at_period_end: stripeSub.cancel_at_period_end || false,
+                  updated_at: new Date().toISOString()
+                }, { onConflict: 'user_id' })
+              }
+            }
+
             // Update subscriptions table
             await supabaseClient
               .from('subscriptions')
@@ -262,7 +305,7 @@ serve(async (req) => {
               })
               .eq('stripe_subscription_id', invoice.subscription as string)
 
-            //  CRITICAL FIX: Get subscription record with user_id
+            // Get subscription record with user_id
             const { data: subRecord } = await supabaseClient
               .from('subscriptions')
               .select('id, user_id')
@@ -332,28 +375,71 @@ serve(async (req) => {
 
         // Update subscription status in database
         try {
-          // Get the old subscription data for comparison
+          // Get the old subscription data for comparison (use maybeSingle so missing row doesn't throw)
           const { data: oldSubData } = await supabaseClient
             .from('subscriptions')
             .select('*, users!inner(id, email, first_name, last_name, full_name, language_preference)')
             .eq('stripe_subscription_id', updatedSubscription.id)
-            .single()
+            .maybeSingle()
+
+          // LOGICAL FIX: If no subscription row exists (e.g. event arrived before checkout), create it from Stripe data
+          if (!oldSubData) {
+            const { data: userRow } = await supabaseClient
+              .from('users')
+              .select('id')
+              .eq('stripe_subscription_id', updatedSubscription.id)
+              .maybeSingle()
+            if (userRow?.id) {
+              const newPriceId = updatedSubscription.items.data[0]?.price?.id
+              const newPrice = updatedSubscription.items.data[0]?.price
+              const starterMonthly = Deno.env.get('STRIPE_STARTER_MONTHLY_PRICE_ID')
+              const starterYearly = Deno.env.get('STRIPE_STARTER_YEARLY_PRICE_ID')
+              const proMonthly = Deno.env.get('STRIPE_PRO_MONTHLY_PRICE_ID')
+              const proYearly = Deno.env.get('STRIPE_PRO_YEARLY_PRICE_ID')
+              let planType = 'starter'
+              if (newPriceId === proMonthly || newPriceId === proYearly) planType = 'pro'
+              const interval = newPrice?.recurring?.interval === 'year' ? 'yearly' : 'monthly'
+              const amount = newPrice ? (newPrice.unit_amount || 0) / 100 : 0
+              const status = updatedSubscription.status === 'canceled' ? 'cancelled' : updatedSubscription.status
+              await supabaseClient.from('subscriptions').upsert({
+                user_id: userRow.id,
+                stripe_subscription_id: updatedSubscription.id,
+                stripe_customer_id: updatedSubscription.customer as string,
+                plan_type: planType,
+                plan_name: planType === 'pro' ? 'Pro Plan' : 'Starter Plan',
+                status,
+                interval,
+                amount,
+                current_period_start: new Date(updatedSubscription.current_period_start * 1000).toISOString(),
+                current_period_end: new Date(updatedSubscription.current_period_end * 1000).toISOString(),
+                trial_end: updatedSubscription.trial_end ? new Date(updatedSubscription.trial_end * 1000).toISOString() : null,
+                cancel_at_period_end: updatedSubscription.cancel_at_period_end || false,
+                updated_at: new Date().toISOString()
+              }, { onConflict: 'user_id' })
+            }
+          }
+
+          // Re-fetch oldSubData if we just created the row (for email logic below)
+          const { data: oldSubDataForEmail } = await supabaseClient
+            .from('subscriptions')
+            .select('*, users!inner(id, email, first_name, last_name, full_name, language_preference)')
+            .eq('stripe_subscription_id', updatedSubscription.id)
+            .maybeSingle()
 
           // Detect plan change to update plan details
           const isPlanChange = previousAttributes?.items !== undefined
           const newPriceId = updatedSubscription.items.data[0]?.price?.id
           const newPrice = updatedSubscription.items.data[0]?.price
           
-          // Determine plan type and interval from price ID
           const starterMonthly = Deno.env.get('STRIPE_STARTER_MONTHLY_PRICE_ID')
           const starterYearly = Deno.env.get('STRIPE_STARTER_YEARLY_PRICE_ID')
           const proMonthly = Deno.env.get('STRIPE_PRO_MONTHLY_PRICE_ID')
           const proYearly = Deno.env.get('STRIPE_PRO_YEARLY_PRICE_ID')
           
-          let planType = oldSubData?.plan_type || 'starter'
-          let planName = oldSubData?.plan_name || 'Starter Plan'
-          let interval = oldSubData?.interval || 'monthly'
-          let amount = oldSubData?.amount || 0
+          let planType = oldSubDataForEmail?.plan_type || 'starter'
+          let planName = oldSubDataForEmail?.plan_name || 'Starter Plan'
+          let interval = oldSubDataForEmail?.interval || 'monthly'
+          let amount = oldSubDataForEmail?.amount || 0
           
           if (isPlanChange && newPriceId) {
             if (newPriceId === starterMonthly || newPriceId === starterYearly) {
@@ -372,14 +458,14 @@ serve(async (req) => {
           await supabaseClient
             .from('subscriptions')
             .update({
-              status: updatedSubscription.status,
+              status: updatedSubscription.status === 'canceled' ? 'cancelled' : updatedSubscription.status,
               plan_type: planType,
               plan_name: planName,
               interval: interval,
               amount: amount,
-              current_period_start: new Date(updatedSubscription.current_period_start * 1000).toISOString(), //  Update period start
-              current_period_end: new Date(updatedSubscription.current_period_end * 1000).toISOString(), //  Update period end (fixes "Next Billing" display)
-              trial_end: updatedSubscription.trial_end ? new Date(updatedSubscription.trial_end * 1000).toISOString() : null, //  Update trial end
+              current_period_start: new Date(updatedSubscription.current_period_start * 1000).toISOString(),
+              current_period_end: new Date(updatedSubscription.current_period_end * 1000).toISOString(),
+              trial_end: updatedSubscription.trial_end ? new Date(updatedSubscription.trial_end * 1000).toISOString() : null,
               cancel_at_period_end: updatedSubscription.cancel_at_period_end || false,
               updated_at: new Date().toISOString()
             })
@@ -389,20 +475,20 @@ serve(async (req) => {
           await supabaseClient
             .from('users')
             .update({
-              subscription_status: updatedSubscription.status,
+              subscription_status: updatedSubscription.status === 'canceled' ? 'cancelled' : updatedSubscription.status,
               selected_plan: planType
             })
             .eq('stripe_subscription_id', updatedSubscription.id)
             .eq('has_lifetime_access', false) // Only update users WITHOUT lifetime access
 
           // Send email notification if plan changed, status changed, or reactivated
-          if (oldSubData && oldSubData.users) {
-            const userData = oldSubData.users
-            const oldStatus = previousAttributes?.status || oldSubData.status
+          if (oldSubDataForEmail && oldSubDataForEmail.users) {
+            const userData = oldSubDataForEmail.users
+            const oldStatus = previousAttributes?.status || oldSubDataForEmail?.status
             const newStatus = updatedSubscription.status
             const oldCancelAtPeriodEnd = previousAttributes?.cancel_at_period_end !== undefined 
               ? previousAttributes.cancel_at_period_end 
-              : oldSubData.cancel_at_period_end
+              : oldSubDataForEmail?.cancel_at_period_end
             const newCancelAtPeriodEnd = updatedSubscription.cancel_at_period_end
 
             // Detect reactivation: cancel_at_period_end changed from true to false
@@ -467,7 +553,7 @@ serve(async (req) => {
                   .eq('stripe_subscription_id', updatedSubscription.id)
                   .single()
 
-                const sub = subscriptionDetails?.data || oldSubData
+                const sub = subscriptionDetails?.data || oldSubDataForEmail
 
                 // Determine email type based on the change
                 let emailType = 'subscription_activated' // Default
@@ -506,7 +592,7 @@ serve(async (req) => {
                   
                   // For upgrade/downgrade, also include old plan info if available
                   if (isUpgrade || isDowngrade) {
-                    const oldSub = oldSubData
+                    const oldSub = oldSubDataForEmail
                     if (oldSub) {
                       emailData.variables.old_plan_name = oldSub.plan_name || ''
                       emailData.variables.old_amount = oldSub.amount ? `${oldSub.amount}` : ''
