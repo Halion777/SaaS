@@ -319,7 +319,8 @@ const AddClientInvoiceModal = ({ isOpen, onClose, onCreated }) => {
     return sum;
   }, [lineItems]);
 
-  const vatPercent = parseAmount(formData.vat_percent) || 21;
+  const parsedVat = parseAmount(formData.vat_percent);
+  const vatPercent = (parsedVat === 0 || parsedVat) ? parsedVat : 21;
   const discount = parseAmount(formData.discount_amount) || 0;
   // When we have line items, net = lineItemsSubtotal; otherwise use formData.net_amount
   const effectiveNet = lineItemsSubtotal != null ? lineItemsSubtotal : parseAmount(formData.net_amount) || 0;
