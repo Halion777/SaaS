@@ -82,7 +82,7 @@ export const QUOTAS = {
   starter: {
     quotesPerMonth: -1, // -1 = unlimited (quotes are unlimited)
     invoicesPerMonth: -1, // -1 = unlimited (simple invoices are unlimited)
-    peppolInvoicesPerMonth: 100, // Up to 100 Peppol e-invoices per month (sent + received) - RESETS MONTHLY
+    peppolInvoicesPerMonth: 999999, // Up to 999999 Peppol e-invoices per month (sent + received) - RESETS MONTHLY
     clientsPerMonth: 30, // Up to 30 clients added per month - RESETS MONTHLY
     maxProfiles: 1 // 1 user profile (total limit, not monthly)
   },
