@@ -1110,7 +1110,7 @@ async function checkReceiverLimit(supabase: any, userId: string): Promise<{
     // Get plan quotas
     const plan = userData?.selected_plan || 'starter';
     const QUOTAS: any = {
-      starter: { peppolInvoicesPerMonth: 50 },
+      starter: { peppolInvoicesPerMonth: 999999 },
       pro: { peppolInvoicesPerMonth: -1 }
     };
     const planQuotas = QUOTAS[plan] || QUOTAS.starter;
