@@ -92,22 +92,23 @@ serve(async (req: Request) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  if (req.method !== 'POST') {
+    return new Response(
+      JSON.stringify({ error: 'Method not allowed' }),
+      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // @ts-ignore
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+  // @ts-ignore
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  let webhookUserId: string | null = null;
+  let logPayloadSnapshot: { eventType: string; messageId: string | null; peppolIdentifier: string | null } | null = null;
+
   try {
-    // Only allow POST requests
-    if (req.method !== 'POST') {
-      return new Response(
-        JSON.stringify({ error: 'Method not allowed' }), 
-        { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Initialize Supabase client
-    // @ts-ignore
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-    // @ts-ignore
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
     // Parse webhook payload (Digiteal format)
     const digitealPayload: DigitealWebhookPayload = await req.json();
     
@@ -178,11 +179,36 @@ serve(async (req: Request) => {
         // Additional fields will be extracted from UBL XML if needed
       }
     };
-    
+
+    logPayloadSnapshot = {
+      eventType: payload.eventType,
+      messageId: payload.data?.messageId ?? null,
+      peppolIdentifier: payload.data?.receiverPeppolId || payload.data?.peppolIdentifier || null
+    };
+
+    const logHttp = async (
+      httpStatus: number,
+      outcome: 'success' | 'failed' | 'accepted_orphan',
+      detail: string,
+      meta: Record<string, unknown> = {}
+    ) => {
+      await logPeppolWebhookOutcome(supabase, {
+        userId: webhookUserId,
+        eventType: logPayloadSnapshot?.eventType ?? 'UNKNOWN',
+        messageId: logPayloadSnapshot?.messageId ?? null,
+        peppolIdentifier: logPayloadSnapshot?.peppolIdentifier ?? null,
+        httpStatus,
+        httpOk: httpStatus >= 200 && httpStatus < 300,
+        outcome,
+        detail,
+        meta: { changeType: digitealPayload.changeType, ...meta }
+      });
+    };
 
     // Validate webhook authentication (basic validation)
     const authHeader = req.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Basic ')) {
+      await logHttp(401, 'failed', 'Missing or invalid Authorization header', { reason: 'no_basic_auth' });
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }), 
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -204,6 +230,9 @@ serve(async (req: Request) => {
     // Validate credentials
     if (!expectedUsername || !expectedPassword) {
       console.error('[Peppol Webhook] PEPPOL_API_USERNAME or PEPPOL_API_PASSWORD not configured');
+      await logHttp(500, 'failed', 'PEPPOL_API_USERNAME or PEPPOL_API_PASSWORD not configured on server', {
+        reason: 'missing_env_credentials'
+      });
       return new Response(
         JSON.stringify({ error: 'Server configuration error' }), 
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -212,6 +241,7 @@ serve(async (req: Request) => {
     
     if (username !== expectedUsername || password !== expectedPassword) {
       console.warn('[Peppol Webhook] Invalid credentials provided');
+      await logHttp(401, 'failed', 'Invalid Basic Auth credentials', { reason: 'invalid_credentials' });
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }), 
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -252,9 +282,15 @@ serve(async (req: Request) => {
         // If XML parsing fails, continue with other methods
       }
     }
-    
-    
+
+    logPayloadSnapshot = {
+      eventType: payload.eventType,
+      messageId: payload.data?.messageId ?? null,
+      peppolIdentifier: receiverPeppolId ?? null
+    };
+
     if (!receiverPeppolId) {
+      await logHttp(400, 'failed', 'Invalid payload: missing receiver identifier', { reason: 'missing_receiver_id' });
       return new Response(
         JSON.stringify({ error: 'Invalid payload: missing receiver identifier' }), 
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -265,6 +301,10 @@ serve(async (req: Request) => {
     const parsedId = parsePeppolId(receiverPeppolId);
     
     if (!parsedId) {
+      await logHttp(400, 'failed', 'Invalid Peppol ID format. Expected SCHEME:VATNUMBER', {
+        reason: 'invalid_peppol_id_format',
+        attemptedId: receiverPeppolId
+      });
       return new Response(
         JSON.stringify({ error: 'Invalid Peppol ID format. Expected format: SCHEME:VATNUMBER' }), 
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -345,7 +385,10 @@ serve(async (req: Request) => {
     }
 
     if (settingsError || !peppolSettings) {
-      
+      await logHttp(404, 'failed', 'User not found for this Peppol identifier', {
+        reason: 'peppol_settings_not_found',
+        attemptedId: receiverPeppolId
+      });
       return new Response(
         JSON.stringify({ 
           error: 'User not found for this Peppol identifier',
@@ -356,9 +399,8 @@ serve(async (req: Request) => {
       );
     }
 
-   
-
     const userId = peppolSettings.user_id;
+    webhookUserId = userId;
 
     // Process the webhook based on event type
     // According to Digiteal documentation: https://doc.digiteal.eu/docs/types-of-webhooks
@@ -402,6 +444,24 @@ serve(async (req: Request) => {
         processResult = { success: true, message: 'Event logged but not processed' };
     }
 
+    const httpStatus = processResult?.success === false ? 400 : 200;
+    const orphanAccepted = !!(processResult as any)?.webhookOrphanAccepted;
+    const outcome: 'success' | 'failed' | 'accepted_orphan' =
+      httpStatus >= 400 ? 'failed' : orphanAccepted ? 'accepted_orphan' : 'success';
+    const detail =
+      httpStatus >= 400
+        ? String(processResult?.error || 'Processing failed')
+        : orphanAccepted
+          ? String((processResult as any)?.message || 'Accepted without local match')
+          : 'Webhook processed successfully';
+
+    await logHttp(httpStatus, outcome, detail, {
+      invoiceId: (processResult as any)?.invoiceId,
+      limit: (processResult as any)?.limit,
+      usage: (processResult as any)?.usage,
+      updated: (processResult as any)?.updated
+    });
+
     // Return success response for successful processing
     return new Response(
       JSON.stringify({
@@ -413,11 +473,25 @@ serve(async (req: Request) => {
       { status: processResult?.success === false ? 400 : 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
+  } catch (error: any) {
+    await logPeppolWebhookOutcome(supabase, {
+      userId: webhookUserId,
+      eventType: logPayloadSnapshot?.eventType ?? 'WEBHOOK_EXCEPTION',
+      messageId: logPayloadSnapshot?.messageId ?? null,
+      peppolIdentifier: logPayloadSnapshot?.peppolIdentifier ?? null,
+      httpStatus: 500,
+      httpOk: false,
+      outcome: 'failed',
+      detail: error?.message || String(error),
+      meta: {
+        reason: 'unhandled_exception',
+        stack: typeof error?.stack === 'string' ? error.stack.slice(0, 800) : undefined
+      }
+    });
     return new Response(
       JSON.stringify({
         error: 'Internal server error',
-        message: error.message
+        message: error?.message || String(error)
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -427,6 +501,44 @@ serve(async (req: Request) => {
 // =====================================================
 // HELPER FUNCTIONS
 // =====================================================
+
+/**
+ * Persist webhook outcomes so you can inspect failures/orphans in Supabase without Digiteal's dashboard.
+ * Best-effort: ignores missing table or RLS (service role bypasses RLS for inserts).
+ */
+async function logPeppolWebhookOutcome(
+  supabase: any,
+  row: {
+    userId: string | null;
+    eventType: string;
+    messageId?: string | null;
+    peppolIdentifier?: string | null;
+    httpStatus: number;
+    httpOk: boolean;
+    outcome: 'success' | 'failed' | 'accepted_orphan';
+    detail?: string | null;
+    meta?: Record<string, unknown>;
+  }
+) {
+  try {
+    const { error } = await supabase.from('peppol_webhook_logs').insert({
+      user_id: row.userId,
+      event_type: row.eventType,
+      message_id: row.messageId || null,
+      peppol_identifier: row.peppolIdentifier || null,
+      http_ok: row.httpOk,
+      http_status: row.httpStatus,
+      outcome: row.outcome,
+      detail: row.detail || null,
+      meta: row.meta || {}
+    });
+    if (error) {
+      console.warn('[Peppol Webhook] peppol_webhook_logs insert failed:', error.message);
+    }
+  } catch (e) {
+    console.warn('[Peppol Webhook] peppol_webhook_logs insert exception:', e);
+  }
+}
 
 /**
  * Parse Peppol ID to extract scheme and VAT number for flexible matching
@@ -1845,7 +1957,12 @@ async function processSendOutcome(supabase: any, userId: string, payload: Webhoo
     const messageId = data.messageId;
 
     if (!messageId) {
-      return { success: false, error: 'No message ID provided' };
+      // 2xx: Digiteal retries non-success; nothing to update without an id
+      return {
+        success: true,
+        webhookOrphanAccepted: true,
+        message: 'Send outcome: no message ID; acknowledged'
+      };
     }
 
     // Find invoice by message ID in the invoices table (client invoices)
@@ -1857,7 +1974,13 @@ async function processSendOutcome(supabase: any, userId: string, payload: Webhoo
       .single();
 
     if (findError || !invoice) {
-      return { success: false, error: 'Invoice not found' };
+      // 2xx: message id may differ from stored peppol_message_id until SEND_PROCESSING_OUTCOME updates it
+      return {
+        success: true,
+        webhookOrphanAccepted: true,
+        messageId,
+        message: 'Send outcome: no matching invoice row; acknowledged'
+      };
     }
 
     // Determine Peppol status
@@ -1920,7 +2043,11 @@ async function processAcknowledgment(supabase: any, userId: string, payload: Web
     const messageId = data.messageId;
 
     if (!messageId) {
-      return { success: false, error: 'No message ID provided' };
+      return {
+        success: true,
+        webhookOrphanAccepted: true,
+        message: 'Acknowledgment: no message ID; acknowledged'
+      };
     }
 
     // Check if this acknowledgment indicates successful delivery
@@ -1998,8 +2125,13 @@ async function processAcknowledgment(supabase: any, userId: string, payload: Web
         // Failed to update peppol_invoices metadata
       }
     } else if (!clientInvoice && !peppolInvoice) {
-      // Neither invoice nor peppol_invoice found
-      return { success: false, error: 'Invoice not found' };
+      // 2xx: Digiteal retries on 4xx; ACK may arrive before peppol_message_id is stored or use another id shape
+      return {
+        success: true,
+        webhookOrphanAccepted: true,
+        messageId,
+        message: 'Acknowledgment: no matching invoice/peppol_invoices row; acknowledged'
+      };
     }
 
     return { 
@@ -2022,7 +2154,11 @@ async function processInvoiceResponse(supabase: any, userId: string, payload: We
     const messageId = data.messageId;
 
     if (!messageId) {
-      return { success: false, error: 'No message ID provided' };
+      return {
+        success: true,
+        webhookOrphanAccepted: true,
+        message: 'Invoice response: no message ID; acknowledged'
+      };
     }
 
     // Find invoice and update metadata with response
@@ -2034,7 +2170,12 @@ async function processInvoiceResponse(supabase: any, userId: string, payload: We
       .single();
 
     if (findError || !invoice) {
-      return { success: true, message: 'Invoice response logged but invoice not found' };
+      return {
+        success: true,
+        webhookOrphanAccepted: true,
+        messageId,
+        message: 'Invoice response: no matching peppol_invoices row; acknowledged'
+      };
     }
 
     // Update metadata with invoice response info
@@ -2073,7 +2214,11 @@ async function processFutureValidationFailed(supabase: any, userId: string, payl
     const messageId = data.messageId;
 
     if (!messageId) {
-      return { success: false, error: 'No message ID provided' };
+      return {
+        success: true,
+        webhookOrphanAccepted: true,
+        message: 'Future validation: no message ID; acknowledged'
+      };
     }
 
     // Find invoice by message ID (could be in invoices or expense_invoices)
@@ -2148,7 +2293,12 @@ async function processFutureValidationFailed(supabase: any, userId: string, payl
       return { success: true, invoiceId: invoice.id, type: invoiceType };
     }
 
-    return { success: true, message: 'Validation warning logged but invoice not found' };
+    return {
+      success: true,
+      webhookOrphanAccepted: true,
+      messageId,
+      message: 'Future validation: no matching invoice; acknowledged'
+    };
 
   } catch (error) {
     return { success: false, error: error.message };

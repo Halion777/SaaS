@@ -82,7 +82,7 @@ export const QUOTAS = {
   starter: {
     quotesPerMonth: -1, // -1 = unlimited (quotes are unlimited)
     invoicesPerMonth: -1, // -1 = unlimited (simple invoices are unlimited)
-    peppolInvoicesPerMonth: 999999, // Up to 999999 Peppol e-invoices per month (sent + received) - RESETS MONTHLY
+    peppolInvoicesPerMonth: 999999, // Up to 999999 Peppol e-invoices per month (sent + received) - RESETS MONTHLY hard code in the webhook supabase/functions/peppol-webhook/index.ts:1113 (limit is large enough to be unlimited)
     clientsPerMonth: 30, // Up to 30 clients added per month - RESETS MONTHLY
     maxProfiles: 1 // 1 user profile (total limit, not monthly)
   },

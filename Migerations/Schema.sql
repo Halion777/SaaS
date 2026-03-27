@@ -776,3 +776,33 @@ CREATE TABLE public.users (
   CONSTRAINT users_pkey PRIMARY KEY (id),
   CONSTRAINT users_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
 );
+
+
+-- Peppol webhook observability (Digiteal): one row per webhook response.
+-- http_status: use http_status >= 400 for failures; 200 for success / accepted orphan.
+CREATE TABLE IF NOT EXISTS public.peppol_webhook_logs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  user_id uuid REFERENCES public.users(id) ON DELETE SET NULL,
+  event_type text NOT NULL,
+  message_id text,
+  peppol_identifier text,
+  http_ok boolean NOT NULL DEFAULT true,
+  http_status integer,
+  outcome text NOT NULL,
+  detail text,
+  meta jsonb NOT NULL DEFAULT '{}'::jsonb
+);
+
+-- No-op if column already present (e.g. table created from this file).
+ALTER TABLE public.peppol_webhook_logs
+  ADD COLUMN IF NOT EXISTS http_status integer;
+
+CREATE INDEX IF NOT EXISTS peppol_webhook_logs_created_at_idx ON public.peppol_webhook_logs (created_at DESC);
+CREATE INDEX IF NOT EXISTS peppol_webhook_logs_user_id_idx ON public.peppol_webhook_logs (user_id);
+
+ALTER TABLE public.peppol_webhook_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users read own peppol webhook logs"
+  ON public.peppol_webhook_logs FOR SELECT
+  USING (auth.uid() = user_id);
