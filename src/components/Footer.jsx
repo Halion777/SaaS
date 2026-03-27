@@ -189,14 +189,24 @@ const Footer = () => {
           </div>
           <div className="mt-4 text-center">
             <span className="text-xs text-gray-500">
-              Designed & Developed by{' '}
-              <a 
-                href="https://abdulhameed.dev" 
-                target="_blank" 
+              Developed by{' '}
+              <a
+                href="https://abdulhameed.dev"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-400 hover:text-white transition-colors underline"
               >
-                abdulhameed.dev
+                Abdul Hameed
+              </a>
+              {' '}
+              ·{' '}
+              <a
+                href="https://www.rixon.agency/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-400 hover:text-white transition-colors underline"
+              >
+                Rix<span className="text-[#39ff14]">on</span> Agency
               </a>
             </span>
           </div>
